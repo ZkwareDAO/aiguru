@@ -4,6 +4,7 @@
 2、github注册使用、python、vscode </br>
 3、头脑风暴 </br>
 4、lyf</br>
-7 czr</br>
 5、Jack</br>
 6、Michael
+7 czr</br>
+8.lsy
