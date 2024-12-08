@@ -1,0 +1,34 @@
+Enabled subsystems: [Mining Sealing SectorStorage]
+StartTime: 245h3m2s (started at 2024-11-13 11:22:08 +0800 CST)
+Chain: [sync ok] [basefee 14.455 fFIL]
+Miner: f02639702 (32 GiB sectors)
+Power: 10.4 Pi / 23.3 Ei (0.0435%)
+        Raw: 1.039 PiB / 4.541 EiB (0.0223%)
+        Committed: 1.039 PiB
+        Proving: 1.039 PiB (480 GiB Faulty, 0.04%)
+Projected average block win rate: 43.83/week (every 3h49m59s)
+Projected block win with 99.9% probability every 26h26m59s
+(projections DO NOT account for future network and miner growth)
+
+Miner Balance:    80640.771 FIL
+      PreCommit:  0
+      Pledge:     65270.914 FIL
+      Vesting:    2809.154 FIL
+      FeeDebt:    0
+      Available:  12560.704 FIL
+Market Balance:   259.456 FIL
+       Locked:    253.85 FIL
+       Available: 5.606 FIL
+Worker Balance:   30.996 FIL
+       Control:   99.785 FIL
+Total Spendable:  12697.092 FIL
+
+Beneficiary:    f02941787
+Beneficiary Quota:      1000000000000000000000000
+Beneficiary Used Quota: 5243246705839188394058
+Beneficiary Expiration: 5679931
+
+Sectors:
+        Total: 0
+
+Workers: Seal(1) WdPoSt(0) WinPoSt(0)
