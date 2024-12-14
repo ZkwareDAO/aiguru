@@ -1,0 +1,4 @@
+1.python -m pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
+或者
+pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
+将指令输入到终端.
