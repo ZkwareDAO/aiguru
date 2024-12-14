@@ -8,7 +8,7 @@ def is_leap_year(year)->bool:
     return True
 
 def day_of_year(year,month,day)->int:
-    previous_day_of_month=[0,31,59,90,120,151,181,212,243,273,304,334]
+    previous_day_of_month=[0,31,59,90,120,151,181,212,243,273,304,334]#
     mumber_of_day=day+previous_day_of_month[month-1]
     if is_leap_year(year) and month>2:
         mumber_of_day+=1
