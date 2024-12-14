@@ -1,4 +1,4 @@
-days=[0,0,31,28,31,30,31,30,31,31,30,31,30,31]
+days=[0,31,28,31,30,31,30,31,31,30,31,30]
 nian=int(input("Year: "))
 yue=int(input("month: "))
 ri=int(input("day: "))
@@ -7,14 +7,13 @@ def runy(y)->bool:
         return False
     elif y%400==0:
         return True
-    elif y%100!=0:
+    elif y%100==0:
         return False
     return True
 def cal_days(d,m):
     baisicday=0
     for day in days:
         if  int(days.index(int(day)))<=m:
-            print(days.index(day))
             baisicday+= int(day) 
     baisicday+=d
     return int(baisicday)
