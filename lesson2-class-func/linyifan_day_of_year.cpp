@@ -2,9 +2,7 @@
 using namespace std;
 int sum;
 int month[15]={0,31,28,31,30,31,30,31,31,30,31,30,31};//存储月份到month数组中
-int main(){
-	int y,m,d;//y年份，m月份，d天数
-	cin>>y>>m>>d;
+int calc(int y,int m,int d){
 	if(y%4==0&&(y%100>0||y%400==0)){
 		month[2]+=1;
 	}
@@ -16,8 +14,13 @@ int main(){
 	}else{
 		sum+=d;//未溢出，直接加d
 	}	
-	cout<<sum;
-	return 0;
+	return sum;
+}
+int main(){
+    int y,m,d;
+    cin>>y>>m>>d;
+    cout<<calc(y,m,d);
+    return 0;
 }
 /*
 思路：
