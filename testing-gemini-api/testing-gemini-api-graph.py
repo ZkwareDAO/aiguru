@@ -2,7 +2,7 @@ from google import genai
 from google.genai import types
 import PIL.Image
 image = PIL.Image.open('D:/Draft/inte.png')#这是我电脑上的本地图片
-client = genai.Client(api_key="(your api key)")
+client = genai.Client(api_key="AIzaSyCHHE2VjvCW4H28b29XbFHZIbZ3O8lklC8")
 response = client.models.generate_content(
     model="gemini-2.0-flash",
     contents=["calculate this integration", image])
