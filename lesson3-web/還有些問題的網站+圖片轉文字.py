@@ -3,6 +3,7 @@ import hashlib
 import os 
 from datetime import datetime 
 import time
+import requests;
 
 OCR_API_URL = "https://ocr.space.com"
 OCR_API_KEY = "K81037081488957"
