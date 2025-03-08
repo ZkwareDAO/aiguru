@@ -1,4 +1,4 @@
-yearinput=int(input("年份："))
+jyearinput=int(input("年份："))
 monthinput=int(input("月份："))
 dayinput=int(input("日："))
 extra=int(0)
@@ -12,3 +12,4 @@ def dayofyear (month,day,change):
             change=change+1
     print(30*(month-1)+day+change)
 dayofyear(monthinput,dayinput,extra)
+
