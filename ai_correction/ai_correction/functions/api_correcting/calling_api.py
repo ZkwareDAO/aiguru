@@ -68,23 +68,9 @@ correction_prompt="""你是一个数学题自动批改系统，需根据提供�
    - 优先匹配步骤逻辑而非文字顺序（如学生调换步骤顺序但逻辑正确，仍给分）。
    - 对模糊内容（如无法识别的符号）标注“OCR识别失败”，不猜测扣分。
    - 禁止修改原始评分方案，仅基于其执行批改。"""
-def testing_api(prompt,file=None):
-    if prompt==correction_prompt:
-        return '''一下为评分
-        {
-       \"总分\": \"2分\",
-       \"分项批改\": [
-         {
-           \"步骤序号\": 1,
-           \"得分\": \"1分\",
-           \"正确点\\": [\"变形正确\"],
-           \"错误点\": [\"符号错误（扣1分）\"],
-           \"建议\": \"注意符号规范，建议复习等式性质\"
-         },
-       ],
-       \"总评\": \"整体反馈（如‘计算能力优秀，但需注意单位转换’）\",
-       \"异常标记\": [\"待人工复核项（如有）\"]
-     }一上为评分'''
+
+def testing_api(prompt,*file):
+    print("Testing api is called.promt is:"+prompt)
     if prompt==marking_scheme_prompt:
         return '''以下为marking_scheme
 {
@@ -102,17 +88,28 @@ def testing_api(prompt,file=None):
     "备注": "特殊说明（如允许误差范围、多解法标识）"
 }
 以上为marking_scheme'''
-    return "no result"
+    return '''以下为评分{
+  "总分": "M分（基于评分方案计算）",
+  "分项批改": [
+    {
+      "步骤序号": 1,
+      "得分": "X分",
+      "正确点": ["变形正确"],
+      "错误点": ["符号错误（扣1分）"],
+      "建议": "注意符号规范，建议复习等式性质"
+    }
+  ],
+  "总评": "整体反馈（如‘计算能力优秀，但需注意单位转换’）",
+  "异常标记": ["待人工复核项（如有）"]
+}
+以上为评分'''
 
 #调用的API,接收一个str和文件，返回一个字符串
 default_api=testing_api
 
-def generate_marking_scheme(image_file, api=default_api):
-    try:
-        # 执行AI函数调用
-        response_str = api(marking_scheme_prompt, image_file)
-        
-        json_match = re.search(r'\{.*\}', response_str, re.DOTALL)
+def extract_json_from_str(string):
+    
+        json_match = re.search(r'\{.*\}', string, re.DOTALL)
         if not json_match:
             raise ValueError("返回字符串中未找到有效JSON")
         
@@ -121,8 +118,16 @@ def generate_marking_scheme(image_file, api=default_api):
             return json.loads(json_match.group(0))
         except json.JSONDecodeError as e:
             raise ValueError(f"返回内容不是有效JSON: {str(e)}") from e
+
+def generate_marking_scheme(image_file, api=default_api):
+    try:
+        # 执行AI函数调用
+        response_str = api(marking_scheme_prompt, image_file)
+        
+        # 解析返回结果
+        return extract_json_from_str(response_str)
     except Exception as e:
-        # 捕获所有AI函数可能抛出的异常
+        # 捕获所有API函数可能抛出的异常
         raise RuntimeError(f"API函数调用失败: {str(e)}") from e
 
 #批改
@@ -141,30 +146,28 @@ def correction_with_json_marking_scheme(json_marking_scheme, image_file, api=def
     RuntimeError: API函数调用失败时抛出
     ValueError: 未找到有效JSON或解析失败时抛出
     """
-    try:
-        # 序列化JSON数据
-        json_str = json.dumps(json_marking_scheme)
-            
-        # 执行AI函数调用
-        response_str = api(json_str, image_file)
-
-        # 提取JSON部分
+    try: 
+        # 执行API函数调用
+        response_str = api(correction_prompt+"\n5.一下是评分标准:\n"+str(json_marking_scheme), image_file)
         
-        json_match = re.search(r'\{.*\}', response_str, re.DOTALL)
-        if not json_match:
-            raise ValueError("返回字符串中未找到有效JSON")
-        
-        # 解析返回结果
-        try:
-            return json.loads(json_match.group(0))
-        except json.JSONDecodeError as e:
-            raise ValueError(f"返回内容不是有效JSON: {str(e)}") from e
+        return extract_json_from_str(response_str)
             
     except Exception as e:
         # 捕获所有AI函数可能抛出的异常
         raise RuntimeError(f"API函数调用失败: {str(e)}") from e
 
-def marking_without_marking_scheme(image,api=default_api):
+def correction_with_image_marking_scheme(marking_scheme, image_file, api=default_api):
+    try:    
+        # 执行AI函数调用
+        response_str = api(correction_prompt,marking_scheme, image_file)
+
+        return extract_json_from_str(response_str)
+            
+    except Exception as e:
+        # 捕获所有AI函数可能抛出的异常
+        raise RuntimeError(f"API函数调用失败: {str(e)}") from e
+
+def correction_without_marking_scheme(image,api=default_api):
     marking_scheme=generate_marking_scheme(image)
     return correction_with_json_marking_scheme(marking_scheme,image,api)
 
