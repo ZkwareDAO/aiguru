@@ -69,10 +69,15 @@ correction_prompt="""你是一个数学题自动批改系统，需根据提供�
    - 对模糊内容（如无法识别的符号）标注“OCR识别失败”，不猜测扣分。
    - 禁止修改原始评分方案，仅基于其执行批改。"""
 
-def testing_api(prompt,*file):
-    print("Testing api is called.promt is:"+prompt)
-    if prompt==marking_scheme_prompt:
-        return '''以下为marking_scheme
+# 使用缓存装饰器来存储API调用结果
+from functools import lru_cache
+
+@lru_cache(maxsize=100)
+def testing_api(prompt, *file):
+    print("Testing api is called. prompt is: " + prompt)
+    try:
+        if prompt == marking_scheme_prompt:
+            return '''以下为marking_scheme
 {
     "题目类型": "分类（如代数方程）",
     "总分值": "N分",
@@ -88,6 +93,9 @@ def testing_api(prompt,*file):
     "备注": "特殊说明（如允许误差范围、多解法标识）"
 }
 以上为marking_scheme'''
+    except Exception as e:
+        logging.error(f"API调用出错: {str(e)}")
+        raise RuntimeError(f"API调用失败: {str(e)}")
     return '''以下为评分{
   "总分": "M分（基于评分方案计算）",
   "分项批改": [

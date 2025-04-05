@@ -1,1 +1,48 @@
-{}
+{
+  "migrated": true,
+  "test_user_2": {
+    "password": "password2",
+    "records": [
+      {
+        "filename": "20250323193645_3850.jpg_wh860.jpg",
+        "upload_time": "20250323193645",
+        "file_size": 140,
+        "file_hash": "b96a879dd5b024dbad5b20ff38855670",
+        "processing_result": "Completed",
+        "progress": 1.0,
+        "file_type": "question",
+        "file_path": "user_uploads\\test_user_2\\20250323193645_3850.jpg_wh860.jpg"
+      },
+      {
+        "filename": "20250323193712_R-C (1).png",
+        "upload_time": "20250323193712",
+        "file_size": 309,
+        "file_hash": "568915c21d768c4988952dbb2674c28d",
+        "processing_result": "Completed",
+        "progress": 1.0,
+        "file_type": "marking_scheme",
+        "file_path": "user_uploads\\test_user_2\\20250323193712_R-C (1).png"
+      },
+      {
+        "filename": "20250323193716_R-C.png",
+        "upload_time": "20250323193716",
+        "file_size": 144,
+        "file_hash": "6ac3c9051c606913a748c8448564ed8c",
+        "processing_result": "Completed",
+        "progress": 1.0,
+        "file_type": "question",
+        "file_path": "user_uploads\\test_user_2\\20250323193716_R-C.png"
+      },
+      {
+        "filename": "20250323193812_\u5fae\u4fe1\u56fe\u7247_20241023224419.jpg",
+        "upload_time": "20250323193812",
+        "file_size": 31,
+        "file_hash": "e11d33c52b3b8766bf2d6c93f9ab23b9",
+        "processing_result": "Completed",
+        "progress": 1.0,
+        "file_type": "student_answer",
+        "file_path": "user_uploads\\test_user_2\\20250323193812_\u5fae\u4fe1\u56fe\u7247_20241023224419.jpg"
+      }
+    ]
+  }
+}
