@@ -156,7 +156,7 @@ class PygameInterface:
             self.sprites['buildings'][building_type] = SpriteAnimation(
                 config['spritesheet'],
                 config['frame_size'],
-                variants=3
+                config['animations']
             )
 
         # 加载单位精灵
@@ -164,7 +164,7 @@ class PygameInterface:
             self.sprites['units'][unit_type] = SpriteAnimation(
                 config['spritesheet'],
                 config['frame_size'],
-                variants=3
+                config['animations']
             )
 
         # 加载地形精灵
@@ -172,7 +172,7 @@ class PygameInterface:
             self.sprites['terrain'][terrain_type] = SpriteAnimation(
                 config['spritesheet'],
                 config['frame_size'],
-                frames_per_state=config['variants']
+                config['animations']
             )
 
     def load_resources(self):

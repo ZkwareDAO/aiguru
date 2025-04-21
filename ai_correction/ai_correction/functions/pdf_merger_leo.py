@@ -1,81 +1,91 @@
-import tkinter as tk
-from tkinter import filedialog, messagebox
 import os
-from fpdf import FPDF
+from PIL import Image
+import streamlit as st # type: ignore
 from PyPDF2 import PdfReader, PdfWriter
+from fpdf import FPDF
+from pathlib import Path
 
-class PDFMerger:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("PDF Merger")
+class ImageToPDFConverter:
+    def __init__(self, upload_dir=None):
+        self.upload_dir = upload_dir or Path("uploads")
+        self.upload_dir.mkdir(exist_ok=True)
         
-        # Create main frame
-        self.main_frame = tk.Frame(root)
-        self.main_frame.pack(padx=10, pady=10)
-        
-        # PDF file selection
-        self.pdf_label = tk.Label(self.main_frame, text="Select PDF File:")
-        self.pdf_label.pack()
-        self.pdf_button = tk.Button(self.main_frame, text="Choose PDF", command=self.select_pdf)
-        self.pdf_button.pack(pady=5)
-        
-        # Answer file selection
-        self.answer_label = tk.Label(self.main_frame, text="Select Answer File (.txt):")
-        self.answer_label.pack()
-        self.answer_button = tk.Button(self.main_frame, text="Choose Answer File", command=self.select_answer)
-        self.answer_button.pack(pady=5)
-        
-        # Annotation file selection
-        self.annotation_label = tk.Label(self.main_frame, text="Select Annotation File (.txt):")
-        self.annotation_label.pack()
-        self.annotation_button = tk.Button(self.main_frame, text="Choose Annotation File", command=self.select_annotation)
-        self.annotation_button.pack(pady=5)
-        
-        # Process button
-        self.process_button = tk.Button(self.main_frame, text="Merge PDFs", command=self.merge_pdfs)
-        self.process_button.pack(pady=20)
-        
-        # File paths
-        self.pdf_path = None
-        self.answer_path = None
-        self.annotation_path = None
-
-    def select_pdf(self):
-        file_path = filedialog.askopenfilename(filetypes=[("PDF files", "*.pdf")])
-        if file_path:
-            self.pdf_path = file_path
-            self.pdf_label.config(text=f"PDF: {os.path.basename(file_path)}")
-
-    def select_answer(self):
-        file_path = filedialog.askopenfilename(filetypes=[("Text files", "*.txt")])
-        if file_path:
-            self.answer_path = file_path
-            self.answer_label.config(text=f"Answer: {os.path.basename(file_path)}")
-
-    def select_annotation(self):
-        file_path = filedialog.askopenfilename(filetypes=[("Text files", "*.txt")])
-        if file_path:
-            self.annotation_path = file_path
-            self.annotation_label.config(text=f"Annotation: {os.path.basename(file_path)}")
-
-    def merge_pdfs(self):
-        if not all([self.pdf_path, self.answer_path, self.annotation_path]):
-            messagebox.showerror("Error", "Please select all required files")
-            return
-
+    def convert_image_to_pdf(self, image_path):
+        """Convert a single image to PDF."""
         try:
-            # Read answer and annotation files
-            with open(self.answer_path, 'r', encoding='utf-8') as f:
-                answer_text = f.read()
+            # Get image file name without extension
+            image_name = os.path.splitext(os.path.basename(image_path))[0]
             
-            with open(self.annotation_path, 'r', encoding='utf-8') as f:
-                annotation_text = f.read()
-
-            # Create temporary PDF with answers and annotations
+            # Create PDF
+            pdf = FPDF()
+            pdf.add_page()
+            
+            # Open image and get dimensions
+            img = Image.open(image_path)
+            width, height = img.size
+            
+            # Calculate image size to fit on PDF page (maintaining aspect ratio)
+            pdf_width = pdf.w - 20  # Margins
+            pdf_height = pdf.h - 20  # Margins
+            
+            ratio = min(pdf_width/width, pdf_height/height)
+            new_width = width * ratio
+            new_height = height * ratio
+            
+            # Add image to PDF
+            pdf.image(image_path, x=10, y=10, w=new_width, h=new_height)
+            
+            # Output path
+            output_path = os.path.join(os.path.dirname(image_path), f"{image_name}.pdf")
+            pdf.output(output_path)
+            
+            return output_path
+        
+        except Exception as e:
+            raise Exception(f"Error converting image to PDF: {str(e)}")
+    
+    def convert_multiple_images_to_pdf(self, image_paths, output_path=None):
+        """Convert multiple images to a single PDF."""
+        try:
+            # Create PDF
+            pdf = FPDF()
+            
+            for img_path in image_paths:
+                pdf.add_page()
+                
+                # Open image and get dimensions
+                img = Image.open(img_path)
+                width, height = img.size
+                
+                # Calculate image size to fit on PDF page (maintaining aspect ratio)
+                pdf_width = pdf.w - 20  # Margins
+                pdf_height = pdf.h - 20  # Margins
+                
+                ratio = min(pdf_width/width, pdf_height/height)
+                new_width = width * ratio
+                new_height = height * ratio
+                
+                # Add image to PDF
+                pdf.image(img_path, x=10, y=10, w=new_width, h=new_height)
+            
+            # Output path
+            if output_path is None:
+                output_path = os.path.join(self.upload_dir, "converted_images.pdf")
+            
+            pdf.output(output_path)
+            return output_path
+            
+        except Exception as e:
+            raise Exception(f"Error converting images to PDF: {str(e)}")
+    
+    def add_annotations_to_pdf(self, pdf_path, answer_text, annotation_text):
+        """Add answer and annotation text to an existing PDF."""
+        try:
+            # Create PDF for annotations
             temp_pdf = FPDF()
-            temp_pdf.add_page()
             
             # Add answer section
+            temp_pdf.add_page()
             temp_pdf.set_font("Arial", 'B', 14)
             temp_pdf.cell(0, 10, "Answers:", ln=True)
             temp_pdf.set_font("Arial", '', 12)
@@ -89,14 +99,14 @@ class PDFMerger:
             temp_pdf.multi_cell(0, 10, annotation_text)
             
             # Save temporary PDF
-            temp_path = "temp_annotations.pdf"
+            temp_path = os.path.join(self.upload_dir, "temp_annotations.pdf")
             temp_pdf.output(temp_path)
 
             # Merge PDFs
             merger = PdfWriter()
             
             # Add original PDF
-            original_pdf = PdfReader(self.pdf_path)
+            original_pdf = PdfReader(pdf_path)
             for page in original_pdf.pages:
                 merger.add_page(page)
             
@@ -105,28 +115,94 @@ class PDFMerger:
             for page in annotations_pdf.pages:
                 merger.add_page(page)
 
-            # Save the merged PDF
-            output_path = filedialog.asksaveasfilename(
-                defaultextension=".pdf",
-                filetypes=[("PDF files", "*.pdf")],
-                initialfile="merged_output.pdf"
-            )
+            # Get output filename from original PDF
+            output_filename = f"annotated_{os.path.basename(pdf_path)}"
+            output_path = os.path.join(self.upload_dir, output_filename)
             
-            if output_path:
-                merger.write(output_path)
-                merger.close()
-                # Clean up temporary file
-                if os.path.exists(temp_path):
-                    os.remove(temp_path)
-                messagebox.showinfo("Success", f"Merged PDF saved as: {output_path}")
-
+            # Write the merged PDF
+            with open(output_path, "wb") as output_file:
+                merger.write(output_file)
+            
+            # Clean up temporary file
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+            
+            return output_path
+            
         except Exception as e:
-            messagebox.showerror("Error", f"An error occurred: {str(e)}")
             # Clean up temporary file in case of error
             if 'temp_path' in locals() and os.path.exists(temp_path):
                 os.remove(temp_path)
+            raise Exception(f"Error adding annotations to PDF: {str(e)}")
+
+def streamlit_image_to_pdf_converter():
+    """Streamlit interface for the image to PDF converter."""
+    st.title("Image to PDF Converter")
+    
+    # File upload section
+    uploaded_images = st.file_uploader("Upload images", type=["jpg", "jpeg", "png"], accept_multiple_files=True)
+    
+    if uploaded_images:
+        # Create converter instance
+        converter = ImageToPDFConverter()
+        
+        # Save uploaded images
+        image_paths = []
+        for img in uploaded_images:
+            img_path = os.path.join(converter.upload_dir, img.name)
+            with open(img_path, "wb") as f:
+                f.write(img.getbuffer())
+            image_paths.append(img_path)
+        
+        # Convert button
+        if st.button("Convert to PDF"):
+            with st.spinner("Converting images to PDF..."):
+                try:
+                    output_path = converter.convert_multiple_images_to_pdf(image_paths)
+                    
+                    # Provide download link
+                    with open(output_path, "rb") as f:
+                        st.download_button(
+                            label="Download PDF",
+                            data=f.read(),
+                            file_name=os.path.basename(output_path),
+                            mime="application/pdf"
+                        )
+                    
+                    st.success(f"Successfully converted {len(image_paths)} images to PDF!")
+                    
+                except Exception as e:
+                    st.error(f"Error: {str(e)}")
+        
+        # Optional annotation section
+        with st.expander("Add Annotations"):
+            answer_text = st.text_area("Answer Text", "", height=200)
+            annotation_text = st.text_area("Annotation Text", "", height=200)
+            
+            if st.button("Add Annotations to PDF"):
+                with st.spinner("Adding annotations..."):
+                    try:
+                        # First convert images if not already converted
+                        pdf_path = os.path.join(converter.upload_dir, "converted_images.pdf")
+                        if not os.path.exists(pdf_path):
+                            pdf_path = converter.convert_multiple_images_to_pdf(image_paths, pdf_path)
+                        
+                        # Add annotations
+                        output_path = converter.add_annotations_to_pdf(pdf_path, answer_text, annotation_text)
+                        
+                        # Provide download link
+                        with open(output_path, "rb") as f:
+                            st.download_button(
+                                label="Download Annotated PDF",
+                                data=f.read(),
+                                file_name=os.path.basename(output_path),
+                                mime="application/pdf"
+                            )
+                        
+                        st.success("Successfully added annotations to PDF!")
+                        
+                    except Exception as e:
+                        st.error(f"Error: {str(e)}")
 
 if __name__ == "__main__":
-    root = tk.Tk()
-    app = PDFMerger(root)
-    root.mainloop()
+    streamlit_image_to_pdf_converter()

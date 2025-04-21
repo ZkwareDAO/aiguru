@@ -100185,6 +100185,94 @@
         "processing_result": "Completed",
         "progress": 1.0,
         "ocr_result": "{\"ParsedResults\":[{\"TextOverlay\":{\"Lines\":[],\"HasOverlay\":false,\"Message\":\"Text overlay is not provided as it is not requested\"},\"TextOrientation\":\"0\",\"FileParseExitCode\":1,\"ParsedText\":\"Microsoft Excel\\r\\nExcel\\r\\nHifi\\r\\nQ\\r\\nQ\\r\\n1527005-839+4832-91 18-\\r\\n54d4Bd6a0c89 cw5n1h2txyewy\\r\\nEN?\u00dcB:\\r\\n91 cg\\r\\n96R$\u00e4%\\r\\n48\\r\\nQ\\r\\n0\\r\\n630\\r\\n2024/6/15\\r\\n\",\"ErrorMessage\":\"\",\"ErrorDetails\":\"\"}],\"OCRExitCode\":1,\"IsErroredOnProcessing\":false,\"ProcessingTimeInMilliseconds\":\"328\",\"SearchablePDFURL\":\"Searchable PDF not generated as it was not requested.\"}"
+      },
+      {
+        "filename": "R-C (1).png",
+        "upload_time": "2025-04-21 16:15:29",
+        "file_size": 309.73,
+        "file_type": "image",
+        "processing_result": "Uploaded"
+      },
+      {
+        "filename": "R-C (1).png",
+        "upload_time": "2025-04-21 16:15:39",
+        "file_size": 309.73,
+        "file_type": "image",
+        "processing_result": "Uploaded"
+      },
+      {
+        "filename": "converted_images_20250421_161539.pdf",
+        "upload_time": "2025-04-21 16:15:39",
+        "file_size": 304.65,
+        "file_type": "pdf",
+        "processing_result": "Completed"
+      },
+      {
+        "filename": "R-C (1).png",
+        "upload_time": "2025-04-21 16:15:42",
+        "file_size": 309.73,
+        "file_type": "image",
+        "processing_result": "Uploaded"
+      },
+      {
+        "filename": "R-C (1).png",
+        "upload_time": "2025-04-21 16:21:47",
+        "file_size": 309.73,
+        "file_type": "image",
+        "processing_result": "Uploaded"
+      },
+      {
+        "filename": "R-C (1).png",
+        "upload_time": "2025-04-21 16:21:49",
+        "file_size": 309.73,
+        "file_type": "image",
+        "processing_result": "Uploaded"
+      },
+      {
+        "filename": "R-C (1).png",
+        "upload_time": "2025-04-21 16:21:55",
+        "file_size": 309.73,
+        "file_type": "image",
+        "processing_result": "Uploaded"
+      },
+      {
+        "filename": "R-C (1).png",
+        "upload_time": "2025-04-21 16:21:56",
+        "file_size": 309.73,
+        "file_type": "image",
+        "processing_result": "Uploaded"
+      },
+      {
+        "filename": "R-C (1).png",
+        "upload_time": "2025-04-21 19:42:41",
+        "file_size": 309.73,
+        "progress": 0,
+        "file_type": "student_answer",
+        "processing_result": "Uploaded"
+      },
+      {
+        "filename": "R-C.png",
+        "upload_time": "2025-04-21 19:42:41",
+        "file_size": 144.48,
+        "progress": 0,
+        "file_type": "marking_scheme",
+        "processing_result": "Uploaded"
+      },
+      {
+        "filename": "R-C (1).png",
+        "upload_time": "2025-04-21 19:42:43",
+        "file_size": 309.73,
+        "progress": 0,
+        "file_type": "student_answer",
+        "processing_result": "Uploaded"
+      },
+      {
+        "filename": "R-C.png",
+        "upload_time": "2025-04-21 19:42:43",
+        "file_size": 144.48,
+        "progress": 0,
+        "file_type": "marking_scheme",
+        "processing_result": "Uploaded"
       }
     ]
   }

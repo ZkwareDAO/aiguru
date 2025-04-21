@@ -122,3 +122,51 @@ class Castle(Building):
     
     def __init__(self, name, owner=None):
         super().__init__(name, "castle", owner)
+        self.defense_bonus = 30  # 提供强大的防御加成
+        self.resource_bonus = {"gold": 1.5}  # 增加50%金币收入
+        self.happiness_bonus = 10  # 显著提高幸福度
+        self.garrison_capacity = 5  # 驻军容量
+        self.garrison_units = []  # 当前驻军
+        self.special_abilities = ["inspire"]  # 特殊能力
+        
+    def upgrade(self):
+        super().upgrade()
+        # 升级效果：全面提升城堡性能
+        self.defense_bonus += 10
+        self.resource_bonus["gold"] += 0.2
+        self.happiness_bonus += 2
+        self.garrison_capacity += 2
+        
+        # 解锁新的特殊能力
+        if self.level == 2:
+            self.special_abilities.append("rally")  # 集结军队
+        elif self.level == 3:
+            self.special_abilities.append("fortify")  # 强化防御
+        elif self.level == 4:
+            self.special_abilities.append("conscription")  # 征兵
+        elif self.level == 5:
+            self.special_abilities.append("royal_decree")  # 皇家敕令
+            
+    def garrison_unit(self, unit):
+        """添加驻军单位"""
+        if len(self.garrison_units) < self.garrison_capacity:
+            self.garrison_units.append(unit)
+            self.defense_bonus += unit.combat_power
+            return True
+        return False
+        
+    def remove_garrison(self, unit):
+        """移除驻军单位"""
+        if unit in self.garrison_units:
+            self.garrison_units.remove(unit)
+            self.defense_bonus -= unit.combat_power
+            return True
+        return False
+        
+    def apply_effect(self, city=None):
+        """应用城堡效果到城市"""
+        if city:
+            city.defense += self.defense_bonus
+            city.happiness += self.happiness_bonus
+            for resource, bonus in self.resource_bonus.items():
+                city.resource_multipliers[resource] *= bonus

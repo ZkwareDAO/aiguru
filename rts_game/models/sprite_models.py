@@ -216,13 +216,6 @@ BUILDING_SPRITES = {
             }
         },
         'elevation': 2
-    }
-}
-                'frames': [4, 5, 6, 7],
-                'duration': 1000,
-                'loop': True
-            }
-        }
     },
     'farm': {
         'spritesheet': 'assets/spritesheets/buildings/farm.png',

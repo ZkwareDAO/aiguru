@@ -5,13 +5,28 @@ import hashlib
 from datetime import datetime
 import time
 import logging
-from functions.pdf_annotator import streamlit_pdf_annotator
-from functions.api_correcting.calling_api import correction_with_json_marking_scheme, correction_with_image_marking_scheme, correction_without_marking_scheme, generate_marking_scheme
+from pathlib import Path
+from functions.pdf_merger_leo import ImageToPDFConverter
+from functions.api_correcting.calling_api import call_api
+
+# Constants
+MAX_FILE_SIZE = 5 * 1024  # 5MB in KB
+UPLOAD_DIR = Path("uploads")
+DATA_FILE = Path("user_data.json")
+
+# Create necessary directories
+UPLOAD_DIR.mkdir(exist_ok=True)
+
+# Test accounts for development
+TEST_ACCOUNTS = {
+    "test_user_1": {"password": "password1"},
+    "test_user_2": {"password": "password2"}
+}
 
 def setup_logger(log_dir="logs"):
     if not os.path.exists(log_dir): 
         os.makedirs(log_dir) 
-    log_file = os.path.join(log_dir,  "app_debug.log") 
+    log_file = os.path.join(log_dir, "app_debug.log") 
     logging.basicConfig( 
         level=logging.INFO,
         format="[%(asctime)s] %(levelname)s @ %(module)s: %(message)s",
@@ -25,597 +40,539 @@ def setup_logger(log_dir="logs"):
 setup_logger()
 logging.info("Starting") 
 
-# Configuration
-UPLOAD_DIR = "user_uploads"
-DATA_FILE = "user_data.json" 
-TEST_ACCOUNTS = {
-    "test_user_1": "password1",
-    "test_user_2": "password2"
-}
-MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
-
 # Initialize storage structure
-if not os.path.exists(UPLOAD_DIR): 
-    os.makedirs(UPLOAD_DIR) 
 if not os.path.exists(DATA_FILE): 
     with open(DATA_FILE, "w") as f:
-        json.dump({},  f)
+        json.dump({}, f)
 
 def read_user_data():
-    with open(DATA_FILE, "r") as f:
-        return json.load(f) 
-
-def write_user_data(data):
-    with open(DATA_FILE, "w") as f:
-        json.dump(data,  f, indent=2)
-
-def migrate_old_data(user_data):
-    """Migrate old data structure to new format (only if needed)"""
-    if user_data.get('migrated'): 
-        return user_data
-
-    for user in list(user_data.keys()): 
-        if isinstance(user_data[user], list):
-            user_data[user] = {
-                "password": "",  # Empty, force user to change
-                "records": user_data[user],
-                "migrated": True
+    """Read user data from JSON file or return default data"""
+    try:
+        with open(DATA_FILE, "r") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        # Return default data with test accounts
+        return {
+            "test_user_1": {
+                "password": "password1",
+                "records": []
+            },
+            "test_user_2": {
+                "password": "password2",
+                "records": []
             }
-    user_data['migrated'] = True  # Mark the entire data as migrated
-    return user_data
+        }
 
-def account_management():
-    """Sidebar account management"""
-    with st.sidebar.expander("🔑  Account Management", expanded=True):
-        st.subheader("User  Information")
-        st.write(f"Current  User: {st.session_state.current_user}") 
-
-        with st.form("Change  Password"):
-            new_password = st.text_input("New  Password", type="password")
-            if st.form_submit_button("Update  Password"):
-                if len(new_password) < 8:
-                    st.error("Password  must be at least 8 characters long.")
-                else:
-                    user_data = read_user_data()
-                    user_data[st.session_state.current_user]['password'] = new_password
-                    write_user_data(user_data)
-                    st.success("Password  updated successfully.")
-
-def history_panel():
-    """Sidebar history query"""
-    with st.sidebar.expander("🕒  History", expanded=True):
-        user_data = read_user_data()
-        user_records = user_data.get(st.session_state.current_user,  {}).get('records', [])
-
-        if user_records:
-            st.subheader("Recent  Uploads")
-            num_records = st.slider("Number  of records to display", 10, len(user_records), 10)
-            for record in user_records[-num_records:]:
-                st.caption(f"{record['filename']}") 
-                st.markdown(f"🗓️  {record['upload_time']}  📏 {record['file_size']}KB")
-                st.progress(float(record.get('progress',  0)))
-                if st.button(f"Delete  {record['filename']}", key=f"del_{record['filename']}"):
-                    if st.confirm(f"Are  you sure you want to delete {record['filename']}?"):
-                        user_dir = os.path.join(UPLOAD_DIR,  st.session_state.current_user) 
-                        file_path = os.path.join(user_dir,  record["filename"])
-                        if os.path.exists(file_path): 
-                            os.remove(file_path) 
-                        updated_records = [r for r in user_records if r['filename'] != record['filename']]
-                        user_data[st.session_state.current_user]['records'] = updated_records
-                        write_user_data(user_data)
-                        st.rerun() 
-        else:
-            st.info("No  history found.")
-
-
+def save_user_data(data):
+    with open(DATA_FILE, "w") as f:
+        json.dump(data, f, indent=2)
 
 def file_management_page():
-    """File upload management page"""
-    st.title("📁  File Management Center")
+    """File management and history page"""
+    st.title("📁 File Management Center")
     
-    # 添加文件列表按钮
-    if st.button("📋 查看文件列表"):
-        st.session_state.sub_page = "file_list"
-        st.rerun()
-
-    # 使用st.cache_data装饰器缓存文件读取结果
-    @st.cache_data(ttl=60)
-    def read_cached_user_data():
-        return read_user_data()
+    # Add history panel at the top of the file management page
+    st.header("🕒 Recent History")
+    user_data = read_user_data()
+    user_records = user_data.get(st.session_state.current_user, {}).get('records', [])
     
-    # 使用st.cache_data装饰器缓存文件处理结果
-    # 修改参数名，添加下划线前缀，告诉Streamlit不要哈希这个参数
-    @st.cache_data(ttl=300)
-    def process_file_with_cache(_file_content, file_type):
-        # 模拟文件处理过程
-        time.sleep(1)  # 避免过快处理导致的界面卡顿
-        return True
-
-    user_dir = os.path.join(UPLOAD_DIR,  st.session_state.current_user) 
-    os.makedirs(user_dir,  exist_ok=True)
+    if user_records:
+        for record in user_records[-3:]:  # Show last 3 records
+            with st.container():
+                st.caption(f"📄 {record['filename']}")
+                st.markdown(f"🗓️ {record['upload_time']}  📏 {record['file_size']}KB")
+                st.progress(float(record.get('progress', 0)))
+                st.divider()
+    else:
+        st.info("No upload history available")
     
-    # 添加题目文件上传功能
-    with st.expander("➕  Upload Question File", expanded=True):
-        st.info("请上传题目文件，系统将自动识别其中的题目内容")
-        uploaded_question_file = st.file_uploader( 
-            label="Select a Question file to upload (Max size: 10MB)",
-            type=["pdf", "docx", "xlsx", "jpg", "png"],
-            key="question_uploader"
-        )
+    st.info("Please use the AI Correction module to upload files and process them.")
 
-        if uploaded_question_file and uploaded_question_file.size <= MAX_FILE_SIZE:
-            file_content = uploaded_question_file.getbuffer() 
-            file_hash = hashlib.md5(file_content).hexdigest()   # Calculate file hash
-            timestamp = datetime.now().strftime("%Y%m%d%H%M%S") 
-            filename = f"{timestamp}_{uploaded_question_file.name}" 
-            save_path = os.path.join(user_dir,  filename)
-
-            user_data = read_user_data()
-            user_entry = user_data.setdefault(st.session_state.current_user,  {
-                "password": "",  # Initial password empty
-                "records": []
-            })
-
-            # Check if the file already exists (based on hash)
-            for record in user_entry['records']:
-                if record.get("file_hash") == file_hash:
-                    st.warning("This file has already been uploaded.")
-                    return
-
-            # 使用st.spinner显示文件处理进度
-            with st.spinner('正在处理文件...'):
-                # 分块写入文件以避免内存占用过大
-                chunk_size = 1024 * 1024  # 1MB chunks
-                with open(save_path, "wb") as f:
-                    for i in range(0, len(file_content), chunk_size):
-                        f.write(file_content[i:i + chunk_size])
-                        # 更新进度条
-                        progress = min(1.0, (i + chunk_size) / len(file_content))
-                        st.progress(progress)
-                
-                # 处理文件
-                process_success = process_file_with_cache(file_content, 'question')
-                if not process_success:
-                    st.error('文件处理失败')
-                    return
-                
-                logging.info("Question File saved and processed")
-                st.success('文件处理完成')
-            # Add new record
-            new_record = {
-                "filename": filename,
-                "upload_time": timestamp,
-                "file_size": uploaded_question_file.size // 1024,
-                "file_hash": file_hash,  # Save file hash
-                "processing_result": "Completed",
-                "progress": 1.0,
-                "file_type": "question",
-                "file_path": save_path
-            }
-            user_entry['records'].append(new_record)
-            write_user_data(user_data)
-            st.success(f"题目文件 {uploaded_question_file.name} 上传成功")
-
-        elif uploaded_question_file:
-            st.error("File size exceeds the limit (10MB).")
-
-    with st.expander("➕  Upload New Marking Scheme File", expanded=True):
-        st.info("请上传评分标准文件，系统将自动识别其中的评分规则")
-        uploaded_marking_scheme_file = st.file_uploader( 
-            label="Select a Marking Scheme file to upload (Max size: 10MB)",
-            type=["pdf", "docx", "xlsx", "jpg", "png"],
-            key="marking_scheme_uploader"
-        )
-
-        if uploaded_marking_scheme_file and uploaded_marking_scheme_file.size <= MAX_FILE_SIZE:
-            file_content = uploaded_marking_scheme_file.getbuffer() 
-            file_hash = hashlib.md5(file_content).hexdigest()   # Calculate file hash
-            timestamp = datetime.now().strftime("%Y%m%d%H%M%S") 
-            filename = f"{timestamp}_{uploaded_marking_scheme_file.name}" 
-            save_path = os.path.join(user_dir,  filename)
-
-            user_data = read_user_data()
-            user_entry = user_data.setdefault(st.session_state.current_user,  {
-                "password": "",  # Initial password empty
-                "records": []
-            })
-
-            # Check if the file already exists (based on hash)
-            for record in user_entry['records']:
-                if record.get("file_hash") == file_hash:
-                    st.warning("This file has already been uploaded.")
-                    return
-
-            # 使用st.spinner显示文件处理进度
-            with st.spinner('正在处理评分标准文件...'):
-                # 分块写入文件以避免内存占用过大
-                chunk_size = 1024 * 1024  # 1MB chunks
-                with open(save_path, "wb") as f:
-                    for i in range(0, len(file_content), chunk_size):
-                        f.write(file_content[i:i + chunk_size])
-                        # 更新进度条
-                        progress = min(1.0, (i + chunk_size) / len(file_content))
-                        st.progress(progress)
-                
-                # 处理文件
-                process_success = process_file_with_cache(file_content, 'marking_scheme')
-                if not process_success:
-                    st.error('评分标准文件处理失败')
-                    return
-                
-                logging.info("Marking Scheme File saved and processed")
-                st.success('评分标准文件处理完成')
-
-            # Add new record
-            new_record = {
-                "filename": filename,
-                "upload_time": timestamp,
-                "file_size": uploaded_marking_scheme_file.size // 1024,
-                "file_hash": file_hash,  # Save file hash
-                "processing_result": "Completed",
-                "progress": 1.0,
-                "file_type": "marking_scheme",
-                "file_path": save_path
-            }
-            user_entry['records'].append(new_record)
-            write_user_data(user_data)
-            st.success(f"评分标准文件 {uploaded_marking_scheme_file.name} 上传成功")
-
-        elif uploaded_marking_scheme_file:
-            st.error("File size exceeds the limit (10MB).")
-
-    with st.expander("➕  Upload Student Answer File", expanded=True):
-        st.info("请上传学生作答文件，系统将根据评分标准进行自动评分")
-        uploaded_answer_file = st.file_uploader( 
-            label="Select a Student Answer file to upload (Max size: 10MB)",
-            type=["pdf", "docx", "xlsx", "jpg", "png"],
-            key="answer_uploader"
-        )
-
-        if uploaded_answer_file and uploaded_answer_file.size <= MAX_FILE_SIZE:
-            file_content = uploaded_answer_file.getbuffer() 
-            file_hash = hashlib.md5(file_content).hexdigest()   # Calculate file hash
-            timestamp = datetime.now().strftime("%Y%m%d%H%M%S") 
-            filename = f"{timestamp}_{uploaded_answer_file.name}" 
-            save_path = os.path.join(user_dir,  filename)
-
-            user_data = read_user_data()
-            user_entry = user_data.setdefault(st.session_state.current_user,  {
-                "password": "",  # Initial password empty
-                "records": []
-            })
-
-            # Check if the file already exists (based on hash)
-            for record in user_entry['records']:
-                if record.get("file_hash") == file_hash:
-                    st.warning("This file has already been uploaded.")
-                    return
-
-            # 使用st.spinner显示文件处理进度
-            with st.spinner('正在处理学生作答文件...'):
-                # 分块写入文件以避免内存占用过大
-                chunk_size = 1024 * 1024  # 1MB chunks
-                with open(save_path, "wb") as f:
-                    for i in range(0, len(file_content), chunk_size):
-                        f.write(file_content[i:i + chunk_size])
-                        # 更新进度条
-                        progress = min(1.0, (i + chunk_size) / len(file_content))
-                        st.progress(progress)
-                
-                # 处理文件
-                process_success = process_file_with_cache(file_content, 'student_answer')
-                if not process_success:
-                    st.error('学生作答文件处理失败')
-                    return
-                
-                logging.info("Student Answer File saved and processed")
-                st.success('学生作答文件处理完成')
-
-            # Add new record
-            new_record = {
-                "filename": filename,
-                "upload_time": timestamp,
-                "file_size": uploaded_answer_file.size // 1024,
-                "file_hash": file_hash,  # Save file hash
-                "processing_result": "Completed",
-                "progress": 1.0,
-                "file_type": "student_answer",
-                "file_path": save_path
-            }
-            user_entry['records'].append(new_record)
-            write_user_data(user_data)
-            st.success(f"学生作答文件 {uploaded_answer_file.name} 上传成功")
-
-        elif uploaded_answer_file:
-            st.error("File size exceeds the limit (10MB).")
+def ai_correction_page():
+    """AI correction management page with integrated file list"""
+    st.title("🤖 AI Correction")
     
-    # PDF标注和评分功能
-    with st.expander("📝 PDF标注与评分", expanded=True):
-        st.info("请选择需要标注或评分的文件")
+    # 创建页面选项卡
+    tab1, tab2, tab3 = st.tabs(["AI Correction", "File List", "Image to PDF"])
+    
+    # 确保用户目录存在
+    user_dir = UPLOAD_DIR / st.session_state.current_user
+    user_dir.mkdir(exist_ok=True)
+    
+    # 加载用户数据
+    user_data = read_user_data()
+    if st.session_state.current_user not in user_data:
+        user_data[st.session_state.current_user] = {"records": []}
+    
+    # Tab 1: AI Correction
+    with tab1:
+        # File upload section
+        col1, col2 = st.columns(2)
         
-        user_data = read_user_data()
+        with col1:
+            st.subheader("Student Answer")
+            student_answer = st.file_uploader("Upload student answer", type=["pdf", "jpg", "jpeg", "png"])
+            
+        with col2:
+            st.subheader("Marking Scheme")
+            marking_scheme = st.file_uploader("Upload marking scheme", type=["pdf", "jpg", "jpeg", "png", "json"])
+        
+        # AI批改处理逻辑
+        if student_answer is not None and marking_scheme is not None:
+            
+            # 保存上传的文件
+            file_size = student_answer.size / 1024  # Convert to KB
+            
+            if file_size > MAX_FILE_SIZE:
+                st.error(f"File size exceeds maximum limit of {MAX_FILE_SIZE}KB")
+            else:
+                # 保存学生答案文件
+                student_file = user_dir / student_answer.name
+                with open(student_file, "wb") as f:
+                    f.write(student_answer.getbuffer())
+                
+                # 更新用户记录
+                current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                new_record = {
+                    "filename": student_answer.name,
+                    "upload_time": current_time,
+                    "file_size": round(file_size, 2),
+                    "progress": 0,
+                    "file_type": "student_answer",
+                    "processing_result": "Uploaded"
+                }
+                
+                # 保存评分标准文件
+                marking_file = user_dir / marking_scheme.name
+                with open(marking_file, "wb") as f:
+                    f.write(marking_scheme.getbuffer())
+                
+                # 添加评分标准文件记录
+                mark_size = marking_scheme.size / 1024
+                mark_record = {
+                    "filename": marking_scheme.name,
+                    "upload_time": current_time,
+                    "file_size": round(mark_size, 2),
+                    "progress": 0,
+                    "file_type": "marking_scheme",
+                    "processing_result": "Uploaded"
+                }
+                
+                user_data[st.session_state.current_user]["records"].extend([new_record, mark_record])
+                save_user_data(user_data)
+                
+                # 处理文件开始按钮
+                if st.button("Start AI Correction"):
+                    st.info("Processing files with AI correction...")
+                    
+                    progress_bar = st.progress(0)
+                    for i in range(10):
+                        # 模拟处理过程
+                        time.sleep(0.1)
+                        progress_bar.progress((i+1)/10)
+                    
+                    try:
+                        # 直接调用API进行处理，将上传文件的路径传递给函数
+                        result = call_api(str(student_file), str(marking_file))
+                        
+                        if result:
+                            st.success("AI Correction completed!")
+                            
+                            # 处理API返回的结果
+                            result_content = result.choices[0].message.content
+                            st.markdown("### API Response")
+                            st.markdown(result_content)
+                            
+                            # 尝试解析JSON结果（如果是JSON格式）
+                            try:
+                                # 查找JSON内容 - 可能在文本中嵌入了JSON
+                                import re
+                                json_match = re.search(r'\{.*\}', result_content, re.DOTALL)
+                                if json_match:
+                                    json_text = json_match.group(0)
+                                    json_result = json.loads(json_text)
+                                    
+                                    # 保存解析后的JSON结果
+                                    result_filename = f"correction_result_{int(time.time())}.json"
+                                    result_file = user_dir / result_filename
+                                    with open(result_file, "w", encoding="utf-8") as f:
+                                        json.dump(json_result, f, indent=2, ensure_ascii=False)
+                                    
+                                    # 显示结构化的结果
+                                    st.json(json_result)
+                                    
+                                    # 更新结果文件记录
+                                    result_record = {
+                                        "filename": result_filename,
+                                        "upload_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                                        "file_size": round(os.path.getsize(result_file) / 1024, 2),
+                                        "file_type": "correction_result",
+                                        "processing_result": "Completed"
+                                    }
+                                    
+                                    user_data[st.session_state.current_user]["records"].append(result_record)
+                                    
+                                    # 提供下载结果的按钮
+                                    with open(result_file, "r", encoding="utf-8") as f:
+                                        st.download_button(
+                                            label="Download Correction Result",
+                                            data=f.read(),
+                                            file_name=result_filename,
+                                            mime="application/json"
+                                        )
+                                else:
+                                    # 如果找不到JSON，保存原始文本
+                                    result_filename = f"correction_result_{int(time.time())}.txt"
+                                    result_file = user_dir / result_filename
+                                    with open(result_file, "w", encoding="utf-8") as f:
+                                        f.write(result_content)
+                                    
+                                    result_record = {
+                                        "filename": result_filename,
+                                        "upload_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                                        "file_size": round(os.path.getsize(result_file) / 1024, 2),
+                                        "file_type": "correction_result",
+                                        "processing_result": "Completed"
+                                    }
+                                    
+                                    user_data[st.session_state.current_user]["records"].append(result_record)
+                                    
+                                    # 提供下载按钮
+                                    with open(result_file, "r", encoding="utf-8") as f:
+                                        st.download_button(
+                                            label="Download Correction Result",
+                                            data=f.read(),
+                                            file_name=result_filename,
+                                            mime="text/plain"
+                                        )
+                            except Exception as e:
+                                st.warning(f"Could not parse JSON result: {str(e)}")
+                                # 保存原始文本
+                                result_filename = f"correction_result_{int(time.time())}.txt"
+                                result_file = user_dir / result_filename
+                                with open(result_file, "w", encoding="utf-8") as f:
+                                    f.write(result_content)
+                                
+                                result_record = {
+                                    "filename": result_filename,
+                                    "upload_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                                    "file_size": round(os.path.getsize(result_file) / 1024, 2),
+                                    "file_type": "correction_result",
+                                    "processing_result": "Completed"
+                                }
+                                
+                                user_data[st.session_state.current_user]["records"].append(result_record)
+                            
+                            # 更新进度状态
+                            for i, record in enumerate(user_data[st.session_state.current_user]["records"]):
+                                if record["filename"] == student_answer.name:
+                                    user_data[st.session_state.current_user]["records"][i]["progress"] = 1.0
+                                    user_data[st.session_state.current_user]["records"][i]["processing_result"] = "Completed"
+                            
+                            save_user_data(user_data)
+                            
+                            # 如果需要，可以自动调用merger功能
+                            st.markdown("### Apply Corrections")
+                            if st.button("Generate Annotated PDF"):
+                                try:
+                                    # 实例化转换器
+                                    converter = ImageToPDFConverter(UPLOAD_DIR)
+                                    
+                                    # 生成带批注的PDF文件名
+                                    annotated_filename = f"annotated_{os.path.splitext(student_answer.name)[0]}_{int(time.time())}.pdf"
+                                    annotated_path = str(user_dir / annotated_filename)
+                                    
+                                    # 从结果中提取评论文本
+                                    annotation_text = f"AI批改结果:\n{result_content}"
+                                    
+                                    # 调用PDF处理函数添加批注
+                                    if student_file.name.endswith('.pdf'):
+                                        # 如果已经是PDF，直接添加批注
+                                        annotated_path = converter.add_annotations_to_pdf(str(student_file), "", annotation_text)
+                                    else:
+                                        # 如果是图片，先转换为PDF再添加批注
+                                        temp_pdf = converter.convert_multiple_images_to_pdf([str(student_file)], str(user_dir / f"temp_{int(time.time())}.pdf"))
+                                        annotated_path = converter.add_annotations_to_pdf(temp_pdf, "", annotation_text)
+                                    
+                                    # 记录生成的文件
+                                    annotated_size = os.path.getsize(annotated_path) / 1024
+                                    annotated_record = {
+                                        "filename": os.path.basename(annotated_path),
+                                        "upload_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                                        "file_size": round(annotated_size, 2),
+                                        "file_type": "annotated_pdf",
+                                        "processing_result": "Completed"
+                                    }
+                                    
+                                    user_data[st.session_state.current_user]["records"].append(annotated_record)
+                                    save_user_data(user_data)
+                                    
+                                    st.success("Successfully generated annotated PDF!")
+                                    with open(annotated_path, "rb") as f:
+                                        st.download_button(
+                                            label="Download Annotated PDF",
+                                            data=f.read(),
+                                            file_name=os.path.basename(annotated_path),
+                                            mime="application/pdf"
+                                        )
+                                    
+                                except Exception as e:
+                                    st.error(f"Error generating annotated PDF: {str(e)}")
+                                    logging.error(f"PDF annotation error: {str(e)}")
+                    except Exception as e:
+                        st.error(f"Error during correction: {str(e)}")
+                        logging.error(f"AI correction error: {str(e)}")
+    
+    # Tab 2: File List
+    with tab2:
         user_records = user_data.get(st.session_state.current_user, {}).get('records', [])
         
         # 分类显示文件
-        question_files = [r for r in user_records if r.get("file_type") == "question"]
-        marking_scheme_files = [r for r in user_records if r.get("file_type") == "marking_scheme"]
-        student_answer_files = [r for r in user_records if r.get("file_type") == "student_answer"]
+        file_categories = {
+            "题目文件": "question",
+            "评分标准文件": "marking_scheme",
+            "学生作答文件": "student_answer",
+            "批改结果": "correction_result",
+            "批注文件": "annotated_pdf"
+        }
         
-        # 选择题目文件
-        selected_question = None
-        if question_files:
-            question_options = ["选择题目文件"] + [r["filename"] for r in question_files]
-            selected_question_index = st.selectbox("题目文件", range(len(question_options)), format_func=lambda x: question_options[x])
-            if selected_question_index > 0:
-                selected_question = question_files[selected_question_index-1]
-        else:
-            st.warning("请先上传题目文件")
-        
-        # 选择评分标准文件
-        selected_marking_scheme = None
-        if marking_scheme_files:
-            marking_scheme_options = ["选择评分标准文件"] + [r["filename"] for r in marking_scheme_files]
-            selected_marking_scheme_index = st.selectbox("评分标准文件", range(len(marking_scheme_options)), format_func=lambda x: marking_scheme_options[x])
-            if selected_marking_scheme_index > 0:
-                selected_marking_scheme = marking_scheme_files[selected_marking_scheme_index-1]
-        else:
-            st.warning("请先上传评分标准文件")
-        
-        # 选择学生作答文件
-        selected_answer = None
-        if student_answer_files:
-            answer_options = ["选择学生作答文件"] + [r["filename"] for r in student_answer_files]
-            selected_answer_index = st.selectbox("学生作答文件", range(len(answer_options)), format_func=lambda x: answer_options[x])
-            if selected_answer_index > 0:
-                selected_answer = student_answer_files[selected_answer_index-1]
-        else:
-            st.warning("请先上传学生作答文件")
-        
-        # 标注功能
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("PDF标注") and selected_answer:
-                answer_path = os.path.join(user_dir, selected_answer["filename"])
-                with open(answer_path, "rb") as f:
-                    pdf_file = st.session_state.get("pdf_file", None)
-                    if pdf_file is None:
-                        st.session_state.pdf_file = f.read()
-                    streamlit_pdf_annotator(selected_answer["filename"], user_dir)
-        
-        # 评分功能
-        with col2:
-            if st.button("自动评分") and selected_marking_scheme and selected_answer:
-                try:
-                    marking_scheme_path = os.path.join(user_dir, selected_marking_scheme["filename"])
-                    answer_path = os.path.join(user_dir, selected_answer["filename"])
+        for title, file_type in file_categories.items():
+            st.write(f"### {title}")
+            filtered_files = [r for r in user_records if r.get("file_type") == file_type]
+            
+            if filtered_files:
+                for record in filtered_files:
+                    cols = st.columns([5, 2, 2, 2])
+                    cols[0].write(record["filename"])
+                    cols[1].metric("Size", f"{record['file_size']}KB")
+                    cols[2].write(record["upload_time"])
                     
-                    # 使用st.spinner显示加载状态
-                    with st.spinner('正在进行评分，请稍候...'):
-                        with open(marking_scheme_path, "rb") as ms_file, open(answer_path, "rb") as ans_file:
-                            # 调用评分API
-                            result = correction_with_image_marking_scheme(ms_file, ans_file)
+                    # 处理文件操作
+                    file_path = user_dir / record["filename"]
+                    if os.path.exists(file_path):
+                        # 提供文件删除功能
+                        if cols[3].button("删除", key=f"del_{file_type}_{record['filename']}_{id(record)}"):
+                            try:
+                                os.remove(file_path)
+                                # 更新记录
+                                updated_records = [r for r in user_records if r['filename'] != record['filename']]
+                                user_data[st.session_state.current_user]['records'] = updated_records
+                                save_user_data(user_data)
+                                st.success(f"文件 {record['filename']} 已删除")
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"删除文件时出错: {str(e)}")
+                        
+                        # 为可下载文件提供下载按钮
+                        if file_type in ["correction_result", "annotated_pdf"]:
+                            file_ext = record["filename"].split(".")[-1].lower()
+                            mime_type = {
+                                "json": "application/json",
+                                "pdf": "application/pdf",
+                                "txt": "text/plain"
+                            }.get(file_ext, "application/octet-stream")
                             
-                            # 使用st.empty()创建占位符，动态更新内容
-                            result_container = st.empty()
-                            result_container.json(result)
+                            read_mode = "r" if file_ext in ["json", "txt"] else "rb"
                             
-                            # 保存评分结果
-                            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-                            result_filename = f"result_{timestamp}.json"
-                            result_path = os.path.join(user_dir, result_filename)
-                            with open(result_path, "w") as f:
-                                json.dump(result, f, indent=2)
-                            
-                            st.success(f"评分完成，结果已保存至 {result_filename}")
+                            with open(file_path, read_mode) as f:
+                                download_data = f.read()
+                                
+                                # 为下载按钮创建一个新的列
+                                st.download_button(
+                                    label="下载",
+                                    data=download_data,
+                                    file_name=record["filename"],
+                                    mime=mime_type,
+                                    key=f"dl_{file_type}_{record['filename']}_{id(record)}"
+                                )
+                    else:
+                        cols[3].warning("文件不存在")
+            else:
+                st.info(f"暂无{title}")
+    
+    # Tab 3: Image to PDF (简化版)
+    with tab3:
+        st.header("Image to PDF Converter")
+        
+        # 实例化转换器
+        converter = ImageToPDFConverter(UPLOAD_DIR)
+        
+        # 图片上传区域
+        uploaded_images = st.file_uploader(
+            "Upload images to convert to PDF", 
+            type=["jpg", "jpeg", "png"], 
+            accept_multiple_files=True,
+            key="upload_images_convert"
+        )
+        
+        if uploaded_images:
+            # 保存上传的图片
+            image_paths = []
+            image_records = []
+            current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            
+            for img in uploaded_images:
+                img_path = user_dir / img.name
+                with open(img_path, "wb") as f:
+                    f.write(img.getbuffer())
+                image_paths.append(str(img_path))
+                
+                # 添加图片记录
+                file_size = img.size / 1024
+                image_records.append({
+                    "filename": img.name,
+                    "upload_time": current_time,
+                    "file_size": round(file_size, 2),
+                    "file_type": "image",
+                    "processing_result": "Uploaded"
+                })
+            
+            # 更新用户记录
+            user_data[st.session_state.current_user]["records"].extend(image_records)
+            save_user_data(user_data)
+            
+            # 显示图片预览
+            st.subheader(f"Preview ({len(uploaded_images)} images)")
+            cols = st.columns(min(3, len(uploaded_images)))
+            for i, img in enumerate(uploaded_images[:3]):
+                cols[i % 3].image(img, caption=img.name, use_column_width=True)
+            
+            # 转换选项
+            output_filename = st.text_input(
+                "PDF Filename (optional)", 
+                value=f"converted_images_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            )
+            
+            if not output_filename.endswith('.pdf'):
+                output_filename += '.pdf'
+            
+            # 转换按钮
+            if st.button("Convert to PDF"):
+                with st.spinner("Converting images to PDF..."):
+                    try:
+                        # 处理输出路径
+                        output_path = str(user_dir / output_filename)
+                        
+                        # 检查文件是否已存在
+                        if os.path.exists(output_path):
+                            output_filename = f"{os.path.splitext(output_filename)[0]}_{int(time.time())}.pdf"
+                            output_path = str(user_dir / output_filename)
+                        
+                        # 执行转换
+                        output_path = converter.convert_multiple_images_to_pdf(image_paths, output_path)
+                        
+                        # 记录PDF文件
+                        pdf_size = os.path.getsize(output_path) / 1024
+                        pdf_record = {
+                            "filename": os.path.basename(output_path),
+                            "upload_time": current_time,
+                            "file_size": round(pdf_size, 2),
+                            "file_type": "pdf",
+                            "processing_result": "Completed"
+                        }
+                        
+                        user_data[st.session_state.current_user]["records"].append(pdf_record)
+                        save_user_data(user_data)
+                        
+                        # 显示成功信息和下载按钮
+                        st.success(f"Successfully converted {len(image_paths)} images to PDF!")
+                        with open(output_path, "rb") as f:
                             st.download_button(
-                                label="下载评分结果",
-                                data=json.dumps(result, indent=2),
-                                file_name=result_filename,
-                                mime="application/json"
+                                label="Download PDF",
+                                data=f.read(),
+                                file_name=os.path.basename(output_path),
+                                mime="application/pdf"
                             )
-                except Exception as e:
-                    st.error(f"评分过程中出错: {str(e)}")
-    
-    st.write("### 题目文件")
-    if question_files:
-        for record in question_files:
-            cols = st.columns([5, 2, 2, 2])
-            cols[0].write(record["filename"])
-            cols[1].metric("Size", f"{record['file_size']}KB")
-            cols[2].write(record["upload_time"])
-            cols[3].write(record["processing_result"])
-    else:
-        st.info("暂无题目文件")
-    
-    st.write("### 评分标准文件")
-    if marking_scheme_files:
-        for record in marking_scheme_files:
-            cols = st.columns([5, 2, 2, 2])
-            cols[0].write(record["filename"])
-            cols[1].metric("Size", f"{record['file_size']}KB")
-            cols[2].write(record["upload_time"])
-            cols[3].write(record["processing_result"])
-    else:
-        st.info("暂无评分标准文件")
-        
-    st.write("### 学生作答文件")
-    if student_answer_files:
-        for record in student_answer_files:
-            cols = st.columns([5, 2, 2, 2])
-            cols[0].write(record["filename"])
-            cols[1].metric("Size", f"{record['file_size']}KB")
-            cols[2].write(record["upload_time"])
-            cols[3].write(record["processing_result"])
-    else:
-        st.info("暂无学生作答文件")
-
-def download_page():
-    st.title("📥  File List")
-    user_data = read_user_data()
-    user_records = user_data.get(st.session_state.current_user, {}).get('records', [])
-    user_dir = os.path.join(UPLOAD_DIR, st.session_state.current_user)
-    
-    # 返回按钮
-    if st.button("⬅️ 返回上一页"):
-        st.session_state.sub_page = None
-        st.rerun()
-    
-    # 按文件类型分类显示
-    st.write("### 题目文件")
-    question_files = [r for r in user_records if r.get("file_type") == "question"]
-    if question_files:
-        for record in question_files:
-            cols = st.columns([5, 2, 2, 2])
-            cols[0].write(record["filename"])
-            cols[1].metric("Size", f"{record['file_size']}KB")
-            cols[2].write(record["upload_time"])
-            if cols[3].button("删除", key=f"del_q_{record['filename']}"):
-                file_path = os.path.join(user_dir, record["filename"])
-                if os.path.exists(file_path):
-                    os.remove(file_path)
-                updated_records = [r for r in user_records if r['filename'] != record['filename']]
-                user_data[st.session_state.current_user]['records'] = updated_records
-                write_user_data(user_data)
-                st.rerun()
-    else:
-        st.info("暂无题目文件")
-    
-    st.write("### 评分标准文件")
-    marking_scheme_files = [r for r in user_records if r.get("file_type") == "marking_scheme"]
-    if marking_scheme_files:
-        for record in marking_scheme_files:
-            cols = st.columns([5, 2, 2, 2])
-            cols[0].write(record["filename"])
-            cols[1].metric("Size", f"{record['file_size']}KB")
-            cols[2].write(record["upload_time"])
-            if cols[3].button("删除", key=f"del_m_{record['filename']}"):
-                file_path = os.path.join(user_dir, record["filename"])
-                if os.path.exists(file_path):
-                    os.remove(file_path)
-                updated_records = [r for r in user_records if r['filename'] != record['filename']]
-                user_data[st.session_state.current_user]['records'] = updated_records
-                write_user_data(user_data)
-                st.rerun()
-    else:
-        st.info("暂无评分标准文件")
-        
-    st.write("### 学生作答文件")
-    student_answer_files = [r for r in user_records if r.get("file_type") == "student_answer"]
-    if student_answer_files:
-        for record in student_answer_files:
-            cols = st.columns([5, 2, 2, 2])
-            cols[0].write(record["filename"])
-            cols[1].metric("Size", f"{record['file_size']}KB")
-            cols[2].write(record["upload_time"])
-            if cols[3].button("删除", key=f"del_s_{record['filename']}"):
-                file_path = os.path.join(user_dir, record["filename"])
-                if os.path.exists(file_path):
-                    os.remove(file_path)
-                updated_records = [r for r in user_records if r['filename'] != record['filename']]
-                user_data[st.session_state.current_user]['records'] = updated_records
-                write_user_data(user_data)
-                st.rerun()
-    else:
-        st.info("暂无学生作答文件")
-
-    # 查找所有已完成的文件
-    completed_records = [record for record in user_records if record["processing_result"] == "Completed"]
-
-    if completed_records:
-        st.subheader("标注文件")
-        for record in completed_records:
-            cols = st.columns([5, 2, 2, 2])
-            cols[0].write(record["filename"])
-            cols[1].metric("Size", f"{record['file_size']}KB")
-            cols[2].write(record["upload_time"])
-
-            # 提供下载按钮
-            file_path = os.path.join(user_dir, record["filename"])
-            if os.path.exists(file_path):
-                with open(file_path, "rb") as f:
-                    cols[3].download_button(
-                        label="下载文件",
-                        data=f.read(),
-                        file_name=record["filename"],
-                        mime="application/octet-stream"
-                    )
-        
-        # 查找标注后的PDF文件
-        annotated_files = [f for f in os.listdir(user_dir) if f.startswith("annotated_")]
-        if annotated_files:
-            st.subheader("标注后的文件")
+                    
+                    except Exception as e:
+                        st.error(f"Error during conversion: {str(e)}")
+                        logging.error(f"Image conversion error: {str(e)}")
 
 def main():
-    """Main function for Streamlit interaction"""
-    if 'logged_in' not in st.session_state: 
-        st.session_state.update({ 
+    # Initialize session state
+    if 'logged_in' not in st.session_state:
+        st.session_state.update({
             'logged_in': False,
             'current_user': None,
             'page': 'main_menu',
             'sub_page': None
         })
 
-    if not st.session_state.logged_in: 
-        st.title("🔐  User Login")
-        with st.form("login_form"): 
-            username = st.text_input("Username") 
-            password = st.text_input("Password",  type="password")
-            if st.form_submit_button("Login"): 
-                user_data = read_user_data()
-                user_data = migrate_old_data(user_data)
+    # Sidebar for navigation (only show when logged in)
+    if st.session_state.logged_in:
+        with st.sidebar:
+            st.title("🎓 AI Guru")
+            st.write(f"Welcome, {st.session_state.current_user}!")
+            
+            # Navigation menu (简化菜单选项)
+            st.subheader("📍 Navigation")
+            menu_options = {
+                "main_menu": "🏠 Main Menu",
+                "file_management": "📁 File Management",
+                "ai_correction": "🤖 AI Correction"
+            }
+            
+            selected_page = st.radio("Go to:", list(menu_options.values()))
+            st.session_state.page = list(menu_options.keys())[list(menu_options.values()).index(selected_page)]
+            
+            # Logout button
+            if st.button("🚪 Logout"):
+                st.session_state.logged_in = False
+                st.session_state.current_user = None
+                st.session_state.page = "main_menu"
+                st.rerun()
 
+    # Login page
+    if not st.session_state.logged_in:
+        st.title("🔐 User Login")
+        with st.form("login_form"):
+            username = st.text_input("Username")
+            password = st.text_input("Password", type="password")
+            if st.form_submit_button("Login"):
+                # Check test accounts
                 if username in TEST_ACCOUNTS:
-                    if username not in user_data:
-                        user_data[username] = {
-                            "password": TEST_ACCOUNTS[username],
-                            "records": []
-                        }
-                        write_user_data(user_data)
-
-                    stored_password = user_data[username]['password']
+                    stored_password = TEST_ACCOUNTS[username]['password']
                     if stored_password == password:
-                        st.session_state.logged_in  = True
-                        st.session_state.current_user  = username
-                        st.rerun() 
-                        return
+                        st.session_state.logged_in = True
+                        st.session_state.current_user = username
+                        st.success("Login successful!")
+                        st.rerun()
                     else:
-                        st.error("Incorrect  password.")
+                        st.error("Invalid password!")
                 else:
-                    st.error("Only  test accounts are allowed to log in.")
-        return  # If not logged in, return
+                    st.error("User not found!")
+        return
 
-    st.title(f"Welcome  back, {st.session_state.current_user}!") 
-
-    with st.sidebar: 
-        account_management()
-        history_panel()
-
-        st.divider() 
-        page_options = {
-            "🏠 主菜单": "main_menu",
-            "📝 AI批改": "ai_correction",
-            "📥 文件管理": "file_management"
-        }
-        selected = st.radio("Navigation  Menu", page_options.keys()) 
-        st.session_state.page  = page_options[selected]
-
-        st.divider() 
-        if st.button("Logout"): 
-            st.session_state.logged_in  = False
-            st.session_state.current_user  = None
-            st.rerun() 
-            return
-
-    if st.session_state.page == "main_menu":
-        from pages.main_menu import main_menu_page
-        main_menu_page()
-    elif st.session_state.page == "ai_correction":
-        if st.session_state.sub_page == "file_list":
-            download_page()
-        else:
-            file_management_page()  # AI批改功能
-    elif st.session_state.page == "file_management":
-        download_page()  # 文件管理功能
+    # Protected pages - only accessible when logged in
+    if st.session_state.logged_in:
+        # 默认进入主页
+        if "page" not in st.session_state:
+            st.session_state.page = "main_menu"
+            
+        # 页面导航处理
+        if st.session_state.page == "file_management":
+            file_management_page()
+        elif st.session_state.page == "ai_correction":
+            ai_correction_page()
+        else:  # 主页显示基本信息
+            st.title("🏠 Main Menu")
+            st.write("Welcome to AI Guru! Select an option from the sidebar to get started.")
+            
+            # 显示简单的使用统计
+            user_data = read_user_data()
+            user_records = user_data.get(st.session_state.current_user, {}).get('records', [])
+            
+            col1, col2, col3 = st.columns(3)
+            col1.metric("Total Files", len(user_records))
+            
+            correction_results = [r for r in user_records if r.get("file_type") == "correction_result"]
+            col2.metric("Completed Corrections", len(correction_results))
+            
+            pdf_files = [r for r in user_records if r.get("file_type") in ["pdf", "annotated_pdf"]]
+            col3.metric("PDF Files", len(pdf_files))
+    else:
+        st.warning("Please log in to access this page.")
+        st.session_state.page = "main_menu"
 
 if __name__ == "__main__":
     main()

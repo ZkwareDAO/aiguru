@@ -132,33 +132,85 @@ def create_combat_effect(particle_system: ParticleSystem, position: Tuple[int, i
         particle_system.create_particles(
             f"hit_{position[0]}_{position[1]}",
             position,
-            count=10,
+            count=15,
             color=(255, 0, 0),  # 红色
             size_range=(2, 4),
             life_range=(10, 20),
             velocity_range=(1.0, 2.0)
+        )
+        # 添加溅血效果
+        particle_system.create_particles(
+            f"blood_{position[0]}_{position[1]}",
+            position,
+            count=8,
+            color=(139, 0, 0),  # 深红色
+            size_range=(1, 2),
+            life_range=(15, 25),
+            velocity_range=(0.8, 1.5)
         )
     elif effect_type == 'magic':
         # 魔法效果
         particle_system.create_particles(
             f"magic_{position[0]}_{position[1]}",
             position,
-            count=25,
+            count=30,
             color=(0, 191, 255),  # 蓝色
+            size_range=(2, 4),
+            life_range=(40, 60),
+            velocity_range=(0.2, 0.8)
+        )
+        # 添加魔法光环
+        particle_system.create_particles(
+            f"magic_aura_{position[0]}_{position[1]}",
+            position,
+            count=20,
+            color=(147, 112, 219),  # 紫色
             size_range=(1, 3),
             life_range=(30, 50),
-            velocity_range=(0.2, 0.8)
+            velocity_range=(0.1, 0.4)
         )
     elif effect_type == 'explosion':
         # 爆炸效果
         particle_system.create_particles(
             f"explosion_{position[0]}_{position[1]}",
             position,
-            count=40,
+            count=50,
             color=(255, 165, 0),  # 橙色
-            size_range=(3, 6),
+            size_range=(4, 8),
             life_range=(15, 30),
-            velocity_range=(1.5, 3.0)
+            velocity_range=(2.0, 4.0)
+        )
+        # 添加烟雾效果
+        particle_system.create_particles(
+            f"smoke_{position[0]}_{position[1]}",
+            position,
+            count=30,
+            color=(128, 128, 128),  # 灰色
+            size_range=(3, 6),
+            life_range=(40, 60),
+            velocity_range=(0.5, 1.0)
+        )
+    elif effect_type == 'heal':
+        # 治疗效果
+        particle_system.create_particles(
+            f"heal_{position[0]}_{position[1]}",
+            position,
+            count=25,
+            color=(124, 252, 0),  # 亮绿色
+            size_range=(2, 4),
+            life_range=(30, 50),
+            velocity_range=(0.3, 0.8)
+        )
+    elif effect_type == 'buff':
+        # 增益效果
+        particle_system.create_particles(
+            f"buff_{position[0]}_{position[1]}",
+            position,
+            count=20,
+            color=(255, 215, 0),  # 金色
+            size_range=(1, 3),
+            life_range=(40, 60),
+            velocity_range=(0.2, 0.6)
         )
 
 import math  # 添加缺少的导入
