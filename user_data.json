@@ -100191,14 +100191,16 @@
         "upload_time": "2025-04-21 16:15:29",
         "file_size": 309.73,
         "file_type": "image",
-        "processing_result": "Uploaded"
+        "processing_result": "Completed",
+        "progress": 1.0
       },
       {
         "filename": "R-C (1).png",
         "upload_time": "2025-04-21 16:15:39",
         "file_size": 309.73,
         "file_type": "image",
-        "processing_result": "Uploaded"
+        "processing_result": "Completed",
+        "progress": 1.0
       },
       {
         "filename": "converted_images_20250421_161539.pdf",
@@ -100212,43 +100214,48 @@
         "upload_time": "2025-04-21 16:15:42",
         "file_size": 309.73,
         "file_type": "image",
-        "processing_result": "Uploaded"
+        "processing_result": "Completed",
+        "progress": 1.0
       },
       {
         "filename": "R-C (1).png",
         "upload_time": "2025-04-21 16:21:47",
         "file_size": 309.73,
         "file_type": "image",
-        "processing_result": "Uploaded"
+        "processing_result": "Completed",
+        "progress": 1.0
       },
       {
         "filename": "R-C (1).png",
         "upload_time": "2025-04-21 16:21:49",
         "file_size": 309.73,
         "file_type": "image",
-        "processing_result": "Uploaded"
+        "processing_result": "Completed",
+        "progress": 1.0
       },
       {
         "filename": "R-C (1).png",
         "upload_time": "2025-04-21 16:21:55",
         "file_size": 309.73,
         "file_type": "image",
-        "processing_result": "Uploaded"
+        "processing_result": "Completed",
+        "progress": 1.0
       },
       {
         "filename": "R-C (1).png",
         "upload_time": "2025-04-21 16:21:56",
         "file_size": 309.73,
         "file_type": "image",
-        "processing_result": "Uploaded"
+        "processing_result": "Completed",
+        "progress": 1.0
       },
       {
         "filename": "R-C (1).png",
         "upload_time": "2025-04-21 19:42:41",
         "file_size": 309.73,
-        "progress": 0,
+        "progress": 1.0,
         "file_type": "student_answer",
-        "processing_result": "Uploaded"
+        "processing_result": "Completed"
       },
       {
         "filename": "R-C.png",
@@ -100262,14 +100269,321 @@
         "filename": "R-C (1).png",
         "upload_time": "2025-04-21 19:42:43",
         "file_size": 309.73,
+        "progress": 1.0,
+        "file_type": "student_answer",
+        "processing_result": "Completed"
+      },
+      {
+        "filename": "R-C.png",
+        "upload_time": "2025-04-21 19:42:43",
+        "file_size": 144.48,
+        "progress": 0,
+        "file_type": "marking_scheme",
+        "processing_result": "Uploaded"
+      },
+      {
+        "filename": "\u5fae\u4fe1\u56fe\u7247_20241023224419.jpg",
+        "upload_time": "2025-04-25 19:55:58",
+        "file_size": 31.33,
+        "progress": 1.0,
+        "file_type": "student_answer",
+        "processing_result": "Completed"
+      },
+      {
+        "filename": "\u5fae\u4fe1\u56fe\u7247_20241023224419.jpg",
+        "upload_time": "2025-04-25 19:55:58",
+        "file_size": 31.33,
+        "progress": 1.0,
+        "file_type": "marking_scheme",
+        "processing_result": "Completed"
+      },
+      {
+        "filename": "\u5fae\u4fe1\u56fe\u7247_20241023224419.jpg",
+        "upload_time": "2025-04-25 19:56:03",
+        "file_size": 31.33,
+        "progress": 1.0,
+        "file_type": "student_answer",
+        "processing_result": "Completed"
+      },
+      {
+        "filename": "\u5fae\u4fe1\u56fe\u7247_20241023224419.jpg",
+        "upload_time": "2025-04-25 19:56:03",
+        "file_size": 31.33,
+        "progress": 1.0,
+        "file_type": "marking_scheme",
+        "processing_result": "Completed"
+      },
+      {
+        "filename": "correction_result_1745582170.txt",
+        "upload_time": "2025-04-25 19:56:10",
+        "file_size": 0.52,
+        "file_type": "correction_result",
+        "processing_result": "Completed"
+      },
+      {
+        "filename": "\u5fae\u4fe1\u56fe\u7247_20241023224419.jpg",
+        "upload_time": "2025-04-25 19:56:19",
+        "file_size": 31.33,
+        "progress": 1.0,
+        "file_type": "student_answer",
+        "processing_result": "Completed"
+      },
+      {
+        "filename": "\u5fae\u4fe1\u56fe\u7247_20241023224419.jpg",
+        "upload_time": "2025-04-25 19:56:19",
+        "file_size": 31.33,
+        "progress": 1.0,
+        "file_type": "marking_scheme",
+        "processing_result": "Completed"
+      },
+      {
+        "filename": "correction_result_1745582185.txt",
+        "upload_time": "2025-04-25 19:56:25",
+        "file_size": 0.32,
+        "file_type": "correction_result",
+        "processing_result": "Completed"
+      },
+      {
+        "filename": "R-C (1).png",
+        "upload_time": "2025-04-25 20:27:52",
+        "file_size": 309.73,
+        "progress": 1.0,
+        "file_type": "student_answer",
+        "processing_result": "Completed"
+      },
+      {
+        "filename": "R-C.png",
+        "upload_time": "2025-04-25 20:27:52",
+        "file_size": 144.48,
+        "progress": 0,
+        "file_type": "marking_scheme",
+        "processing_result": "Uploaded"
+      },
+      {
+        "filename": "R-C (1).png",
+        "upload_time": "2025-04-25 20:27:53",
+        "file_size": 309.73,
+        "progress": 1.0,
+        "file_type": "student_answer",
+        "processing_result": "Completed"
+      },
+      {
+        "filename": "R-C.png",
+        "upload_time": "2025-04-25 20:27:53",
+        "file_size": 144.48,
+        "progress": 0,
+        "file_type": "marking_scheme",
+        "processing_result": "Uploaded"
+      },
+      {
+        "filename": "correction_result_1745584078.txt",
+        "upload_time": "2025-04-25 20:27:58",
+        "file_size": 0.3,
+        "file_type": "correction_result",
+        "processing_result": "Completed"
+      },
+      {
+        "filename": "R-C (1).png",
+        "upload_time": "2025-04-25 20:28:06",
+        "file_size": 309.73,
         "progress": 0,
         "file_type": "student_answer",
         "processing_result": "Uploaded"
       },
       {
         "filename": "R-C.png",
-        "upload_time": "2025-04-21 19:42:43",
+        "upload_time": "2025-04-25 20:28:06",
         "file_size": 144.48,
+        "progress": 0,
+        "file_type": "marking_scheme",
+        "processing_result": "Uploaded"
+      },
+      {
+        "filename": "Topic1_MC.pdf",
+        "upload_time": "2025-04-25 20:28:32",
+        "file_size": 1275.05,
+        "progress": 0,
+        "file_type": "student_answer",
+        "processing_result": "Uploaded"
+      },
+      {
+        "filename": "Topic1_MC.pdf",
+        "upload_time": "2025-04-25 20:28:32",
+        "file_size": 1275.05,
+        "progress": 0,
+        "file_type": "marking_scheme",
+        "processing_result": "Uploaded"
+      },
+      {
+        "filename": "Topic1_MC.pdf",
+        "upload_time": "2025-04-25 20:28:34",
+        "file_size": 1275.05,
+        "progress": 0,
+        "file_type": "student_answer",
+        "processing_result": "Uploaded"
+      },
+      {
+        "filename": "Topic1_MC.pdf",
+        "upload_time": "2025-04-25 20:28:34",
+        "file_size": 1275.05,
+        "progress": 0,
+        "file_type": "marking_scheme",
+        "processing_result": "Uploaded"
+      },
+      {
+        "filename": "fee58e639eef42b68791a965912fefad.jpeg",
+        "upload_time": "2025-04-25 20:31:20",
+        "file_size": 45.27,
+        "progress": 1.0,
+        "file_type": "student_answer",
+        "processing_result": "Completed"
+      },
+      {
+        "filename": "fee58e639eef42b68791a965912fefad.jpeg",
+        "upload_time": "2025-04-25 20:31:20",
+        "file_size": 45.27,
+        "progress": 1.0,
+        "file_type": "marking_scheme",
+        "processing_result": "Completed"
+      },
+      {
+        "filename": "fee58e639eef42b68791a965912fefad.jpeg",
+        "upload_time": "2025-04-25 20:31:21",
+        "file_size": 45.27,
+        "progress": 1.0,
+        "file_type": "student_answer",
+        "processing_result": "Completed"
+      },
+      {
+        "filename": "fee58e639eef42b68791a965912fefad.jpeg",
+        "upload_time": "2025-04-25 20:31:21",
+        "file_size": 45.27,
+        "progress": 1.0,
+        "file_type": "marking_scheme",
+        "processing_result": "Completed"
+      },
+      {
+        "filename": "ac3b89c4dbad4a58b11a5565adfcc031.jpeg",
+        "upload_time": "2025-04-25 20:32:39",
+        "file_size": 13.49,
+        "progress": 1.0,
+        "file_type": "student_answer",
+        "processing_result": "Completed"
+      },
+      {
+        "filename": "fee58e639eef42b68791a965912fefad.jpeg",
+        "upload_time": "2025-04-25 20:32:39",
+        "file_size": 45.27,
+        "progress": 1.0,
+        "file_type": "marking_scheme",
+        "processing_result": "Completed"
+      },
+      {
+        "filename": "ac3b89c4dbad4a58b11a5565adfcc031.jpeg",
+        "upload_time": "2025-04-25 20:32:40",
+        "file_size": 13.49,
+        "progress": 1.0,
+        "file_type": "student_answer",
+        "processing_result": "Completed"
+      },
+      {
+        "filename": "fee58e639eef42b68791a965912fefad.jpeg",
+        "upload_time": "2025-04-25 20:32:40",
+        "file_size": 45.27,
+        "progress": 1.0,
+        "file_type": "marking_scheme",
+        "processing_result": "Completed"
+      },
+      {
+        "filename": "correction_result_1745584377.txt",
+        "upload_time": "2025-04-25 20:32:57",
+        "file_size": 1.22,
+        "file_type": "correction_result",
+        "processing_result": "Completed"
+      },
+      {
+        "filename": "fee58e639eef42b68791a965912fefad.jpeg",
+        "upload_time": "2025-04-25 20:33:48",
+        "file_size": 45.27,
+        "progress": 1.0,
+        "file_type": "student_answer",
+        "processing_result": "Completed"
+      },
+      {
+        "filename": "fee58e639eef42b68791a965912fefad.jpeg",
+        "upload_time": "2025-04-25 20:33:48",
+        "file_size": 45.27,
+        "progress": 1.0,
+        "file_type": "marking_scheme",
+        "processing_result": "Completed"
+      },
+      {
+        "filename": "fee58e639eef42b68791a965912fefad.jpeg",
+        "upload_time": "2025-04-25 20:33:52",
+        "file_size": 45.27,
+        "progress": 1.0,
+        "file_type": "student_answer",
+        "processing_result": "Completed"
+      },
+      {
+        "filename": "fee58e639eef42b68791a965912fefad.jpeg",
+        "upload_time": "2025-04-25 20:33:52",
+        "file_size": 45.27,
+        "progress": 1.0,
+        "file_type": "marking_scheme",
+        "processing_result": "Completed"
+      },
+      {
+        "filename": "fee58e639eef42b68791a965912fefad.jpeg",
+        "upload_time": "2025-04-25 20:33:55",
+        "file_size": 45.27,
+        "progress": 1.0,
+        "file_type": "student_answer",
+        "processing_result": "Completed"
+      },
+      {
+        "filename": "fee58e639eef42b68791a965912fefad.jpeg",
+        "upload_time": "2025-04-25 20:33:55",
+        "file_size": 45.27,
+        "progress": 1.0,
+        "file_type": "marking_scheme",
+        "processing_result": "Completed"
+      },
+      {
+        "filename": "fee58e639eef42b68791a965912fefad.jpeg",
+        "upload_time": "2025-04-25 20:35:00",
+        "file_size": 45.27,
+        "progress": 1.0,
+        "file_type": "student_answer",
+        "processing_result": "Completed"
+      },
+      {
+        "filename": "fee58e639eef42b68791a965912fefad.jpeg",
+        "upload_time": "2025-04-25 20:35:00",
+        "file_size": 45.27,
+        "progress": 1.0,
+        "file_type": "marking_scheme",
+        "processing_result": "Completed"
+      },
+      {
+        "filename": "correction_result_1745584517.json",
+        "upload_time": "2025-04-25 20:35:17",
+        "file_size": 1.76,
+        "file_type": "correction_result",
+        "processing_result": "Completed"
+      },
+      {
+        "filename": "fee58e639eef42b68791a965912fefad.jpeg",
+        "upload_time": "2025-04-25 20:39:21",
+        "file_size": 45.27,
+        "progress": 0,
+        "file_type": "student_answer",
+        "processing_result": "Uploaded"
+      },
+      {
+        "filename": "fee58e639eef42b68791a965912fefad.jpeg",
+        "upload_time": "2025-04-25 20:39:21",
+        "file_size": 45.27,
         "progress": 0,
         "file_type": "marking_scheme",
         "processing_result": "Uploaded"

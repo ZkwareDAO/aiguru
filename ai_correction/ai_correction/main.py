@@ -372,19 +372,22 @@ def ai_correction_page():
                                 "txt": "text/plain"
                             }.get(file_ext, "application/octet-stream")
                             
-                            read_mode = "r" if file_ext in ["json", "txt"] else "rb"
+                            # Modified file reading code with proper encoding handling
+                            if file_ext in ["json", "txt"]:
+                                with open(file_path, "r", encoding="utf-8") as f:
+                                    download_data = f.read()
+                            else:
+                                with open(file_path, "rb") as f:
+                                    download_data = f.read()
                             
-                            with open(file_path, read_mode) as f:
-                                download_data = f.read()
-                                
-                                # 为下载按钮创建一个新的列
-                                st.download_button(
-                                    label="下载",
-                                    data=download_data,
-                                    file_name=record["filename"],
-                                    mime=mime_type,
-                                    key=f"dl_{file_type}_{record['filename']}_{id(record)}"
-                                )
+                            # 为下载按钮创建一个新的列
+                            st.download_button(
+                                label="下载",
+                                data=download_data,
+                                file_name=record["filename"],
+                                mime=mime_type,
+                                key=f"dl_{file_type}_{record['filename']}_{id(record)}"
+                            )
                     else:
                         cols[3].warning("文件不存在")
             else:
