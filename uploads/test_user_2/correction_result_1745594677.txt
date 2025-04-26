@@ -1,0 +1,69 @@
+The image contains mathematical derivations related to trigonometry and the cosine rule in a triangle ABC. Let's break down the key points in the image:
+
+### Part (i)
+1. **Cosine Rule Application:**
+   - The cosine of angle A is given by:
+     \[
+     \cos A = \frac{b^2 + c^2 - a^2}{2bc} = \frac{\sqrt{3}}{2}
+     \]
+   - This implies:
+     \[
+     \frac{1}{2}c^2 = b^2 - a^2
+     \]
+   - Using the cosine rule again for angle C:
+     \[
+     c^2 = a^2 + b^2 - 2ab \cos C
+     \]
+
+2. **Trigonometric Identities:**
+   - It is shown that:
+     \[
+     \sin^2 B - \sin^2 A = \frac{1}{2} \sin^2 C
+     \]
+   - Further manipulation leads to:
+     \[
+     \cos^2 C + \sin^2 C - 1 = \sin^2 C
+     \]
+   - Simplifying, it results in:
+     \[
+     \cos^2 C + 1 - 2 \sin^2 C + \sin^2 C - 1 = \sin^2 C
+     \]
+   - Ultimately:
+     \[
+     \cos^2 C = 2 \sin^2 C
+     \]
+   - Therefore:
+     \[
+     \frac{\sin^2 C}{\cos^2 C} = \frac{1}{2} \implies \tan C = \frac{\sqrt{3}}{3}
+     \]
+
+### Part (ii)
+1. **Trigonometric Values:**
+   - Given:
+     \[
+     \sin C = \frac{\sqrt{3}}{2}, \quad \cos C = \frac{1}{2}
+     \]
+   - Using the angle sum identity for sine:
+     \[
+     \sin B = \sin(A + C) = \sin A \cos C + \cos A \sin C
+     \]
+     Substituting the values:
+     \[
+     \sin B = \frac{\sqrt{3}}{2} \cdot \frac{1}{2} + \frac{1}{2} \cdot \frac{\sqrt{3}}{2} = \frac{\sqrt{3}}{2}
+     \]
+
+2. **Area of Triangle:**
+   - The area of triangle ABC is given by:
+     \[
+     \Delta_{ABC} = \frac{1}{2} bc \sin A = 3
+     \]
+     Given \(bc = 6\sqrt{3}\), it follows that:
+     \[
+     a^2 = b^2 + c^2 - 2bc \cos A
+     \]
+     Simplifying, it results in:
+     \[
+     b = 2\sqrt{3}
+     \]
+
+This summarizes the steps and results derived in the image for solving the trigonometric and geometric problem.

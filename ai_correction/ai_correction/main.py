@@ -131,35 +131,10 @@ def ai_correction_page():
                 with open(student_file, "wb") as f:
                     f.write(student_answer.getbuffer())
                 
-                # 更新用户记录
-                current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                new_record = {
-                    "filename": student_answer.name,
-                    "upload_time": current_time,
-                    "file_size": round(file_size, 2),
-                    "progress": 0,
-                    "file_type": "student_answer",
-                    "processing_result": "Uploaded"
-                }
-                
                 # 保存评分标准文件
                 marking_file = user_dir / marking_scheme.name
                 with open(marking_file, "wb") as f:
                     f.write(marking_scheme.getbuffer())
-                
-                # 添加评分标准文件记录
-                mark_size = marking_scheme.size / 1024
-                mark_record = {
-                    "filename": marking_scheme.name,
-                    "upload_time": current_time,
-                    "file_size": round(mark_size, 2),
-                    "progress": 0,
-                    "file_type": "marking_scheme",
-                    "processing_result": "Uploaded"
-                }
-                
-                user_data[st.session_state.current_user]["records"].extend([new_record, mark_record])
-                save_user_data(user_data)
                 
                 # 处理文件开始按钮
                 if st.button("Start AI Correction"):
@@ -178,149 +153,48 @@ def ai_correction_page():
                         if result:
                             st.success("AI Correction completed!")
                             
-                            # 处理API返回的结果
-                            result_content = result.choices[0].message.content
-                            st.markdown("### API Response")
-                            st.markdown(result_content)
+                            # Debug the raw response
+                            st.subheader("Debug Information")
+                            st.text("Raw Response Type:")
+                            st.text(type(result))
+                            st.text("Raw Response Content:")
+                            st.text(result)
                             
-                            # 尝试解析JSON结果（如果是JSON格式）
-                            try:
-                                # 查找JSON内容 - 可能在文本中嵌入了JSON
-                                import re
-                                json_match = re.search(r'\{.*\}', result_content, re.DOTALL)
-                                if json_match:
-                                    json_text = json_match.group(0)
-                                    json_result = json.loads(json_text)
-                                    
-                                    # 保存解析后的JSON结果
-                                    result_filename = f"correction_result_{int(time.time())}.json"
-                                    result_file = user_dir / result_filename
-                                    with open(result_file, "w", encoding="utf-8") as f:
-                                        json.dump(json_result, f, indent=2, ensure_ascii=False)
-                                    
-                                    # 显示结构化的结果
-                                    st.json(json_result)
-                                    
-                                    # 更新结果文件记录
-                                    result_record = {
-                                        "filename": result_filename,
-                                        "upload_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                                        "file_size": round(os.path.getsize(result_file) / 1024, 2),
-                                        "file_type": "correction_result",
-                                        "processing_result": "Completed"
-                                    }
-                                    
-                                    user_data[st.session_state.current_user]["records"].append(result_record)
-                                    
-                                    # 提供下载结果的按钮
-                                    with open(result_file, "r", encoding="utf-8") as f:
-                                        st.download_button(
-                                            label="Download Correction Result",
-                                            data=f.read(),
-                                            file_name=result_filename,
-                                            mime="application/json"
-                                        )
-                                else:
-                                    # 如果找不到JSON，保存原始文本
-                                    result_filename = f"correction_result_{int(time.time())}.txt"
-                                    result_file = user_dir / result_filename
-                                    with open(result_file, "w", encoding="utf-8") as f:
-                                        f.write(result_content)
-                                    
-                                    result_record = {
-                                        "filename": result_filename,
-                                        "upload_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                                        "file_size": round(os.path.getsize(result_file) / 1024, 2),
-                                        "file_type": "correction_result",
-                                        "processing_result": "Completed"
-                                    }
-                                    
-                                    user_data[st.session_state.current_user]["records"].append(result_record)
-                                    
-                                    # 提供下载按钮
-                                    with open(result_file, "r", encoding="utf-8") as f:
-                                        st.download_button(
-                                            label="Download Correction Result",
-                                            data=f.read(),
-                                            file_name=result_filename,
-                                            mime="text/plain"
-                                        )
-                            except Exception as e:
-                                st.warning(f"Could not parse JSON result: {str(e)}")
-                                # 保存原始文本
-                                result_filename = f"correction_result_{int(time.time())}.txt"
-                                result_file = user_dir / result_filename
-                                with open(result_file, "w", encoding="utf-8") as f:
-                                    f.write(result_content)
-                                
-                                result_record = {
-                                    "filename": result_filename,
-                                    "upload_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                                    "file_size": round(os.path.getsize(result_file) / 1024, 2),
-                                    "file_type": "correction_result",
-                                    "processing_result": "Completed"
-                                }
-                                
-                                user_data[st.session_state.current_user]["records"].append(result_record)
+                            # Store the raw response first
+                            raw_filename = f"correction_result_raw_{int(time.time())}.txt"
+                            raw_file = user_dir / raw_filename
+                            with open(raw_file, "w", encoding="utf-8") as f:
+                                f.write(str(result))
                             
-                            # 更新进度状态
-                            for i, record in enumerate(user_data[st.session_state.current_user]["records"]):
-                                if record["filename"] == student_answer.name:
-                                    user_data[st.session_state.current_user]["records"][i]["progress"] = 1.0
-                                    user_data[st.session_state.current_user]["records"][i]["processing_result"] = "Completed"
+                            # Display the response in a readable format
+                            st.markdown("### AI Response")
+                            st.markdown(str(result))
                             
+                            # Provide download button for the raw result
+                            with open(raw_file, "r", encoding="utf-8") as f:
+                                st.download_button(
+                                    label="Download Result",
+                                    data=f.read(),
+                                    file_name=raw_filename,
+                                    mime="text/plain"
+                                )
+                            
+                            # Record the result file
+                            result_record = {
+                                "filename": raw_filename,
+                                "upload_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                                "file_size": round(os.path.getsize(raw_file) / 1024, 2),
+                                "file_type": "correction_result",
+                                "processing_result": "Completed"
+                            }
+                            
+                            user_data[st.session_state.current_user]["records"].append(result_record)
                             save_user_data(user_data)
                             
-                            # 如果需要，可以自动调用merger功能
-                            st.markdown("### Apply Corrections")
-                            if st.button("Generate Annotated PDF"):
-                                try:
-                                    # 实例化转换器
-                                    converter = ImageToPDFConverter(UPLOAD_DIR)
-                                    
-                                    # 生成带批注的PDF文件名
-                                    annotated_filename = f"annotated_{os.path.splitext(student_answer.name)[0]}_{int(time.time())}.pdf"
-                                    annotated_path = str(user_dir / annotated_filename)
-                                    
-                                    # 从结果中提取评论文本
-                                    annotation_text = f"AI批改结果:\n{result_content}"
-                                    
-                                    # 调用PDF处理函数添加批注
-                                    if student_file.name.endswith('.pdf'):
-                                        # 如果已经是PDF，直接添加批注
-                                        annotated_path = converter.add_annotations_to_pdf(str(student_file), "", annotation_text)
-                                    else:
-                                        # 如果是图片，先转换为PDF再添加批注
-                                        temp_pdf = converter.convert_multiple_images_to_pdf([str(student_file)], str(user_dir / f"temp_{int(time.time())}.pdf"))
-                                        annotated_path = converter.add_annotations_to_pdf(temp_pdf, "", annotation_text)
-                                    
-                                    # 记录生成的文件
-                                    annotated_size = os.path.getsize(annotated_path) / 1024
-                                    annotated_record = {
-                                        "filename": os.path.basename(annotated_path),
-                                        "upload_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                                        "file_size": round(annotated_size, 2),
-                                        "file_type": "annotated_pdf",
-                                        "processing_result": "Completed"
-                                    }
-                                    
-                                    user_data[st.session_state.current_user]["records"].append(annotated_record)
-                                    save_user_data(user_data)
-                                    
-                                    st.success("Successfully generated annotated PDF!")
-                                    with open(annotated_path, "rb") as f:
-                                        st.download_button(
-                                            label="Download Annotated PDF",
-                                            data=f.read(),
-                                            file_name=os.path.basename(annotated_path),
-                                            mime="application/pdf"
-                                        )
-                                    
-                                except Exception as e:
-                                    st.error(f"Error generating annotated PDF: {str(e)}")
-                                    logging.error(f"PDF annotation error: {str(e)}")
                     except Exception as e:
                         st.error(f"Error during correction: {str(e)}")
+                        st.text("Full error details:")
+                        st.exception(e)
                         logging.error(f"AI correction error: {str(e)}")
     
     # Tab 2: File List

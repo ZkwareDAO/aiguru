@@ -122,7 +122,7 @@ def img_to_base64(image_path):
             image_data = image_file.read()
     return base64.b64encode(image_data).decode('utf-8')
 
-def call_tongyi_api(input_text,*input_images):
+def call_api(input_text,*input_images):
     client = OpenAI(
         base_url="https://api.siliconflow.cn/v1",
         api_key="sk-exhlpcmlvywtnrzancrdqbohmsbfbmxkkodjhqxufkbhctay"
@@ -160,7 +160,7 @@ def call_tongyi_api(input_text,*input_images):
 from functools import lru_cache
 
 #调用的API,接收一个str和文件paths，返回一个字符串
-default_api=call_tongyi_api
+default_api=call_api
 
 def extract_json_from_str(string):
     

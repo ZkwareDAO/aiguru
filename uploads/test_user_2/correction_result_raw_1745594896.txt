@@ -1,0 +1,39 @@
+This image shows a detailed mathematical solution involving trigonometric identities and the cosine rule in the context of a triangle ABC. Here's a breakdown of the steps and solutions presented:
+
+### Part (1)
+The problem starts with the cosine rule for angle A:
+\[ \cos A = \frac{b^2 + c^2 - a^2}{2bc} = \frac{\sqrt{3}}{2} \]
+
+From this, it derives:
+\[ \frac{1}{2}c^2 = b^2 - a^2 \]
+\[ c^2 = a^2 + b^2 - 2ab \cos C \]
+
+Then, it proceeds to manipulate the equation:
+\[ \sin^2 B - \sin^2 A = \frac{1}{2} \sin^2 C \]
+
+Using trigonometric identities and substitutions, it eventually arrives at:
+\[ \cos^2 C + \sin^2 C - 1 = \sin^2 C \]
+\[ \cos^2 C = 2 \sin^2 C \]
+
+From this, it concludes:
+\[ \frac{\sin^2 C}{\cos^2 C} = \frac{1}{2} \]
+\[ \tan C = \frac{1}{\sqrt{2}} \]
+\[ \tan C = \frac{\sqrt{3}}{3} \]
+
+### Part (2)
+Given:
+\[ \sin C = \frac{\sqrt{3}}{3}, \quad \cos C = \frac{\sqrt{6}}{3} \]
+
+Using the angle sum identity for sine:
+\[ \sin B = \sin(A + C) = \sin A \cos C + \cos A \sin C \]
+\[ = \frac{\sqrt{3}}{2} \cdot \frac{\sqrt{6}}{3} + \frac{1}{2} \cdot \frac{\sqrt{3}}{3} = \frac{3\sqrt{2} + \sqrt{3}}{6} \]
+
+The area of triangle ABC is given as:
+\[ \Delta_{ABC} = \frac{1}{2} bc \sin A = 3 \]
+\[ bc = 6\sqrt{2} \]
+
+Using the cosine rule again:
+\[ a^2 = b^2 + c^2 - 2bc \cos A \]
+\[ \therefore b = 2\sqrt{2} \]
+
+This solution effectively uses trigonometric identities and the cosine rule to solve for various components of the triangle, including angles and side lengths.
