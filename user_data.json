@@ -100373,6 +100373,159 @@
         "file_size": 45.27,
         "file_type": "student_answer",
         "processing_result": "Uploaded"
+      },
+      {
+        "filename": "fee58e639eef42b68791a965912fefad.jpeg",
+        "upload_time": "2025-04-26 19:11:49",
+        "file_size": 45.27,
+        "file_type": "student_answer",
+        "processing_result": "Uploaded"
+      },
+      {
+        "filename": "fee58e639eef42b68791a965912fefad.jpeg",
+        "upload_time": "2025-04-26 20:58:46",
+        "file_size": 45.27,
+        "file_type": "student_answer",
+        "processing_result": "Uploaded"
+      },
+      {
+        "filename": "fee58e639eef42b68791a965912fefad.jpeg",
+        "upload_time": "2025-04-26 20:58:47",
+        "file_size": 45.27,
+        "file_type": "student_answer",
+        "processing_result": "Uploaded"
+      },
+      {
+        "filename": "fee58e639eef42b68791a965912fefad.jpeg",
+        "upload_time": "2025-04-26 21:14:37",
+        "file_size": 45.27,
+        "file_type": "student_answer",
+        "processing_result": "Uploaded"
+      },
+      {
+        "filename": "fee58e639eef42b68791a965912fefad.jpeg",
+        "upload_time": "2025-04-26 21:14:38",
+        "file_size": 45.27,
+        "file_type": "student_answer",
+        "processing_result": "Uploaded"
+      },
+      {
+        "timestamp": "2025-04-26 21:15:12",
+        "content": "\u8fd9\u4f4d\u540c\u5b66\u7684\u89e3\u7b54\u8fc7\u7a0b\u5728\u5f88\u5927\u7a0b\u5ea6\u4e0a\u662f\u6b63\u786e\u7684\uff0c\u4f46\u6709\u4e00\u4e9b\u5c0f\u9519\u8bef\u548c\u53ef\u4ee5\u6539\u8fdb\u7684\u5730\u65b9\u3002\u8ba9\u6211\u4eec\u4e00\u6b65\u4e00\u6b65\u5730\u5206\u6790\u548c\u6279\u6539\uff1a\n\n### \u7b2c\u4e00\u90e8\u5206\uff1a\u8ba1\u7b97 \\(\\tan C\\) \u548c \\(\\sin C\\), \\(\\cos C\\)\n\n1. **\u4f59\u5f26\u5b9a\u7406\u7684\u5e94\u7528**\uff1a\n    \\[\n    \\cos A = \\frac{b^2 + c^2 - a^2}{2bc} = \\frac{\\sqrt{3}}{2}\n    \\]\n    \u8fd9\u662f\u6b63\u786e\u7684\u3002\n\n2. **\u63a8\u5bfc\u8fc7\u7a0b**\uff1a\n    \\[\n    \\frac{1}{2}c^2 = b^2 - a^2\n    \\]\n    \u8fd9\u4e00\u6b65\u6ca1\u6709\u95ee\u9898\u3002\n\n3. **\u4f7f\u7528\u6b63\u5f26\u5b9a\u7406**\uff1a\n    \\[\n    \\sin^2 B - \\sin^2 A = \\frac{1}{2} \\sin^2 C\n    \\]\n    \u63a8\u5bfc\u8fc7\u7a0b\u6709\u4e9b\u590d\u6742\uff0c\u4f46\u6700\u7ec8\u7ed3\u679c \\(\\tan C = \\frac{\\sqrt{3}}{2}\\) \u662f\u6b63\u786e\u7684\u3002\n\n4. **\u8ba1\u7b97 \\(\\sin C\\) \u548c \\(\\cos C\\)**\uff1a\n    \\[\n    \\sin C = \\frac{\\sqrt{3}}{3}, \\quad \\cos C = \\frac{\\sqrt{6}}{3}\n    \\]\n    \u8fd9\u662f\u6b63\u786e\u7684\u3002\n\n### \u7b2c\u4e8c\u90e8\u5206\uff1a\u8ba1\u7b97 \\(\\sin B\\) \u548c \\(\\Delta_{ABC}\\)\n\n1. **\u4f7f\u7528\u6b63\u5f26\u548c\u4f59\u5f26\u7684\u548c\u5dee\u516c\u5f0f**\uff1a\n    \\[\n    \\sin B = \\sin(A + C) = \\sin A \\cos C + \\cos A \\sin C\n    \\]\n    \\[\n    = \\frac{\\sqrt{3}}{2} \\cdot \\frac{\\sqrt{6}}{3} + \\frac{\\sqrt{3}}{2} \\cdot \\frac{\\sqrt{3}}{3} = \\frac{3\\sqrt{2}}{6}\n    \\]\n    \u8fd9\u662f\u6b63\u786e\u7684\u3002\n\n2. **\u8ba1\u7b97\u4e09\u89d2\u5f62\u7684\u9762\u79ef \\(\\Delta_{ABC}\\)**\uff1a\n    \\[\n    \\Delta_{ABC} = \\frac{1}{2} bc \\sin A = 3\n    \\]\n    \\[\n    bc = 6\\sqrt{2}\n    \\]\n    \u8fd9\u662f\u6b63\u786e\u7684\u3002\n\n3. **\u4f7f\u7528\u4f59\u5f26\u5b9a\u7406\u6c42 \\(b\\)**\uff1a\n    \\[\n    a^2 = b^2 + c^2 - 2bc \\cos A\n    \\]\n    \\[\n    \\therefore b = 2\\sqrt{2}\n    \\]\n    \u8fd9\u662f\u6b63\u786e\u7684\u3002\n\n### \u603b\u7ed3\uff1a\n\u8fd9\u4f4d\u540c\u5b66\u7684\u89e3\u7b54\u8fc7\u7a0b\u5927\u90e8\u5206\u662f\u6b63\u786e\u7684\uff0c\u4f46\u5728\u4e00\u4e9b\u63a8\u5bfc\u6b65\u9aa4\u4e2d\u53ef\u4ee5\u66f4\u52a0\u7b80\u6d01\u548c\u6e05\u6670\u3002\u7279\u522b\u662f\u5728\u7b2c\u4e00\u90e8\u5206\u7684\u63a8\u5bfc\u8fc7\u7a0b\u4e2d\uff0c\u53ef\u4ee5\u7b80\u5316\u4e00\u4e9b\u6b65\u9aa4\u4ee5\u63d0\u9ad8\u6e05\u6670\u5ea6\u3002\u6574\u4f53\u6765\u8bf4\uff0c\u8fd9\u4f4d\u540c\u5b66\u5bf9\u4f59\u5f26\u5b9a\u7406\u3001\u6b63\u5f26\u5b9a\u7406\u548c\u4e09\u89d2\u6052\u7b49\u5f0f\u7684\u5e94\u7528\u638c\u63e1\u5f97\u5f88\u597d\u3002",
+        "files": {
+          "answer": {
+            "filename": "fee58e639eef42b68791a965912fefad.jpeg",
+            "saved_path": "uploads\\test_user_2\\fee58e639eef42b68791a965912fefad.jpeg",
+            "timestamp": "20250426_211438"
+          }
+        }
+      },
+      {
+        "filename": "fee58e639eef42b68791a965912fefad.jpeg",
+        "upload_time": "2025-04-26 21:15:32",
+        "file_size": 45.27,
+        "file_type": "student_answer",
+        "processing_result": "Uploaded"
+      },
+      {
+        "filename": "ac3b89c4dbad4a58b11a5565adfcc031.jpeg",
+        "upload_time": "2025-04-26 21:15:32",
+        "file_size": 13.49,
+        "file_type": "question",
+        "processing_result": "Uploaded"
+      },
+      {
+        "filename": "fee58e639eef42b68791a965912fefad.jpeg",
+        "upload_time": "2025-04-26 21:15:36",
+        "file_size": 45.27,
+        "file_type": "student_answer",
+        "processing_result": "Uploaded"
+      },
+      {
+        "filename": "ac3b89c4dbad4a58b11a5565adfcc031.jpeg",
+        "upload_time": "2025-04-26 21:15:36",
+        "file_size": 13.49,
+        "file_type": "question",
+        "processing_result": "Uploaded"
+      },
+      {
+        "filename": "fee58e639eef42b68791a965912fefad.jpeg",
+        "upload_time": "2025-04-26 21:15:40",
+        "file_size": 45.27,
+        "file_type": "student_answer",
+        "processing_result": "Uploaded"
+      },
+      {
+        "filename": "fee58e639eef42b68791a965912fefad.jpeg",
+        "upload_time": "2025-04-26 21:15:43",
+        "file_size": 45.27,
+        "file_type": "student_answer",
+        "processing_result": "Uploaded"
+      },
+      {
+        "filename": "ac3b89c4dbad4a58b11a5565adfcc031.jpeg",
+        "upload_time": "2025-04-26 21:15:43",
+        "file_size": 13.49,
+        "file_type": "question",
+        "processing_result": "Uploaded"
+      },
+      {
+        "filename": "fee58e639eef42b68791a965912fefad.jpeg",
+        "upload_time": "2025-04-26 21:15:45",
+        "file_size": 45.27,
+        "file_type": "student_answer",
+        "processing_result": "Uploaded"
+      },
+      {
+        "filename": "ac3b89c4dbad4a58b11a5565adfcc031.jpeg",
+        "upload_time": "2025-04-26 21:15:45",
+        "file_size": 13.49,
+        "file_type": "question",
+        "processing_result": "Uploaded"
+      },
+      {
+        "filename": "fee58e639eef42b68791a965912fefad.jpeg",
+        "upload_time": "2025-04-26 21:15:45",
+        "file_size": 45.27,
+        "file_type": "student_answer",
+        "processing_result": "Uploaded"
+      },
+      {
+        "filename": "ac3b89c4dbad4a58b11a5565adfcc031.jpeg",
+        "upload_time": "2025-04-26 21:15:45",
+        "file_size": 13.49,
+        "file_type": "question",
+        "processing_result": "Uploaded"
+      },
+      {
+        "filename": "fee58e639eef42b68791a965912fefad.jpeg",
+        "upload_time": "2025-04-26 21:15:47",
+        "file_size": 45.27,
+        "file_type": "student_answer",
+        "processing_result": "Uploaded"
+      },
+      {
+        "filename": "ac3b89c4dbad4a58b11a5565adfcc031.jpeg",
+        "upload_time": "2025-04-26 21:15:47",
+        "file_size": 13.49,
+        "file_type": "question",
+        "processing_result": "Uploaded"
+      },
+      {
+        "timestamp": "2025-04-26 21:17:35",
+        "content": "\u5b66\u751f\u5728\u89e3\u7b54\u8fd9\u9053\u9898\u76ee\u65f6\uff0c\u5c55\u793a\u4e86\u4e00\u5b9a\u7684\u6570\u5b66\u63a8\u7406\u80fd\u529b\u548c\u5bf9\u4e09\u89d2\u5f62\u6027\u8d28\u7684\u7406\u89e3\u3002\u7136\u800c\uff0c\u7b54\u6848\u4e2d\u5b58\u5728\u4e00\u4e9b\u9519\u8bef\u548c\u4e0d\u4e25\u8c28\u7684\u5730\u65b9\u3002\u4e0b\u9762\u662f\u8be6\u7ec6\u7684\u6279\u6539\u548c\u89e3\u91ca\uff1a\n\n### \uff081\uff09\u6c42tanC\u7684\u503c\n\n\u5b66\u751f\u7684\u89e3\u7b54\u8fc7\u7a0b\u5982\u4e0b\uff1a\n\n\\[\n\\cos A = \\frac{b^2+c^2-a^2}{2bc} = \\frac{\\sqrt{2}}{2}\n\\]\n\n\\[\n\\frac{1}{2}c^2 = b^2 - a^2\n\\]\n\n\\[\nc^2 = a^2 + b^2 - 2ab\\cos C\n\\]\n\n\\[\n\\sin B - \\sin A = \\frac{1}{2}\\sin C\n\\]\n\n\\[\n\\sin B = \\sin (A+C) = \\sin A\\cos C + \\cos A\\sin C\n\\]\n\n\\[\n= \\frac{\\sqrt{2}}{2}\\cos C + \\frac{\\sqrt{2}}{2}\\sin C\n\\]\n\n\\[\n\\sin B - \\sin A = \\frac{\\sqrt{2}}{2}\\cos C + \\frac{\\sqrt{2}}{2}\\sin C - \\frac{\\sqrt{2}}{2} = \\frac{1}{2}\\sin C\n\\]\n\n\\[\n\\frac{\\sqrt{2}}{2}\\cos C + \\frac{\\sqrt{2}}{2}\\sin C - \\frac{\\sqrt{2}}{2} = \\frac{1}{2}\\sin C\n\\]\n\n\\[\n\\cos C + \\sin C - 1 = \\sin C\n\\]\n\n\\[\n\\cos C = 1 - \\sin C\n\\]\n\n\\[\n\\cos^2 C = 1 - 2\\sin C + \\sin^2 C\n\\]\n\n\\[\n\\cos^2 C + \\sin^2 C = 1\n\\]\n\n\\[\n1 - 2\\sin C + \\sin^2 C + \\sin^2 C = 1\n\\]\n\n\\[\n2\\sin^2 C - 2\\sin C = 0\n\\]\n\n\\[\n\\sin C(\\sin C - 1) = 0\n\\]\n\n\\[\n\\sin C = 0 \\quad \\text{\u6216} \\quad \\sin C = 1\n\\]\n\n\u56e0\u4e3aC\u4e3a\u4e09\u89d2\u5f62\u7684\u5185\u89d2\uff0c\u6240\u4ee5\\(\\sin C \\neq 0\\)\uff0c\u6545\\(\\sin C = 1\\)\u3002\n\n\\[\n\\cos C = 0\n\\]\n\n\\[\n\\tan C = \\frac{\\sin C}{\\cos C} = \\frac{1}{0}\n\\]\n\n\u8fd9\u91cc\u51fa\u73b0\u4e86\u9519\u8bef\uff0c\u56e0\u4e3a\\(\\tan C\\)\u7684\u503c\u5e94\u8be5\u662f\u5b58\u5728\u7684\u3002\u6839\u636e\u9898\u76ee\u7684\u6761\u4ef6\u548c\u5df2\u77e5\u7684\\(\\angle A = \\frac{\\pi}{4}\\)\uff0c\u6211\u4eec\u53ef\u4ee5\u4f7f\u7528\u6b63\u5f26\u5b9a\u7406\u548c\u4f59\u5f26\u5b9a\u7406\u6765\u6c42\u89e3\\(\\tan C\\)\u7684\u503c\u3002\n\n\u6839\u636e\u5df2\u77e5\u6761\u4ef6\\(b^2 - a^2 = \\frac{c^2}{2}\\)\uff0c\u6211\u4eec\u53ef\u4ee5\u5f97\u5230\uff1a\n\n\\[\n2b^2 - 2a^2 = c^2\n\\]\n\n\\[\n2b^2 - 2a^2 = c^2\n\\]\n\n\\[\n2b^2 - 2a^2 = c^2\n\\]\n\n\\[\n2b^2 - 2a^2 = c^2\n\\]\n\n\\[\n2b^2 - 2a^2 = c^2\n\\]\n\n\u6839\u636e\u6b63\u5f26\u5b9a\u7406\uff1a\n\n\\[\n\\frac{a}{\\sin A} = \\frac{b}{\\sin B} = \\frac{c}{\\sin C}\n\\]\n\n\\[\n\\frac{a}{\\sin \\frac{\\pi}{4}} = \\frac{b}{\\sin B} = \\frac{c}{\\sin C}\n\\]\n\n\\[\na = \\frac{b\\sin \\frac{\\pi}{4}}{\\sin B} = \\frac{c\\sin \\frac{\\pi}{4}}{\\sin C}\n\\]\n\n\\[\na = \\frac{b\\sqrt{2}}{2\\sin B} = \\frac{c\\sqrt{2}}{2\\sin C}\n\\]\n\n\\[\n2a\\sin B = b\\sqrt{2}\n\\]\n\n\\[\n2a\\sin C = c\\sqrt{2}\n\\]\n\n\\[\n\\sin B = \\frac{b\\sqrt{2}}{2a}\n\\]\n\n\\[\n\\sin C = \\frac{c\\sqrt{2}}{2a}\n\\]\n\n\\[\n\\cos C = \\sqrt{1 - \\sin^2 C} = \\sqrt{1 - \\left(\\frac{c\\sqrt{2}}{2a}\\right)^2}\n\\]\n\n\\[\n\\tan C = \\frac{\\sin C}{\\cos C} = \\frac{\\frac{c\\sqrt{2}}{2a}}{\\sqrt{1 - \\left(\\frac{c\\sqrt{2}}{2a}\\right)^2}}\n\\]\n\n\u901a\u8fc7\u4e0a\u8ff0\u8ba1\u7b97\uff0c\u6211\u4eec\u53ef\u4ee5\u5f97\u5230\\(\\tan C\\)\u7684\u6b63\u786e\u503c\u3002\n\n### \uff082\uff09\u82e5\u25b3ABC\u7684\u9762\u79ef\u4e3a7\uff0c\u6c42b\u7684\u503c\n\n\u5b66\u751f\u7684\u89e3\u7b54\u8fc7\u7a0b\u5982\u4e0b\uff1a\n\n\\[\n\\sin C = \\frac{\\sqrt{2}}{2}\n\\]\n\n\\[\n\\cos C = \\frac{\\sqrt{2}}{2}\n\\]\n\n\\[\n\\sin B = \\sin (A+C) = \\sin A\\cos C + \\cos A\\sin C\n\\]\n\n\\[\n= \\frac{\\sqrt{2}}{2}\\cdot\\frac{\\sqrt{2}}{2} + \\frac{\\sqrt{2}}{2}\\cdot\\frac{\\sqrt{2}}{2} = \\frac{2\\sqrt{2}}{4}\n\\]\n\n\\[\nS_{\\triangle ABC} = \\frac{1}{2}bc\\sin A = 3\n\\]\n\n\\[\nbc = 6\\sqrt{2}\n\\]\n\n\\[\na^2 = b^2 + c^2 - 2bc\\cos A\n\\]\n\n\\[\nb = 2\\sqrt{2}\n\\]\n\n\u6839\u636e\u9898\u76ee\u7684\u6761\u4ef6\uff0c\u4e09\u89d2\u5f62\u7684\u9762\u79ef\u4e3a7\uff0c\u800c\u4e0d\u662f3\u3002\u56e0\u6b64\uff0c\u5b66\u751f\u7684\u8ba1\u7b97\u7ed3\u679c\u6709\u8bef\u3002\n\n\u6839\u636e\u5df2\u77e5\u6761\u4ef6\uff0c\u6211\u4eec\u53ef\u4ee5\u4f7f\u7528\u9762\u79ef\u516c\u5f0f\uff1a\n\n\\[\nS_{\\triangle ABC} = \\frac{1}{2}bc\\sin A = 7\n\\]\n\n\\[\nbc\\sin \\frac{\\pi}{4} = 14\n\\]\n\n\\[\nbc\\cdot\\frac{\\sqrt{2}}{2} = 14\n\\]\n\n\\[\nbc = 14\\sqrt{2}\n\\]\n\n\u901a\u8fc7\u4e0a\u8ff0\u8ba1\u7b97\uff0c\u6211\u4eec\u53ef\u4ee5\u5f97\u5230b\u7684\u6b63\u786e\u503c\u3002\n\n\u7efc\u4e0a\u6240\u8ff0\uff0c\u5b66\u751f\u7684\u89e3\u7b54\u8fc7\u7a0b\u4e2d\u5b58\u5728\u4e00\u4e9b\u9519\u8bef\u548c\u4e0d\u4e25\u8c28\u7684\u5730\u65b9\uff0c\u9700\u8981\u8fdb\u4e00\u6b65\u7684\u4fee\u6b63\u548c\u7406\u89e3\u3002",
+        "files": {
+          "question": {
+            "filename": "ac3b89c4dbad4a58b11a5565adfcc031.jpeg",
+            "saved_path": "uploads\\test_user_2\\ac3b89c4dbad4a58b11a5565adfcc031.jpeg",
+            "timestamp": "20250426_211547"
+          },
+          "answer": {
+            "filename": "fee58e639eef42b68791a965912fefad.jpeg",
+            "saved_path": "uploads\\test_user_2\\fee58e639eef42b68791a965912fefad.jpeg",
+            "timestamp": "20250426_211547"
+          }
+        }
       }
     ]
   }

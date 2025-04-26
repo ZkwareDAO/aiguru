@@ -74,88 +74,86 @@ def file_management_page():
     user_data = read_user_data()
     user_records = user_data.get(st.session_state.current_user, {}).get('records', [])
     
-    # 新增：历史批改结果查询
-    correction_results = [r for r in user_records if r.get("file_type") == "correction_result"]
-    if correction_results:
-        with st.expander("View Correction History"):
-            for idx, record in enumerate(reversed(correction_results)):
-                st.markdown(f"### Result {idx + 1}")
-                st.markdown(f"Time: {record['upload_time']}")
-                st.markdown(record.get('content', ''))
-                
-                # 创建两列用于放置下载按钮
-                col1, col2 = st.columns([1, 1])
-                
-                # TXT下载按钮
-                with col1:
-                    st.download_button(
-                        label=f"Download TXT",
-                        data=record.get('content', ''),
-                        file_name=record['filename'],
-                        mime="text/plain",
-                        key=f"download_txt_{idx}"
+    if not user_records:
+        st.info("No correction records found.")
+        return
+
+    st.subheader("📋 Correction History")
+    
+    for idx, record in enumerate(reversed(user_records)):
+        # 获取时间戳，如果不存在则使用默认值
+        timestamp = record.get('timestamp', 'No timestamp')
+        
+        with st.expander(f"Record {len(user_records)-idx}: {timestamp}", expanded=False):
+            # 显示上传的图片
+            if record.get('files'):
+                st.write("📎 Uploaded Files:")
+                cols = st.columns(3)
+                for i, (file_type, file_info) in enumerate(record['files'].items()):
+                    with cols[i]:
+                        if file_info and isinstance(file_info, dict) and 'saved_path' in file_info:
+                            if os.path.exists(file_info['saved_path']):
+                                st.write(f"{file_type.title()}: {file_info.get('filename', 'Unknown file')}")
+                                try:
+                                    st.image(file_info['saved_path'], caption=file_type.title())
+                                except Exception:
+                                    st.write("(File preview not available)")
+
+            # 显示结果内容
+            st.write("🔍 Correction Result:")
+            content = record.get('content', 'No content available')
+            st.write(content)
+
+            # 添加下载按钮
+            col1, col2 = st.columns(2)
+            with col1:
+                # TXT下载
+                current_time = datetime.now().strftime('%Y%m%d_%H%M%S')
+                st.download_button(
+                    label="Download as TXT",
+                    data=content.encode('utf-8'),
+                    file_name=f"correction_result_{current_time}.txt",
+                    mime="text/plain",
+                    key=f"txt_{idx}"
+                )
+
+            with col2:
+                # PDF下载
+                try:
+                    current_time = datetime.now().strftime('%Y%m%d_%H%M%S')
+                    pdf_filename = f"correction_result_{current_time}.pdf"
+                    
+                    pdf_merger = PDFMerger(UPLOAD_DIR)
+                    
+                    # 准备上传文件信息
+                    uploaded_files = {}
+                    for file_type, file_info in record.get('files', {}).items():
+                        if isinstance(file_info, dict) and 'saved_path' in file_info:
+                            if os.path.exists(file_info['saved_path']):
+                                uploaded_files[file_type] = file_info['saved_path']
+                    
+                    pdf_path = pdf_merger.merge_pdfs(
+                        content=content,
+                        output_filename=pdf_filename,
+                        uploaded_files=uploaded_files
                     )
-                
-                # PDF下载按钮和选项
-                with col2:
-                    if st.button("Download as PDF", key=f"pdf_button_{idx}"):
-                        # 显示PDF选项
-                        st.markdown("#### PDF Options")
-                        include_images = st.checkbox("Include uploaded images", value=True, key=f"include_images_{idx}")
+                    
+                    with open(pdf_path, 'rb') as pdf_file:
+                        pdf_bytes = pdf_file.read()
+                        st.download_button(
+                            label="Download as PDF",
+                            data=pdf_bytes,
+                            file_name=pdf_filename,
+                            mime="application/pdf",
+                            key=f"pdf_{idx}"
+                        )
+                    
+                    if os.path.exists(pdf_path):
+                        os.remove(pdf_path)
                         
-                        if st.button("Generate and Download PDF", key=f"generate_pdf_{idx}"):
-                            try:
-                                from functions.api_correcting.pdf_merger import PDFMerger
-                                
-                                # 创建PDF合并器
-                                merger = PDFMerger(UPLOAD_DIR)
-                                
-                                # 获取相关的图片文件
-                                files_to_include = {}
-                                if include_images:
-                                    # 查找与此结果相关的图片文件
-                                    timestamp = record['upload_time'].replace(':', '').replace('-', '').replace(' ', '_')
-                                    related_files = [r for r in user_records 
-                                                   if r['upload_time'] == record['upload_time'] 
-                                                   and r['file_type'] in ['question', 'student_answer', 'marking_scheme']]
-                                    
-                                    for related_file in related_files:
-                                        file_path = UPLOAD_DIR / st.session_state.current_user / related_file['filename']
-                                        if file_path.exists():
-                                            files_to_include[related_file['file_type']] = file_path
-                                
-                                # 生成PDF
-                                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                                output_filename = f"correction_result_{timestamp}.pdf"
-                                output_path = UPLOAD_DIR / st.session_state.current_user / output_filename
-                                
-                                success, result_path = merger.merge_pdfs(
-                                    files_to_include,
-                                    record.get('content', ''),
-                                    "AI Correction Results",
-                                    output_path
-                                )
-                                
-                                if success:
-                                    with open(result_path, "rb") as pdf_file:
-                                        pdf_data = pdf_file.read()
-                                        st.download_button(
-                                            label="Download PDF",
-                                            data=pdf_data,
-                                            file_name=output_filename,
-                                            mime="application/pdf",
-                                            key=f"download_pdf_{timestamp}"
-                                        )
-                                else:
-                                    st.error(f"Failed to generate PDF: {result_path}")
-                                    
-                            except Exception as e:
-                                st.error(f"Error generating PDF: {str(e)}")
-                                logging.error(f"PDF generation error: {str(e)}")
-                
-                st.markdown("---")
-    else:
-        st.info("No correction history yet.")
+                except Exception as e:
+                    st.error(f"Failed to generate PDF: {str(e)}")
+                    logging.error(f"Error during PDF generation: {str(e)}")
 
     st.info("Please use the AI Correction module to upload files and process them.")
 
@@ -183,7 +181,7 @@ def ai_correction_page():
             st.subheader("Question")
             question = st.file_uploader("Upload question (optional)", type=["pdf", "jpg", "jpeg", "png"], key="question_file")
         with col2:
-            st.subheader("Student Answer")
+            st.subheader("Student Answer")  
             student_answer = st.file_uploader("Upload student answer", type=["pdf", "jpg", "jpeg", "png"], key="student_answer_file")
         with col3:
             st.subheader("Marking Scheme")
@@ -261,15 +259,45 @@ def ai_correction_page():
                             if st.session_state.current_user not in user_data:
                                 user_data[st.session_state.current_user] = {'records': []}
 
-                            # 创建记录时不再访问 .type 属性
+                            # 在处理结果时保存更详细的文件信息
+                            uploaded_files = {}
+                            for file_type, file_obj in [
+                                ('question', question_file),
+                                ('answer', student_file),
+                                ('marking', marking_file)
+                            ]:
+                                if file_obj:
+                                    # 检查是否是 UploadedFile 对象
+                                    if hasattr(file_obj, 'name') and hasattr(file_obj, 'getvalue'):
+                                        # 处理新上传的文件
+                                        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                                        file_ext = os.path.splitext(file_obj.name)[1]
+                                        saved_filename = f"{file_type}_{timestamp}{file_ext}"
+                                        save_path = UPLOAD_DIR / st.session_state.current_user / saved_filename
+                                        
+                                        save_path.parent.mkdir(parents=True, exist_ok=True)
+                                        with open(save_path, 'wb') as f:
+                                            f.write(file_obj.getvalue())
+                                        
+                                        uploaded_files[file_type] = {
+                                            'filename': file_obj.name,
+                                            'saved_path': str(save_path),
+                                            'timestamp': timestamp
+                                        }
+                                    elif isinstance(file_obj, (str, Path)):
+                                        # 处理已经保存的文件路径
+                                        file_path = Path(file_obj)
+                                        if file_path.exists():
+                                            uploaded_files[file_type] = {
+                                                'filename': file_path.name,
+                                                'saved_path': str(file_path),
+                                                'timestamp': datetime.fromtimestamp(file_path.stat().st_mtime).strftime('%Y%m%d_%H%M%S')
+                                            }
+
                             record = {
                                 'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
                                 'content': result,
-                                'files': {
-                                    'question': str(question_file) if question_file else None,
-                                    'answer': str(student_file) if student_file else None,
-                                    'marking': str(marking_file) if marking_file else None
-                                }
+                                'files': uploaded_files
                             }
 
                             user_data[st.session_state.current_user]['records'].append(record)
