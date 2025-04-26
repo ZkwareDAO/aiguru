@@ -122,6 +122,42 @@ def img_to_base64(image_path):
             image_data = image_file.read()
     return base64.b64encode(image_data).decode('utf-8')
 
+def convert_math_to_natural(text):
+    """将数学公式转换为自然语言"""
+    # 使用简单的字符串替换而不是正则表达式
+    replacements = [
+        ('\\cos', 'cos'),
+        ('\\sin', 'sin'),
+        ('\\sqrt', '√'),
+        ('\\cdot', '×'),
+        ('\\triangle', '三角形'),
+        ('\\frac{1}{2}', '1/2'),
+        ('\\left(', '('),
+        ('\\right)', ')'),
+        ('\\times', '×'),
+        ('\\div', '÷'),
+        ('\\pm', '±'),
+        ('\\geq', '≥'),
+        ('\\leq', '≤'),
+        ('\\neq', '≠'),
+        ('\\approx', '≈'),
+        ('\\alpha', 'α'),
+        ('\\beta', 'β'),
+        ('\\gamma', 'γ'),
+        ('\\theta', 'θ'),
+        ('\\pi', 'π')
+    ]
+    
+    result = text
+    # 使用字符串替换
+    for latex, natural in replacements:
+        result = result.replace(latex, natural)
+    
+    # 简单处理分数
+    result = result.replace('\\frac{', '').replace('}{', '/').replace('}', '')
+    
+    return result
+
 def call_api(input_text, *input_images):
     client = OpenAI(
         base_url="https://api.siliconflow.cn/v1",
@@ -155,7 +191,9 @@ def call_api(input_text, *input_images):
         temperature=0.7
     )
 
-    return response.choices[0].message.content
+    # 在返回结果之前转换数学公式
+    result = response.choices[0].message.content
+    return convert_math_to_natural(result)
 
 # 使用缓存装饰器来存储API调用结果
 from functools import lru_cache
@@ -164,16 +202,17 @@ from functools import lru_cache
 default_api=call_api
 
 def extract_json_from_str(string):
+    json_match = re.search(r'\{.*\}', string, re.DOTALL)
+    if not json_match:
+        raise ValueError("返回字符串中未找到有效JSON")
     
-        json_match = re.search(r'\{.*\}', string, re.DOTALL)
-        if not json_match:
-            raise ValueError("返回字符串中未找到有效JSON")
-        
-        # 解析返回结果
-        try:
-            return json.loads(json_match.group(0))
-        except json.JSONDecodeError as e:
-            raise ValueError(f"返回内容不是有效JSON: {str(e)}") from e
+    try:
+        json_str = json_match.group(0)
+        # 在解析JSON之前转换数学公式
+        json_str = convert_math_to_natural(json_str)
+        return json.loads(json_str)
+    except json.JSONDecodeError as e:
+        raise ValueError(f"返回内容不是有效JSON: {str(e)}") from e
 
 def generate_marking_scheme(*image_file, api=default_api):
     try:
