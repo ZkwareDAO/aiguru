@@ -3,6 +3,7 @@ from fpdf import FPDF
 from PyPDF2 import PdfReader, PdfWriter
 from pathlib import Path
 from datetime import datetime
+from PIL import Image
 
 class PDFMerger:
     def __init__(self, upload_dir):
@@ -120,3 +121,39 @@ def process_pdf_merge(original_pdf, answer_file, annotation_file, output_dir):
         
     except Exception as e:
         return False, f"Error processing files: {str(e)}"
+
+class ImageToPDFConverter:
+    def __init__(self, upload_dir):
+        self.upload_dir = Path(upload_dir)
+
+    def convert_multiple_images_to_pdf(self, image_paths, output_path):
+        """
+        Convert multiple images to a single PDF file
+        
+        Args:
+            image_paths (list): List of paths to image files
+            output_path (str): Path where the PDF should be saved
+        
+        Returns:
+            str: Path to the created PDF file
+        """
+        try:
+            # 打开第一张图片
+            first_image = Image.open(image_paths[0])
+            first_image = first_image.convert('RGB')
+            
+            # 转换其他图片
+            other_images = []
+            for img_path in image_paths[1:]:
+                img = Image.open(img_path)
+                if img.mode != 'RGB':
+                    img = img.convert('RGB')
+                other_images.append(img)
+            
+            # 保存为PDF
+            first_image.save(output_path, save_all=True, append_images=other_images)
+            
+            return output_path
+            
+        except Exception as e:
+            raise Exception(f"Error converting images to PDF: {str(e)}")

@@ -6,9 +6,8 @@ from datetime import datetime
 import time
 import logging
 from pathlib import Path
-from functions.pdf_merger_leo import ImageToPDFConverter
+# from functions.api_correcting.pdf_merger import ImageToPDFConverter
 from functions.api_correcting.calling_api import call_api
-from functions.api_correcting.pdf_merger import pdf_merger_page
 
 # Constants
 MAX_FILE_SIZE = 5 * 1024  # 5MB in KB
@@ -87,6 +86,25 @@ def file_management_page():
     else:
         st.info("No upload history available")
     
+    # 新增：历史批改结果查询
+    correction_results = [r for r in user_records if r.get("file_type") == "correction_result"]
+    if correction_results:
+        with st.expander("View Correction History"):
+            for idx, record in enumerate(reversed(correction_results)):
+                st.markdown(f"### Result {idx + 1}")
+                st.markdown(f"Time: {record['upload_time']}")
+                st.markdown(record.get('content', ''))
+                st.download_button(
+                    label=f"Download Result {idx + 1}",
+                    data=record.get('content', ''),
+                    file_name=record['filename'],
+                    mime="text/plain",
+                    key=f"download_history_{idx}"
+                )
+                st.markdown("---")
+    else:
+        st.info("No correction history yet.")
+
     st.info("Please use the AI Correction module to upload files and process them.")
 
 def ai_correction_page():
@@ -94,7 +112,7 @@ def ai_correction_page():
     st.title("🤖 AI Correction")
     
     # 创建页面选项卡
-    tab1, tab2, tab3 = st.tabs(["AI Correction", "File List", "Image to PDF"])
+    tab1, tab2 = st.tabs(["AI Correction", "File List"])
     
     # 确保用户目录存在
     user_dir = UPLOAD_DIR / st.session_state.current_user
@@ -107,24 +125,31 @@ def ai_correction_page():
     
     # Tab 1: AI Correction
     with tab1:
-        # File upload section
+        # 上传区域：三列同一排
         col1, col2, col3 = st.columns(3)
-        
         with col1:
             st.subheader("Question")
-            question = st.file_uploader("Upload question (optional)", type=["pdf", "jpg", "jpeg", "png"])
-            
+            question = st.file_uploader("Upload question (optional)", type=["pdf", "jpg", "jpeg", "png"], key="question_file")
         with col2:
             st.subheader("Student Answer")
-            student_answer = st.file_uploader("Upload student answer", type=["pdf", "jpg", "jpeg", "png"])
-            
+            student_answer = st.file_uploader("Upload student answer", type=["pdf", "jpg", "jpeg", "png"], key="student_answer_file")
         with col3:
             st.subheader("Marking Scheme")
-            marking_scheme = st.file_uploader("Upload marking scheme (optional)", type=["pdf", "jpg", "jpeg", "png", "json"])
-        
+            marking_scheme = st.file_uploader("Upload marking scheme (optional)", type=["pdf", "jpg", "jpeg", "png", "json"], key="marking_scheme_file")
+
+        # 添加分隔线
+        st.markdown("---")
+
+        # session state用于保存结果
+        if 'correction_result' not in st.session_state:
+            st.session_state.correction_result = None
+        if 'correction_success' not in st.session_state:
+            st.session_state.correction_success = False
+        if 'correction_history' not in st.session_state:
+            st.session_state.correction_history = []
+
         # AI批改处理逻辑
-        if student_answer is not None:  # 只要求学生答案必填
-            
+        if student_answer is not None:
             # 保存上传的文件
             file_size = student_answer.size / 1024  # Convert to KB
             
@@ -163,65 +188,104 @@ def ai_correction_page():
                         
                         # 添加题目文件内容（如果有）
                         if question_file:
-                            with open(question_file, 'rb') as f:
-                                api_inputs.append(str(question_file))  # 传递文件路径而不是内容
+                            api_inputs.append(str(question_file))
                         
                         # 添加学生答案文件内容（必需）
-                        api_inputs.append(str(student_file))  # 传递文件路径而不是内容
+                        api_inputs.append(str(student_file))
                         
                         # 添加评分标准文件内容（如果有）
                         if marking_file:
-                            api_inputs.append(str(marking_file))  # 传递文件路径而不是内容
+                            api_inputs.append(str(marking_file))
                         
                         # 调用API处理函数
                         result = call_api(*api_inputs)
                         
                         if result:
-                            st.success("AI Correction completed!")
+                            st.session_state.correction_success = True
+                            st.session_state.correction_result = result
                             
-                            # Debug the raw response
-                            st.subheader("Debug Information")
-                            st.text("Raw Response Type:")
-                            st.text(type(result))
-                            st.text("Raw Response Content:")
-                            st.text(result)
-                            
-                            # Store the raw response first
-                            raw_filename = f"correction_result_raw_{int(time.time())}.txt"
+                            # 生成唯一的结果文件名
+                            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                            raw_filename = f"correction_result_{timestamp}.txt"
                             raw_file = user_dir / raw_filename
+                            
+                            # 保存结果文件
                             with open(raw_file, "w", encoding="utf-8") as f:
                                 f.write(str(result))
                             
-                            # Display the response in a readable format
-                            st.markdown("### AI Response")
-                            st.markdown(str(result))
-                            
-                            # Provide download button for the raw result
-                            with open(raw_file, "r", encoding="utf-8") as f:
-                                st.download_button(
-                                    label="Download Result",
-                                    data=f.read(),
-                                    file_name=raw_filename,
-                                    mime="text/plain"
-                                )
-                            
-                            # Record the result file
+                            # 创建结果记录
                             result_record = {
                                 "filename": raw_filename,
                                 "upload_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                                 "file_size": round(os.path.getsize(raw_file) / 1024, 2),
                                 "file_type": "correction_result",
-                                "processing_result": "Completed"
+                                "processing_result": "Completed",
+                                "content": str(result)  # 保存结果内容
                             }
                             
-                            user_data[st.session_state.current_user]["records"].append(result_record)
-                            save_user_data(user_data)
+                            # 更新session state中的历史记录
+                            st.session_state.correction_history.append(result_record)
+                            
+                            # 更新用户数据
+                            if st.session_state.current_user in user_data:
+                                user_data[st.session_state.current_user]["records"].append(result_record)
+                                save_user_data(user_data)
                             
                     except Exception as e:
                         st.error(f"Error during correction: {str(e)}")
                         st.text("Full error details:")
                         st.exception(e)
                         logging.error(f"AI correction error: {str(e)}")
+
+        # 只在批改结果出来后显示预览
+        if st.session_state.correction_success and st.session_state.correction_result:
+            st.success("AI Correction completed!")
+
+            # 预览区
+            st.markdown("### Uploaded Files Preview")
+            preview_cols = st.columns(3)
+            # 题目预览
+            if question:
+                with preview_cols[0]:
+                    st.image(question, caption="Question Preview", use_column_width=True)
+            # 学生答案预览
+            if student_answer:
+                with preview_cols[1]:
+                    st.image(student_answer, caption="Student Answer Preview", use_column_width=True)
+            # 评分标准预览
+            if marking_scheme and marking_scheme.type != "application/json":
+                with preview_cols[2]:
+                    st.image(marking_scheme, caption="Marking Scheme Preview", use_column_width=True)
+            elif marking_scheme:
+                with preview_cols[2]:
+                    st.info("JSON Marking Scheme loaded")
+                    try:
+                        marking_content = marking_scheme.read().decode('utf-8')
+                        with st.expander("View Marking Scheme Content"):
+                            st.json(json.loads(marking_content))
+                    except Exception as e:
+                        st.warning(f"Unable to preview JSON content: {str(e)}")
+
+            # 显示批改结果
+            st.markdown("### AI Response")
+            st.markdown(str(st.session_state.correction_result))
+            
+            # 提供下载按钮
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            st.download_button(
+                label="Download Result",
+                data=str(st.session_state.correction_result),
+                file_name=f"correction_result_{timestamp}.txt",
+                mime="text/plain",
+                key=f"download_result_{timestamp}"
+            )
+
+        # 添加清除结果的按钮
+        if st.session_state.correction_success:
+            if st.button("Clear Results"):
+                st.session_state.correction_success = False
+                st.session_state.correction_result = None
+                st.rerun()
     
     # Tab 2: File List
     with tab2:
@@ -292,104 +356,6 @@ def ai_correction_page():
                         cols[3].warning("文件不存在")
             else:
                 st.info(f"暂无{title}")
-    
-    # Tab 3: Image to PDF (简化版)
-    with tab3:
-        st.header("Image to PDF Converter")
-        
-        # 实例化转换器
-        converter = ImageToPDFConverter(UPLOAD_DIR)
-        
-        # 图片上传区域
-        uploaded_images = st.file_uploader(
-            "Upload images to convert to PDF", 
-            type=["jpg", "jpeg", "png"], 
-            accept_multiple_files=True,
-            key="upload_images_convert"
-        )
-        
-        if uploaded_images:
-            # 保存上传的图片
-            image_paths = []
-            image_records = []
-            current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            
-            for img in uploaded_images:
-                img_path = user_dir / img.name
-                with open(img_path, "wb") as f:
-                    f.write(img.getbuffer())
-                image_paths.append(str(img_path))
-                
-                # 添加图片记录
-                file_size = img.size / 1024
-                image_records.append({
-                    "filename": img.name,
-                    "upload_time": current_time,
-                    "file_size": round(file_size, 2),
-                    "file_type": "image",
-                    "processing_result": "Uploaded"
-                })
-            
-            # 更新用户记录
-            user_data[st.session_state.current_user]["records"].extend(image_records)
-            save_user_data(user_data)
-            
-            # 显示图片预览
-            st.subheader(f"Preview ({len(uploaded_images)} images)")
-            cols = st.columns(min(3, len(uploaded_images)))
-            for i, img in enumerate(uploaded_images[:3]):
-                cols[i % 3].image(img, caption=img.name, use_column_width=True)
-            
-            # 转换选项
-            output_filename = st.text_input(
-                "PDF Filename (optional)", 
-                value=f"converted_images_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-            )
-            
-            if not output_filename.endswith('.pdf'):
-                output_filename += '.pdf'
-            
-            # 转换按钮
-            if st.button("Convert to PDF"):
-                with st.spinner("Converting images to PDF..."):
-                    try:
-                        # 处理输出路径
-                        output_path = str(user_dir / output_filename)
-                        
-                        # 检查文件是否已存在
-                        if os.path.exists(output_path):
-                            output_filename = f"{os.path.splitext(output_filename)[0]}_{int(time.time())}.pdf"
-                            output_path = str(user_dir / output_filename)
-                        
-                        # 执行转换
-                        output_path = converter.convert_multiple_images_to_pdf(image_paths, output_path)
-                        
-                        # 记录PDF文件
-                        pdf_size = os.path.getsize(output_path) / 1024
-                        pdf_record = {
-                            "filename": os.path.basename(output_path),
-                            "upload_time": current_time,
-                            "file_size": round(pdf_size, 2),
-                            "file_type": "pdf",
-                            "processing_result": "Completed"
-                        }
-                        
-                        user_data[st.session_state.current_user]["records"].append(pdf_record)
-                        save_user_data(user_data)
-                        
-                        # 显示成功信息和下载按钮
-                        st.success(f"Successfully converted {len(image_paths)} images to PDF!")
-                        with open(output_path, "rb") as f:
-                            st.download_button(
-                                label="Download PDF",
-                                data=f.read(),
-                                file_name=os.path.basename(output_path),
-                                mime="application/pdf"
-                            )
-                    
-                    except Exception as e:
-                        st.error(f"Error during conversion: {str(e)}")
-                        logging.error(f"Image conversion error: {str(e)}")
 
 # 新增辅助函数用于保存上传的文件
 def save_uploaded_file(user_dir, uploaded_file, file_type, user_data):
@@ -447,7 +413,6 @@ def main():
                 "main_menu": "🏠 Main Menu",
                 "file_management": "📁 File Management",
                 "ai_correction": "🤖 AI Correction",
-                "pdf_merger": "📄 PDF Merger"
             }
             
             selected_page = st.radio("Go to:", list(menu_options.values()))
@@ -492,8 +457,6 @@ def main():
             file_management_page()
         elif st.session_state.page == "ai_correction":
             ai_correction_page()
-        elif st.session_state.page == "pdf_merger":
-            pdf_merger_page()
         else:  # 主页显示基本信息
             st.title("🏠 Main Menu")
             st.write("Welcome to AI Guru! Select an option from the sidebar to get started.")
