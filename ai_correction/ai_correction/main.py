@@ -71,20 +71,10 @@ def file_management_page():
     """File management and history page"""
     st.title("📁 File Management Center")
     
-    # Add history panel at the top of the file management page
-    st.header("🕒 Recent History")
+    # 删除历史面板部分的代码
+    # st.header("🕒 Recent History")
     user_data = read_user_data()
     user_records = user_data.get(st.session_state.current_user, {}).get('records', [])
-    
-    if user_records:
-        for record in user_records[-3:]:  # Show last 3 records
-            with st.container():
-                st.caption(f"📄 {record['filename']}")
-                st.markdown(f"🗓️ {record['upload_time']}  📏 {record['file_size']}KB")
-                st.progress(float(record.get('progress', 0)))
-                st.divider()
-    else:
-        st.info("No upload history available")
     
     # 新增：历史批改结果查询
     correction_results = [r for r in user_records if r.get("file_type") == "correction_result"]
@@ -397,8 +387,7 @@ def main():
         st.session_state.update({
             'logged_in': False,
             'current_user': None,
-            'page': 'main_menu',
-            'sub_page': None
+            'page': 'main_menu'
         })
 
     # Sidebar for navigation (only show when logged in)
@@ -407,7 +396,7 @@ def main():
             st.title("🎓 AI Guru")
             st.write(f"Welcome, {st.session_state.current_user}!")
             
-            # Navigation menu (简化菜单选项)
+            # Navigation menu
             st.subheader("📍 Navigation")
             menu_options = {
                 "main_menu": "🏠 Main Menu",
@@ -418,7 +407,6 @@ def main():
             selected_page = st.radio("Go to:", list(menu_options.values()))
             st.session_state.page = list(menu_options.keys())[list(menu_options.values()).index(selected_page)]
             
-            # Logout button
             if st.button("🚪 Logout"):
                 st.session_state.logged_in = False
                 st.session_state.current_user = None
@@ -432,10 +420,8 @@ def main():
             username = st.text_input("Username")
             password = st.text_input("Password", type="password")
             if st.form_submit_button("Login"):
-                # Check test accounts
                 if username in TEST_ACCOUNTS:
-                    stored_password = TEST_ACCOUNTS[username]['password']
-                    if stored_password == password:
+                    if TEST_ACCOUNTS[username]['password'] == password:
                         st.session_state.logged_in = True
                         st.session_state.current_user = username
                         st.success("Login successful!")
@@ -446,36 +432,25 @@ def main():
                     st.error("User not found!")
         return
 
-    # Protected pages - only accessible when logged in
-    if st.session_state.logged_in:
-        # 默认进入主页
-        if "page" not in st.session_state:
-            st.session_state.page = "main_menu"
-            
-        # 页面导航处理
-        if st.session_state.page == "file_management":
-            file_management_page()
-        elif st.session_state.page == "ai_correction":
-            ai_correction_page()
-        else:  # 主页显示基本信息
-            st.title("🏠 Main Menu")
-            st.write("Welcome to AI Guru! Select an option from the sidebar to get started.")
-            
-            # 显示简单的使用统计
-            user_data = read_user_data()
-            user_records = user_data.get(st.session_state.current_user, {}).get('records', [])
-            
-            col1, col2, col3 = st.columns(3)
-            col1.metric("Total Files", len(user_records))
-            
-            correction_results = [r for r in user_records if r.get("file_type") == "correction_result"]
-            col2.metric("Completed Corrections", len(correction_results))
-            
-            pdf_files = [r for r in user_records if r.get("file_type") in ["pdf", "annotated_pdf"]]
-            col3.metric("PDF Files", len(pdf_files))
-    else:
-        st.warning("Please log in to access this page.")
-        st.session_state.page = "main_menu"
+    # Page routing
+    if st.session_state.page == "file_management":
+        file_management_page()
+    elif st.session_state.page == "ai_correction":
+        ai_correction_page()
+    else:  # main menu
+        st.title("🏠 Main Menu")
+        st.write("Welcome to AI Guru! Select an option from the sidebar to get started.")
+        
+        # Display usage statistics
+        user_data = read_user_data()
+        user_records = user_data.get(st.session_state.current_user, {}).get('records', [])
+        
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Total Files", len(user_records))
+        correction_results = [r for r in user_records if r.get("file_type") == "correction_result"]
+        col2.metric("Completed Corrections", len(correction_results))
+        pdf_files = [r for r in user_records if r.get("file_type") in ["pdf", "annotated_pdf"]]
+        col3.metric("PDF Files", len(pdf_files))
 
 if __name__ == "__main__":
     main()
