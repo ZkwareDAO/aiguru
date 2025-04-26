@@ -6,9 +6,8 @@ from datetime import datetime
 import time
 import logging
 from pathlib import Path
-from functions.pdf_merger_leo import ImageToPDFConverter
+# from functions.api_correcting.pdf_merger import ImageToPDFConverter
 from functions.api_correcting.calling_api import call_api
-from functions.api_correcting.pdf_merger import pdf_merger_page
 
 # Constants
 MAX_FILE_SIZE = 5 * 1024  # 5MB in KB
@@ -87,6 +86,25 @@ def file_management_page():
     else:
         st.info("No upload history available")
     
+    # 新增：历史批改结果查询
+    correction_results = [r for r in user_records if r.get("file_type") == "correction_result"]
+    if correction_results:
+        with st.expander("View Correction History"):
+            for idx, record in enumerate(reversed(correction_results)):
+                st.markdown(f"### Result {idx + 1}")
+                st.markdown(f"Time: {record['upload_time']}")
+                st.markdown(record.get('content', ''))
+                st.download_button(
+                    label=f"Download Result {idx + 1}",
+                    data=record.get('content', ''),
+                    file_name=record['filename'],
+                    mime="text/plain",
+                    key=f"download_history_{idx}"
+                )
+                st.markdown("---")
+    else:
+        st.info("No correction history yet.")
+
     st.info("Please use the AI Correction module to upload files and process them.")
 
 def ai_correction_page():
@@ -94,7 +112,7 @@ def ai_correction_page():
     st.title("🤖 AI Correction")
     
     # 创建页面选项卡
-    tab1, tab2, tab3 = st.tabs(["AI Correction", "File List", "Image to PDF"])
+    tab1, tab2 = st.tabs(["AI Correction", "File List"])
     
     # 确保用户目录存在
     user_dir = UPLOAD_DIR / st.session_state.current_user
@@ -261,22 +279,6 @@ def ai_correction_page():
                 mime="text/plain",
                 key=f"download_result_{timestamp}"
             )
-            
-            # 显示历史结果
-            if st.session_state.correction_history:
-                with st.expander("View Correction History"):
-                    for idx, record in enumerate(reversed(st.session_state.correction_history)):
-                        st.markdown(f"### Result {idx + 1}")
-                        st.markdown(f"Time: {record['upload_time']}")
-                        st.markdown(record['content'])
-                        st.download_button(
-                            label=f"Download Result {idx + 1}",
-                            data=record['content'],
-                            file_name=record['filename'],
-                            mime="text/plain",
-                            key=f"download_history_{idx}"
-                        )
-                        st.markdown("---")
 
         # 添加清除结果的按钮
         if st.session_state.correction_success:
@@ -354,104 +356,6 @@ def ai_correction_page():
                         cols[3].warning("文件不存在")
             else:
                 st.info(f"暂无{title}")
-    
-    # Tab 3: Image to PDF (简化版)
-    with tab3:
-        st.header("Image to PDF Converter")
-        
-        # 实例化转换器
-        converter = ImageToPDFConverter(UPLOAD_DIR)
-        
-        # 图片上传区域
-        uploaded_images = st.file_uploader(
-            "Upload images to convert to PDF", 
-            type=["jpg", "jpeg", "png"], 
-            accept_multiple_files=True,
-            key="upload_images_convert"
-        )
-        
-        if uploaded_images:
-            # 保存上传的图片
-            image_paths = []
-            image_records = []
-            current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            
-            for img in uploaded_images:
-                img_path = user_dir / img.name
-                with open(img_path, "wb") as f:
-                    f.write(img.getbuffer())
-                image_paths.append(str(img_path))
-                
-                # 添加图片记录
-                file_size = img.size / 1024
-                image_records.append({
-                    "filename": img.name,
-                    "upload_time": current_time,
-                    "file_size": round(file_size, 2),
-                    "file_type": "image",
-                    "processing_result": "Uploaded"
-                })
-            
-            # 更新用户记录
-            user_data[st.session_state.current_user]["records"].extend(image_records)
-            save_user_data(user_data)
-            
-            # 显示图片预览
-            st.subheader(f"Preview ({len(uploaded_images)} images)")
-            cols = st.columns(min(3, len(uploaded_images)))
-            for i, img in enumerate(uploaded_images[:3]):
-                cols[i % 3].image(img, caption=img.name, use_column_width=True)
-            
-            # 转换选项
-            output_filename = st.text_input(
-                "PDF Filename (optional)", 
-                value=f"converted_images_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-            )
-            
-            if not output_filename.endswith('.pdf'):
-                output_filename += '.pdf'
-            
-            # 转换按钮
-            if st.button("Convert to PDF"):
-                with st.spinner("Converting images to PDF..."):
-                    try:
-                        # 处理输出路径
-                        output_path = str(user_dir / output_filename)
-                        
-                        # 检查文件是否已存在
-                        if os.path.exists(output_path):
-                            output_filename = f"{os.path.splitext(output_filename)[0]}_{int(time.time())}.pdf"
-                            output_path = str(user_dir / output_filename)
-                        
-                        # 执行转换
-                        output_path = converter.convert_multiple_images_to_pdf(image_paths, output_path)
-                        
-                        # 记录PDF文件
-                        pdf_size = os.path.getsize(output_path) / 1024
-                        pdf_record = {
-                            "filename": os.path.basename(output_path),
-                            "upload_time": current_time,
-                            "file_size": round(pdf_size, 2),
-                            "file_type": "pdf",
-                            "processing_result": "Completed"
-                        }
-                        
-                        user_data[st.session_state.current_user]["records"].append(pdf_record)
-                        save_user_data(user_data)
-                        
-                        # 显示成功信息和下载按钮
-                        st.success(f"Successfully converted {len(image_paths)} images to PDF!")
-                        with open(output_path, "rb") as f:
-                            st.download_button(
-                                label="Download PDF",
-                                data=f.read(),
-                                file_name=os.path.basename(output_path),
-                                mime="application/pdf"
-                            )
-                    
-                    except Exception as e:
-                        st.error(f"Error during conversion: {str(e)}")
-                        logging.error(f"Image conversion error: {str(e)}")
 
 # 新增辅助函数用于保存上传的文件
 def save_uploaded_file(user_dir, uploaded_file, file_type, user_data):
@@ -509,7 +413,6 @@ def main():
                 "main_menu": "🏠 Main Menu",
                 "file_management": "📁 File Management",
                 "ai_correction": "🤖 AI Correction",
-                "pdf_merger": "📄 PDF Merger"
             }
             
             selected_page = st.radio("Go to:", list(menu_options.values()))
@@ -554,8 +457,6 @@ def main():
             file_management_page()
         elif st.session_state.page == "ai_correction":
             ai_correction_page()
-        elif st.session_state.page == "pdf_merger":
-            pdf_merger_page()
         else:  # 主页显示基本信息
             st.title("🏠 Main Menu")
             st.write("Welcome to AI Guru! Select an option from the sidebar to get started.")
