@@ -6,94 +6,215 @@ from datetime import datetime
 from PIL import Image
 import io
 import base64
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image
+from reportlab.lib.units import inch
+from reportlab.pdfbase.pdfmetrics import registerFontFamily
+from PIL import Image as PILImage
+import tempfile
+
+class PDFWithChinese(FPDF):
+    def __init__(self):
+        super().__init__()
+        self.set_auto_page_break(auto=True, margin=15)
+        # 使用内置的 Arial Unicode MS 字体，支持中文
+        self.add_font('Arial', '', fname=None, uni=True)
+
+    def write_chinese(self, text, font_size=12):
+        """写入中文内容"""
+        self.set_font('Arial', '', font_size)
+        # 将文本按行分割并写入
+        lines = str(text).split('\n')
+        for line in lines:
+            encoded_text = line.encode('latin-1', errors='ignore').decode('latin-1')
+            self.multi_cell(0, 10, encoded_text)
+
+def replace_math_symbols(text):
+    """替换数学符号为普通字符"""
+    replacements = {
+        '×': 'x',
+        '÷': '/',
+        '±': '+/-',
+        '≠': '!=',
+        '≤': '<=',
+        '≥': '>=',
+        '∞': 'infinity',
+        '∑': 'sum',
+        '∏': 'product',
+        '√': 'sqrt',
+        '∫': 'integral',
+        '∂': 'd',
+        '∆': 'delta',
+        'π': 'pi',
+        'θ': 'theta',
+        'α': 'alpha',
+        'β': 'beta',
+        'γ': 'gamma',
+        'μ': 'mu',
+        'σ': 'sigma',
+        'λ': 'lambda',
+        '∈': 'in',
+        '∉': 'not in',
+        '∪': 'union',
+        '∩': 'intersection',
+        '⊂': 'subset of',
+        '⊃': 'superset of',
+        '∀': 'for all',
+        '∃': 'exists',
+        '∄': 'not exists',
+        '∴': 'therefore',
+        '∵': 'because',
+        '≈': '~=',
+        '≡': '===',
+        '∝': 'proportional to',
+        '∥': 'parallel to',
+        '⊥': 'perpendicular to',
+        '∠': 'angle',
+        '°': ' degrees',
+        '′': "'",
+        '″': '"',
+        '∅': 'empty set',
+        '⊕': 'xor',
+        '⊗': 'tensor product',
+    }
+    
+    for old, new in replacements.items():
+        text = text.replace(old, new)
+    
+    # 处理上标和下标
+    text = text.replace('²', '^2')
+    text = text.replace('³', '^3')
+    text = text.replace('₁', '_1')
+    text = text.replace('₂', '_2')
+    
+    return text
 
 class PDFMerger:
     def __init__(self, upload_dir):
         self.upload_dir = Path(upload_dir)
         self.upload_dir.mkdir(exist_ok=True)
-
-    def merge_pdfs(self, question_image, student_answer_image, marking_scheme_image, api_result, output_dir):
-        """
-        合并PDF文件并添加答案和注释
         
-        参数:
-        question_image: UploadedFile, 题目图片
-        student_answer_image: UploadedFile, 学生答案图片
-        marking_scheme_image: UploadedFile, 评分标准图片
-        api_result: str, API返回的批改结果
-        output_dir: Path, 输出目录
-        
-        返回:
-        tuple: (成功标志, 输出文件路径或错误信息)
-        """
+        # 注册中文字体
         try:
-            # 检查文件是否已选择
-            if not all([question_image, student_answer_image, marking_scheme_image]):
-                return False, "Please select all required files (Question, Student Answer, and Marking Scheme)"
+            # 尝试注册微软雅黑字体
+            pdfmetrics.registerFont(TTFont('SimSun', 'C:/Windows/Fonts/simsun.ttc'))
+        except:
+            try:
+                # 备选：尝试注册宋体
+                pdfmetrics.registerFont(TTFont('SimSun', 'C:/Windows/Fonts/simfang.ttf'))
+            except:
+                print("Warning: Chinese font not found. Text might not display correctly.")
 
-            # 创建临时PDF文件
-            temp_pdf = FPDF()
+    def merge_pdfs(self, files_to_include, result_text, title, output_path):
+        temp_files = []
+        try:
+            # 创建PDF文档，减小页边距
+            doc = SimpleDocTemplate(
+                str(output_path),
+                pagesize=A4,
+                rightMargin=36,    # 减小右边距
+                leftMargin=36,     # 减小左边距
+                topMargin=36,      # 减小上边距
+                bottomMargin=36    # 减小下边距
+            )
             
-            # 添加题目图片
-            temp_pdf.add_page()
-            temp_pdf.set_font("Arial", 'B', 14)
-            temp_pdf.cell(0, 10, "Question:", ln=True)
-            # 将图片转换为base64
-            question_img = Image.open(io.BytesIO(question_image.getvalue()))
-            question_img_path = output_dir / "temp_question.jpg"
-            question_img.save(question_img_path)
-            temp_pdf.image(str(question_img_path), x=10, y=30, w=190)
+            # 创建样式
+            styles = getSampleStyleSheet()
+            title_style = ParagraphStyle(
+                'CustomTitle',
+                parent=styles['Title'],
+                fontName='SimSun',
+                fontSize=16,        # 减小标题字号
+                spaceAfter=10      # 减小标题后的空间
+            )
+            heading_style = ParagraphStyle(
+                'CustomHeading',
+                parent=styles['Heading1'],
+                fontName='SimSun',
+                fontSize=14,        # 减小子标题字号
+                spaceAfter=8       # 减小子标题后的空间
+            )
+            body_style = ParagraphStyle(
+                'CustomBody',
+                parent=styles['Normal'],
+                fontName='SimSun',
+                fontSize=12,
+                spaceAfter=6,      # 减小段落间距
+                leading=16         # 减小行距
+            )
             
-            # 添加学生答案图片
-            temp_pdf.add_page()
-            temp_pdf.set_font("Arial", 'B', 14)
-            temp_pdf.cell(0, 10, "Student Answer:", ln=True)
-            student_img = Image.open(io.BytesIO(student_answer_image.getvalue()))
-            student_img_path = output_dir / "temp_student.jpg"
-            student_img.save(student_img_path)
-            temp_pdf.image(str(student_img_path), x=10, y=30, w=190)
+            # 准备内容
+            story = []
             
-            # 添加评分标准图片
-            temp_pdf.add_page()
-            temp_pdf.set_font("Arial", 'B', 14)
-            temp_pdf.cell(0, 10, "Marking Scheme:", ln=True)
-            marking_img = Image.open(io.BytesIO(marking_scheme_image.getvalue()))
-            marking_img_path = output_dir / "temp_marking.jpg"
-            marking_img.save(marking_img_path)
-            temp_pdf.image(str(marking_img_path), x=10, y=30, w=190)
+            # 处理上传的图片文件
+            if files_to_include:
+                for file_type, uploaded_file in files_to_include.items():
+                    if uploaded_file and uploaded_file.type.startswith('image/'):
+                        try:
+                            with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmp_file:
+                                img_data = uploaded_file.getvalue()
+                                img = PILImage.open(io.BytesIO(img_data))
+                                
+                                if img.mode != 'RGB':
+                                    img = img.convert('RGB')
+                                
+                                # 调整图片大小以适应页面宽度
+                                available_width = A4[0] - 72  # 页面宽度减去边距
+                                img_width, img_height = img.size
+                                aspect = img_height / float(img_width)
+                                
+                                new_width = min(available_width, img_width)
+                                new_height = new_width * aspect
+                                
+                                img = img.resize((int(new_width), int(new_height)), PILImage.Resampling.LANCZOS)
+                                img.save(tmp_file.name, 'PNG')
+                                temp_files.append(tmp_file.name)
+                            
+                            img_obj = Image(tmp_file.name, width=new_width, height=new_height)
+                            story.append(img_obj)
+                            story.append(Spacer(1, 10))  # 减小图片后的空间
+                            
+                        except Exception as e:
+                            story.append(Paragraph(f"Unable to load image {file_type}: {str(e)}", body_style))
             
-            # 添加API批改结果
-            temp_pdf.add_page()
-            temp_pdf.set_font("Arial", 'B', 14)
-            temp_pdf.cell(0, 10, "AI Correction Result:", ln=True)
-            temp_pdf.set_font("Arial", '', 12)
-            temp_pdf.multi_cell(0, 10, api_result)
+            # 添加一个小的分隔
+            story.append(Spacer(1, 10))
             
-            # 保存临时PDF
-            temp_path = output_dir / "temp_annotations.pdf"
-            temp_pdf.output(str(temp_path))
+            # 添加AI响应内容
+            story.append(Paragraph("AI Response:", heading_style))
+            story.append(Spacer(1, 8))
             
-            # 清理临时图片文件
-            for temp_img in [question_img_path, student_img_path, marking_img_path]:
-                if temp_img.exists():
-                    temp_img.unlink()
+            # 处理原始文本，按段落分割
+            paragraphs = str(result_text).split('\n')
+            for para in paragraphs:
+                if para.strip():
+                    # 处理特殊HTML字符
+                    para = para.replace('&', '&amp;')
+                    para = para.replace('<', '&lt;')
+                    para = para.replace('>', '&gt;')
+                    # 保持原始格式
+                    story.append(Paragraph(para, body_style))
             
-            # 生成输出文件名
-            output_filename = f"correction_result_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
-            output_path = output_dir / output_filename
-            
-            # 重命名临时PDF为最终输出文件
-            temp_path.rename(output_path)
-            
+            # 生成PDF
+            doc.build(story)
             return True, str(output_path)
-
+            
         except Exception as e:
-            error_msg = f"Error during PDF merging: {str(e)}"
-            # 清理临时文件
-            for temp_file in [question_img_path, student_img_path, marking_img_path, temp_path]:
-                if 'temp_file' in locals() and temp_file.exists():
-                    temp_file.unlink()
+            error_msg = f"Error during PDF generation: {str(e)}"
             return False, error_msg
+        
+        finally:
+            # 清理临时文件
+            for temp_file in temp_files:
+                try:
+                    if os.path.exists(temp_file):
+                        os.unlink(temp_file)
+                except Exception:
+                    pass
 
 def process_correction_pdf(question_image, student_answer_image, marking_scheme_image, api_result, output_dir):
     """
@@ -119,10 +240,9 @@ def process_correction_pdf(question_image, student_answer_image, marking_scheme_
         
         # 合并PDF
         success, result = merger.merge_pdfs(
-            question_image,
-            student_answer_image,
-            marking_scheme_image,
+            {'question': question_image, 'answer': student_answer_image, 'marking': marking_scheme_image},
             api_result,
+            "AI Correction Results",
             output_dir
         )
         

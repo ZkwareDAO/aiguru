@@ -71,8 +71,6 @@ def file_management_page():
     """File management and history page"""
     st.title("📁 File Management Center")
     
-    # 删除历史面板部分的代码
-    # st.header("🕒 Recent History")
     user_data = read_user_data()
     user_records = user_data.get(st.session_state.current_user, {}).get('records', [])
     
@@ -84,13 +82,77 @@ def file_management_page():
                 st.markdown(f"### Result {idx + 1}")
                 st.markdown(f"Time: {record['upload_time']}")
                 st.markdown(record.get('content', ''))
-                st.download_button(
-                    label=f"Download Result {idx + 1}",
-                    data=record.get('content', ''),
-                    file_name=record['filename'],
-                    mime="text/plain",
-                    key=f"download_history_{idx}"
-                )
+                
+                # 创建两列用于放置下载按钮
+                col1, col2 = st.columns([1, 1])
+                
+                # TXT下载按钮
+                with col1:
+                    st.download_button(
+                        label=f"Download TXT",
+                        data=record.get('content', ''),
+                        file_name=record['filename'],
+                        mime="text/plain",
+                        key=f"download_txt_{idx}"
+                    )
+                
+                # PDF下载按钮和选项
+                with col2:
+                    if st.button("Download as PDF", key=f"pdf_button_{idx}"):
+                        # 显示PDF选项
+                        st.markdown("#### PDF Options")
+                        include_images = st.checkbox("Include uploaded images", value=True, key=f"include_images_{idx}")
+                        
+                        if st.button("Generate and Download PDF", key=f"generate_pdf_{idx}"):
+                            try:
+                                from functions.api_correcting.pdf_merger import PDFMerger
+                                
+                                # 创建PDF合并器
+                                merger = PDFMerger(UPLOAD_DIR)
+                                
+                                # 获取相关的图片文件
+                                files_to_include = {}
+                                if include_images:
+                                    # 查找与此结果相关的图片文件
+                                    timestamp = record['upload_time'].replace(':', '').replace('-', '').replace(' ', '_')
+                                    related_files = [r for r in user_records 
+                                                   if r['upload_time'] == record['upload_time'] 
+                                                   and r['file_type'] in ['question', 'student_answer', 'marking_scheme']]
+                                    
+                                    for related_file in related_files:
+                                        file_path = UPLOAD_DIR / st.session_state.current_user / related_file['filename']
+                                        if file_path.exists():
+                                            files_to_include[related_file['file_type']] = file_path
+                                
+                                # 生成PDF
+                                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                                output_filename = f"correction_result_{timestamp}.pdf"
+                                output_path = UPLOAD_DIR / st.session_state.current_user / output_filename
+                                
+                                success, result_path = merger.merge_pdfs(
+                                    files_to_include,
+                                    record.get('content', ''),
+                                    "AI Correction Results",
+                                    output_path
+                                )
+                                
+                                if success:
+                                    with open(result_path, "rb") as pdf_file:
+                                        pdf_data = pdf_file.read()
+                                        st.download_button(
+                                            label="Download PDF",
+                                            data=pdf_data,
+                                            file_name=output_filename,
+                                            mime="application/pdf",
+                                            key=f"download_pdf_{timestamp}"
+                                        )
+                                else:
+                                    st.error(f"Failed to generate PDF: {result_path}")
+                                    
+                            except Exception as e:
+                                st.error(f"Error generating PDF: {str(e)}")
+                                logging.error(f"PDF generation error: {str(e)}")
+                
                 st.markdown("---")
     else:
         st.info("No correction history yet.")
@@ -194,32 +256,24 @@ def ai_correction_page():
                             st.session_state.correction_success = True
                             st.session_state.correction_result = result
                             
-                            # 生成唯一的结果文件名
-                            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                            raw_filename = f"correction_result_{timestamp}.txt"
-                            raw_file = user_dir / raw_filename
-                            
-                            # 保存结果文件
-                            with open(raw_file, "w", encoding="utf-8") as f:
-                                f.write(str(result))
-                            
-                            # 创建结果记录
-                            result_record = {
-                                "filename": raw_filename,
-                                "upload_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                                "file_size": round(os.path.getsize(raw_file) / 1024, 2),
-                                "file_type": "correction_result",
-                                "processing_result": "Completed",
-                                "content": str(result)  # 保存结果内容
+                            # 保存结果到用户记录
+                            user_data = read_user_data()
+                            if st.session_state.current_user not in user_data:
+                                user_data[st.session_state.current_user] = {'records': []}
+
+                            # 创建记录时不再访问 .type 属性
+                            record = {
+                                'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                                'content': result,
+                                'files': {
+                                    'question': str(question_file) if question_file else None,
+                                    'answer': str(student_file) if student_file else None,
+                                    'marking': str(marking_file) if marking_file else None
+                                }
                             }
-                            
-                            # 更新session state中的历史记录
-                            st.session_state.correction_history.append(result_record)
-                            
-                            # 更新用户数据
-                            if st.session_state.current_user in user_data:
-                                user_data[st.session_state.current_user]["records"].append(result_record)
-                                save_user_data(user_data)
+
+                            user_data[st.session_state.current_user]['records'].append(record)
+                            save_user_data(user_data)
                             
                     except Exception as e:
                         st.error(f"Error during correction: {str(e)}")
@@ -260,15 +314,84 @@ def ai_correction_page():
             st.markdown("### AI Response")
             st.markdown(str(st.session_state.correction_result))
             
-            # 提供下载按钮
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            st.download_button(
-                label="Download Result",
-                data=str(st.session_state.correction_result),
-                file_name=f"correction_result_{timestamp}.txt",
-                mime="text/plain",
-                key=f"download_result_{timestamp}"
-            )
+            # 修改下载部分
+            st.markdown("### Download Options")
+            download_col1, download_col2 = st.columns([2, 1])
+            
+            with download_col1:
+                file_type = st.selectbox(
+                    "Select file type",
+                    ["Text (.txt)", "PDF (.pdf)"],
+                    key="download_type"
+                )
+            
+            if file_type == "PDF (.pdf)":
+                # PDF选项
+                st.markdown("#### PDF Options")
+                include_images = st.checkbox("Include uploaded images", value=True)
+                include_question = st.checkbox("Include question", value=True)
+                include_answer = st.checkbox("Include student answer", value=True)
+                include_marking = st.checkbox("Include marking scheme", value=True)
+                
+                if st.button("Generate and Download PDF"):
+                    try:
+                        from functions.api_correcting.pdf_merger import PDFMerger
+                        
+                        # 创建PDF合并器
+                        merger = PDFMerger(UPLOAD_DIR)
+                        
+                        # 准备要包含的文件，直接使用文件对象而不是保存后的路径
+                        files_to_include = {}
+                        
+                        if include_question and question:
+                            files_to_include['question'] = question
+                        if include_answer and student_answer:
+                            files_to_include['answer'] = student_answer
+                        if include_marking and marking_scheme:
+                            files_to_include['marking'] = marking_scheme
+                        
+                        # 生成PDF
+                        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                        output_filename = f"correction_result_{timestamp}.pdf"
+                        output_path = user_dir / output_filename
+                        
+                        # 确保传递完整的AI响应内容
+                        full_result = str(st.session_state.correction_result)
+                        
+                        success, result_path = merger.merge_pdfs(
+                            files_to_include,
+                            full_result,  # 传递完整的响应内容
+                            "AI Correction Results",
+                            output_path
+                        )
+                        
+                        if success:
+                            with open(result_path, "rb") as pdf_file:
+                                pdf_data = pdf_file.read()
+                                st.download_button(
+                                    label="Download PDF",
+                                    data=pdf_data,
+                                    file_name=output_filename,
+                                    mime="application/pdf",
+                                    key=f"download_pdf_{timestamp}"
+                                )
+                        else:
+                            st.error(f"Failed to generate PDF: {result_path}")
+                            
+                    except Exception as e:
+                        st.error(f"Error generating PDF: {str(e)}")
+                        logging.error(f"PDF generation error: {str(e)}")
+            
+            else:  # Text file
+                # 原有的文本文件下载逻辑
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                st.download_button(
+                    label="Download Text",
+                    data=str(st.session_state.correction_result),
+                    file_name=f"correction_result_{timestamp}.txt",
+                    mime="text/plain",
+                    key=f"download_result_{timestamp}"
+                )
 
         # 添加清除结果的按钮
         if st.session_state.correction_success:
