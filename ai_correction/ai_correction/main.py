@@ -8,6 +8,7 @@ import logging
 from pathlib import Path
 from functions.pdf_merger_leo import ImageToPDFConverter
 from functions.api_correcting.calling_api import call_api
+from functions.api_correcting.pdf_merger import pdf_merger_page
 
 # Constants
 MAX_FILE_SIZE = 5 * 1024  # 5MB in KB
@@ -507,7 +508,8 @@ def main():
             menu_options = {
                 "main_menu": "🏠 Main Menu",
                 "file_management": "📁 File Management",
-                "ai_correction": "🤖 AI Correction"
+                "ai_correction": "🤖 AI Correction",
+                "pdf_merger": "📄 PDF Merger"
             }
             
             selected_page = st.radio("Go to:", list(menu_options.values()))
@@ -552,6 +554,8 @@ def main():
             file_management_page()
         elif st.session_state.page == "ai_correction":
             ai_correction_page()
+        elif st.session_state.page == "pdf_merger":
+            pdf_merger_page()
         else:  # 主页显示基本信息
             st.title("🏠 Main Menu")
             st.write("Welcome to AI Guru! Select an option from the sidebar to get started.")
