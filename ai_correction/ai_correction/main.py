@@ -107,18 +107,22 @@ def ai_correction_page():
     # Tab 1: AI Correction
     with tab1:
         # File upload section
-        col1, col2 = st.columns(2)
+        col1, col2, col3 = st.columns(3)
         
         with col1:
+            st.subheader("Question")
+            question = st.file_uploader("Upload question (optional)", type=["pdf", "jpg", "jpeg", "png"])
+            
+        with col2:
             st.subheader("Student Answer")
             student_answer = st.file_uploader("Upload student answer", type=["pdf", "jpg", "jpeg", "png"])
             
-        with col2:
+        with col3:
             st.subheader("Marking Scheme")
-            marking_scheme = st.file_uploader("Upload marking scheme", type=["pdf", "jpg", "jpeg", "png", "json"])
+            marking_scheme = st.file_uploader("Upload marking scheme (optional)", type=["pdf", "jpg", "jpeg", "png", "json"])
         
         # AI批改处理逻辑
-        if student_answer is not None and marking_scheme is not None:
+        if student_answer is not None:  # 只要求学生答案必填
             
             # 保存上传的文件
             file_size = student_answer.size / 1024  # Convert to KB
@@ -127,14 +131,17 @@ def ai_correction_page():
                 st.error(f"File size exceeds maximum limit of {MAX_FILE_SIZE}KB")
             else:
                 # 保存学生答案文件
-                student_file = user_dir / student_answer.name
-                with open(student_file, "wb") as f:
-                    f.write(student_answer.getbuffer())
+                student_file = save_uploaded_file(user_dir, student_answer, "student_answer", user_data)
                 
-                # 保存评分标准文件
-                marking_file = user_dir / marking_scheme.name
-                with open(marking_file, "wb") as f:
-                    f.write(marking_scheme.getbuffer())
+                # 保存题目文件（如果有）
+                question_file = None
+                if question is not None:
+                    question_file = save_uploaded_file(user_dir, question, "question", user_data)
+                
+                # 保存评分标准文件（如果有）
+                marking_file = None
+                if marking_scheme is not None:
+                    marking_file = save_uploaded_file(user_dir, marking_scheme, "marking_scheme", user_data)
                 
                 # 处理文件开始按钮
                 if st.button("Start AI Correction"):
@@ -147,8 +154,26 @@ def ai_correction_page():
                         progress_bar.progress((i+1)/10)
                     
                     try:
-                        # 直接调用API进行处理，将上传文件的路径传递给函数
-                        result = call_api(str(student_file), str(marking_file))
+                        # 准备API调用的文本内容
+                        prompt_text = "请批改以下学生答案"
+                        
+                        # 准备文件内容
+                        api_inputs = [prompt_text]  # 第一个参数始终是文本提示
+                        
+                        # 添加题目文件内容（如果有）
+                        if question_file:
+                            with open(question_file, 'rb') as f:
+                                api_inputs.append(str(question_file))  # 传递文件路径而不是内容
+                        
+                        # 添加学生答案文件内容（必需）
+                        api_inputs.append(str(student_file))  # 传递文件路径而不是内容
+                        
+                        # 添加评分标准文件内容（如果有）
+                        if marking_file:
+                            api_inputs.append(str(marking_file))  # 传递文件路径而不是内容
+                        
+                        # 调用API处理函数
+                        result = call_api(*api_inputs)
                         
                         if result:
                             st.success("AI Correction completed!")
@@ -364,6 +389,40 @@ def ai_correction_page():
                     except Exception as e:
                         st.error(f"Error during conversion: {str(e)}")
                         logging.error(f"Image conversion error: {str(e)}")
+
+# 新增辅助函数用于保存上传的文件
+def save_uploaded_file(user_dir, uploaded_file, file_type, user_data):
+    """
+    保存上传的文件并更新用户记录
+    
+    参数:
+    user_dir: Path对象，用户目录路径
+    uploaded_file: UploadedFile对象，上传的文件
+    file_type: str，文件类型
+    user_data: dict，用户数据字典
+    
+    返回:
+    Path对象，保存的文件路径
+    """
+    file_path = user_dir / uploaded_file.name
+    with open(file_path, "wb") as f:
+        f.write(uploaded_file.getbuffer())
+    
+    # 更新用户记录
+    file_size = uploaded_file.size / 1024
+    record = {
+        "filename": uploaded_file.name,
+        "upload_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "file_size": round(file_size, 2),
+        "file_type": file_type,
+        "processing_result": "Uploaded"
+    }
+    
+    if st.session_state.current_user in user_data:
+        user_data[st.session_state.current_user]["records"].append(record)
+        save_user_data(user_data)
+    
+    return file_path
 
 def main():
     # Initialize session state

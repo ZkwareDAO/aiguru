@@ -1,0 +1,63 @@
+The image contains handwritten mathematical solutions to a trigonometric problem. Here is a breakdown and interpretation of the content:
+
+### Part (i)
+1. **Cosine Rule Application**:
+   - The cosine rule is used to find \( \cos A \):
+     \[
+     \cos A = \frac{b^2 + c^2 - a^2}{2bc}
+     \]
+   - Given values are plugged in, resulting in:
+     \[
+     \cos A = \frac{\sqrt{3}}{2}
+     \]
+
+2. **Simplifying Trigonometric Identities**:
+   - Using the identity \( \sin^2 \theta + \cos^2 \theta = 1 \), and other trigonometric relationships, the expression \( \sin B - \sin A \) is simplified.
+   - The terms are rearranged and simplified to isolate \( \sin C \) and \( \cos C \).
+
+3. **Finding \( \tan C \)**:
+   - The expression is simplified to:
+     \[
+     \frac{\sin^2 C}{\cos^2 C} = \frac{1}{2}
+     \]
+   - Therefore:
+     \[
+     \tan C = \frac{1}{2}
+     \]
+
+### Part (ii)
+1. **Given Values for \( \sin C \) and \( \cos C \)**:
+   - \( \sin C = \frac{2\sqrt{3}}{3} \)
+   - \( \cos C = \frac{\sqrt{3}}{3} \)
+
+2. **Using Angle Sum Formula for Sine**:
+   - \( \sin B \) is calculated using the angle sum formula \( \sin (A + C) \):
+     \[
+     \sin B = \sin (A + C) = \sin A \cos C + \cos A \sin C
+     \]
+   - Substituting the values:
+     \[
+     \sin B = \left(\frac{\sqrt{3}}{2}\right)\left(\frac{\sqrt{3}}{3}\right) + \left(\frac{1}{2}\right)\left(\frac{2\sqrt{3}}{3}\right) = \frac{3\sqrt{3}}{6}
+     \]
+
+3. **Area of Triangle \( \triangle ABC \)**:
+   - The area is given by:
+     \[
+     \Delta_{ABC} = \frac{1}{2} bc \sin A = 3
+     \]
+   - Solving for \( bc \):
+     \[
+     bc = 6\sqrt{2}
+     \]
+
+4. **Finding \( b \)**:
+   - Using the cosine rule again:
+     \[
+     a^2 = b^2 + c^2 - 2bc \cos A
+     \]
+   - Solving for \( b \):
+     \[
+     b = 2\sqrt{2}
+     \]
+
+The solutions are well-structured and use trigonometric identities effectively to solve the problem.
