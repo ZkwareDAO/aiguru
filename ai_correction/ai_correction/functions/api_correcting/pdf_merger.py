@@ -1,132 +1,122 @@
-import tkinter as tk
-from tkinter import filedialog, messagebox
 import os
 from fpdf import FPDF
 from PyPDF2 import PdfReader, PdfWriter
+from pathlib import Path
+from datetime import datetime
 
 class PDFMerger:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("PDF Merger")
-        
-        # Create main frame
-        self.main_frame = tk.Frame(root)
-        self.main_frame.pack(padx=10, pady=10)
-        
-        # PDF file selection
-        self.pdf_label = tk.Label(self.main_frame, text="Select PDF File:")
-        self.pdf_label.pack()
-        self.pdf_button = tk.Button(self.main_frame, text="Choose PDF", command=self.select_pdf)
-        self.pdf_button.pack(pady=5)
-        
-        # Answer file selection
-        self.answer_label = tk.Label(self.main_frame, text="Select Answer File (.txt):")
-        self.answer_label.pack()
-        self.answer_button = tk.Button(self.main_frame, text="Choose Answer File", command=self.select_answer)
-        self.answer_button.pack(pady=5)
-        
-        # Annotation file selection
-        self.annotation_label = tk.Label(self.main_frame, text="Select Annotation File (.txt):")
-        self.annotation_label.pack()
-        self.annotation_button = tk.Button(self.main_frame, text="Choose Annotation File", command=self.select_annotation)
-        self.annotation_button.pack(pady=5)
-        
-        # Process button
-        self.process_button = tk.Button(self.main_frame, text="Merge PDFs", command=self.merge_pdfs)
-        self.process_button.pack(pady=20)
-        
-        # File paths
-        self.pdf_path = None
-        self.answer_path = None
-        self.annotation_path = None
+    def __init__(self, upload_dir):
+        self.upload_dir = Path(upload_dir)
+        self.upload_dir.mkdir(exist_ok=True)
 
-    def select_pdf(self):
-        file_path = filedialog.askopenfilename(filetypes=[("PDF files", "*.pdf")])
-        if file_path:
-            self.pdf_path = file_path
-            self.pdf_label.config(text=f"PDF: {os.path.basename(file_path)}")
-
-    def select_answer(self):
-        file_path = filedialog.askopenfilename(filetypes=[("Text files", "*.txt")])
-        if file_path:
-            self.answer_path = file_path
-            self.answer_label.config(text=f"Answer: {os.path.basename(file_path)}")
-
-    def select_annotation(self):
-        file_path = filedialog.askopenfilename(filetypes=[("Text files", "*.txt")])
-        if file_path:
-            self.annotation_path = file_path
-            self.annotation_label.config(text=f"Annotation: {os.path.basename(file_path)}")
-
-    def merge_pdfs(self):
-        if not all([self.pdf_path, self.answer_path, self.annotation_path]):
-            messagebox.showerror("Error", "Please select all required files")
-            return
-
+    def merge_pdfs(self, original_pdf_path, answer_text, annotation_text, output_dir):
+        """
+        合并PDF文件并添加答案和注释
+        
+        参数:
+        original_pdf_path: str, 原始PDF文件路径
+        answer_text: str, 答案文本
+        annotation_text: str, 注释文本
+        output_dir: Path, 输出目录
+        
+        返回:
+        tuple: (成功标志, 输出文件路径或错误信息)
+        """
         try:
-            # Read answer and annotation files
-            with open(self.answer_path, 'r', encoding='utf-8') as f:
-                answer_text = f.read()
-            
-            with open(self.annotation_path, 'r', encoding='utf-8') as f:
-                annotation_text = f.read()
-
-            # Create temporary PDF with answers and annotations
+            # 创建临时PDF文件
             temp_pdf = FPDF()
             temp_pdf.add_page()
             
-            # Add answer section
+            # 添加答案部分
             temp_pdf.set_font("Arial", 'B', 14)
             temp_pdf.cell(0, 10, "Answers:", ln=True)
             temp_pdf.set_font("Arial", '', 12)
             temp_pdf.multi_cell(0, 10, answer_text)
             
-            # Add annotation section
+            # 添加注释部分
             temp_pdf.add_page()
             temp_pdf.set_font("Arial", 'B', 14)
             temp_pdf.cell(0, 10, "Annotations:", ln=True)
             temp_pdf.set_font("Arial", '', 12)
             temp_pdf.multi_cell(0, 10, annotation_text)
             
-            # Save temporary PDF
-            temp_path = "temp_annotations.pdf"
-            temp_pdf.output(temp_path)
+            # 保存临时PDF
+            temp_path = output_dir / "temp_annotations.pdf"
+            temp_pdf.output(str(temp_path))
 
-            # Merge PDFs
+            # 合并PDF
             merger = PdfWriter()
             
-            # Add original PDF
-            original_pdf = PdfReader(self.pdf_path)
+            # 添加原始PDF
+            original_pdf = PdfReader(original_pdf_path)
             for page in original_pdf.pages:
                 merger.add_page(page)
             
-            # Add annotations PDF
-            annotations_pdf = PdfReader(temp_path)
+            # 添加注释PDF
+            annotations_pdf = PdfReader(str(temp_path))
             for page in annotations_pdf.pages:
                 merger.add_page(page)
 
-            # Save the merged PDF
-            output_path = filedialog.asksaveasfilename(
-                defaultextension=".pdf",
-                filetypes=[("PDF files", "*.pdf")],
-                initialfile="merged_output.pdf"
-            )
+            # 生成输出文件名
+            output_filename = f"merged_output_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+            output_path = output_dir / output_filename
             
-            if output_path:
-                merger.write(output_path)
-                merger.close()
-                # Clean up temporary file
-                if os.path.exists(temp_path):
-                    os.remove(temp_path)
-                messagebox.showinfo("Success", f"Merged PDF saved as: {output_path}")
+            # 保存合并后的PDF
+            merger.write(str(output_path))
+            merger.close()
+            
+            # 清理临时文件
+            if temp_path.exists():
+                temp_path.unlink()
+            
+            return True, str(output_path)
 
         except Exception as e:
-            messagebox.showerror("Error", f"An error occurred: {str(e)}")
-            # Clean up temporary file in case of error
-            if 'temp_path' in locals() and os.path.exists(temp_path):
-                os.remove(temp_path)
+            error_msg = f"Error during PDF merging: {str(e)}"
+            # 清理临时文件
+            if 'temp_path' in locals() and temp_path.exists():
+                temp_path.unlink()
+            return False, error_msg
 
-if __name__ == "__main__":
-    root = tk.Tk()
-    app = PDFMerger(root)
-    root.mainloop()
+def process_pdf_merge(original_pdf, answer_file, annotation_file, output_dir):
+    """
+    处理PDF合并请求
+    
+    参数:
+    original_pdf: UploadedFile, 原始PDF文件
+    answer_file: UploadedFile, 答案文件
+    annotation_file: UploadedFile, 注释文件
+    output_dir: Path, 输出目录
+    
+    返回:
+    tuple: (成功标志, 输出文件路径或错误信息)
+    """
+    try:
+        # 保存原始PDF
+        original_pdf_path = output_dir / original_pdf.name
+        with open(original_pdf_path, "wb") as f:
+            f.write(original_pdf.getbuffer())
+        
+        # 读取答案和注释文件
+        answer_text = answer_file.getvalue().decode("utf-8")
+        annotation_text = annotation_file.getvalue().decode("utf-8")
+        
+        # 创建PDF合并器
+        merger = PDFMerger(str(output_dir))
+        
+        # 合并PDF
+        success, result = merger.merge_pdfs(
+            str(original_pdf_path),
+            answer_text,
+            annotation_text,
+            output_dir
+        )
+        
+        # 清理原始PDF文件
+        if original_pdf_path.exists():
+            original_pdf_path.unlink()
+        
+        return success, result
+        
+    except Exception as e:
+        return False, f"Error processing files: {str(e)}"
