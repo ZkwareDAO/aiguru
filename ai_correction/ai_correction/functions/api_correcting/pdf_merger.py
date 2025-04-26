@@ -27,6 +27,10 @@ class PDFMerger:
         tuple: (成功标志, 输出文件路径或错误信息)
         """
         try:
+            # 检查文件是否已选择
+            if not all([question_image, student_answer_image, marking_scheme_image]):
+                return False, "Please select all required files (Question, Student Answer, and Marking Scheme)"
+
             # 创建临时PDF文件
             temp_pdf = FPDF()
             
@@ -106,6 +110,10 @@ def process_correction_pdf(question_image, student_answer_image, marking_scheme_
     tuple: (成功标志, 输出文件路径或错误信息)
     """
     try:
+        # 检查文件是否已选择
+        if not all([question_image, student_answer_image, marking_scheme_image]):
+            return False, "Please select all required files (Question, Student Answer, and Marking Scheme)"
+
         # 创建PDF合并器
         merger = PDFMerger(str(output_dir))
         
@@ -122,3 +130,43 @@ def process_correction_pdf(question_image, student_answer_image, marking_scheme_
         
     except Exception as e:
         return False, f"Error processing files: {str(e)}"
+
+class ImageToPDFConverter:
+    def __init__(self, upload_dir):
+        self.upload_dir = Path(upload_dir)
+
+    def convert_multiple_images_to_pdf(self, image_paths, output_path):
+        """
+        Convert multiple images to a single PDF file
+        
+        Args:
+            image_paths (list): List of paths to image files
+            output_path (str): Path where the PDF should be saved
+        
+        Returns:
+            str: Path to the created PDF file
+        """
+        try:
+            # 检查是否有图片文件
+            if not image_paths:
+                raise Exception("No image files provided")
+
+            # 打开第一张图片
+            first_image = Image.open(image_paths[0])
+            first_image = first_image.convert('RGB')
+            
+            # 转换其他图片
+            other_images = []
+            for img_path in image_paths[1:]:
+                img = Image.open(img_path)
+                if img.mode != 'RGB':
+                    img = img.convert('RGB')
+                other_images.append(img)
+            
+            # 保存为PDF
+            first_image.save(output_path, save_all=True, append_images=other_images)
+            
+            return output_path
+            
+        except Exception as e:
+            raise Exception(f"Error converting images to PDF: {str(e)}")

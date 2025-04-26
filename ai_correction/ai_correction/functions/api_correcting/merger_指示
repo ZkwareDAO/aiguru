@@ -15,3 +15,21 @@ if success:
 else:
     # 处理失败，result是错误信息
     error_message = result
+
+
+
+
+    success, result = process_correction_pdf(
+    question_image,
+    student_answer_image,
+    marking_scheme_image,
+    api_result,
+    output_dir
+)
+
+if success:
+    # 处理成功，result是输出文件路径
+    output_path = result
+else:
+    # 处理失败，result是错误信息
+    error_message = result
