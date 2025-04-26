@@ -106,24 +106,31 @@ def ai_correction_page():
     
     # Tab 1: AI Correction
     with tab1:
-        # File upload section
+        # 上传区域：三列同一排
         col1, col2, col3 = st.columns(3)
-        
         with col1:
             st.subheader("Question")
-            question = st.file_uploader("Upload question (optional)", type=["pdf", "jpg", "jpeg", "png"])
-            
+            question = st.file_uploader("Upload question (optional)", type=["pdf", "jpg", "jpeg", "png"], key="question_file")
         with col2:
             st.subheader("Student Answer")
-            student_answer = st.file_uploader("Upload student answer", type=["pdf", "jpg", "jpeg", "png"])
-            
+            student_answer = st.file_uploader("Upload student answer", type=["pdf", "jpg", "jpeg", "png"], key="student_answer_file")
         with col3:
             st.subheader("Marking Scheme")
-            marking_scheme = st.file_uploader("Upload marking scheme (optional)", type=["pdf", "jpg", "jpeg", "png", "json"])
-        
+            marking_scheme = st.file_uploader("Upload marking scheme (optional)", type=["pdf", "jpg", "jpeg", "png", "json"], key="marking_scheme_file")
+
+        # 添加分隔线
+        st.markdown("---")
+
+        # session state用于保存结果
+        if 'correction_result' not in st.session_state:
+            st.session_state.correction_result = None
+        if 'correction_success' not in st.session_state:
+            st.session_state.correction_success = False
+        if 'correction_history' not in st.session_state:
+            st.session_state.correction_history = []
+
         # AI批改处理逻辑
-        if student_answer is not None:  # 只要求学生答案必填
-            
+        if student_answer is not None:
             # 保存上传的文件
             file_size = student_answer.size / 1024  # Convert to KB
             
@@ -162,65 +169,120 @@ def ai_correction_page():
                         
                         # 添加题目文件内容（如果有）
                         if question_file:
-                            with open(question_file, 'rb') as f:
-                                api_inputs.append(str(question_file))  # 传递文件路径而不是内容
+                            api_inputs.append(str(question_file))
                         
                         # 添加学生答案文件内容（必需）
-                        api_inputs.append(str(student_file))  # 传递文件路径而不是内容
+                        api_inputs.append(str(student_file))
                         
                         # 添加评分标准文件内容（如果有）
                         if marking_file:
-                            api_inputs.append(str(marking_file))  # 传递文件路径而不是内容
+                            api_inputs.append(str(marking_file))
                         
                         # 调用API处理函数
                         result = call_api(*api_inputs)
                         
                         if result:
-                            st.success("AI Correction completed!")
+                            st.session_state.correction_success = True
+                            st.session_state.correction_result = result
                             
-                            # Debug the raw response
-                            st.subheader("Debug Information")
-                            st.text("Raw Response Type:")
-                            st.text(type(result))
-                            st.text("Raw Response Content:")
-                            st.text(result)
-                            
-                            # Store the raw response first
-                            raw_filename = f"correction_result_raw_{int(time.time())}.txt"
+                            # 生成唯一的结果文件名
+                            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                            raw_filename = f"correction_result_{timestamp}.txt"
                             raw_file = user_dir / raw_filename
+                            
+                            # 保存结果文件
                             with open(raw_file, "w", encoding="utf-8") as f:
                                 f.write(str(result))
                             
-                            # Display the response in a readable format
-                            st.markdown("### AI Response")
-                            st.markdown(str(result))
-                            
-                            # Provide download button for the raw result
-                            with open(raw_file, "r", encoding="utf-8") as f:
-                                st.download_button(
-                                    label="Download Result",
-                                    data=f.read(),
-                                    file_name=raw_filename,
-                                    mime="text/plain"
-                                )
-                            
-                            # Record the result file
+                            # 创建结果记录
                             result_record = {
                                 "filename": raw_filename,
                                 "upload_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                                 "file_size": round(os.path.getsize(raw_file) / 1024, 2),
                                 "file_type": "correction_result",
-                                "processing_result": "Completed"
+                                "processing_result": "Completed",
+                                "content": str(result)  # 保存结果内容
                             }
                             
-                            user_data[st.session_state.current_user]["records"].append(result_record)
-                            save_user_data(user_data)
+                            # 更新session state中的历史记录
+                            st.session_state.correction_history.append(result_record)
+                            
+                            # 更新用户数据
+                            if st.session_state.current_user in user_data:
+                                user_data[st.session_state.current_user]["records"].append(result_record)
+                                save_user_data(user_data)
                             
                     except Exception as e:
                         st.error(f"Error during correction: {str(e)}")
                         st.text("Full error details:")
                         st.exception(e)
                         logging.error(f"AI correction error: {str(e)}")
+
+        # 只在批改结果出来后显示预览
+        if st.session_state.correction_success and st.session_state.correction_result:
+            st.success("AI Correction completed!")
+
+            # 预览区
+            st.markdown("### Uploaded Files Preview")
+            preview_cols = st.columns(3)
+            # 题目预览
+            if question:
+                with preview_cols[0]:
+                    st.image(question, caption="Question Preview", use_column_width=True)
+            # 学生答案预览
+            if student_answer:
+                with preview_cols[1]:
+                    st.image(student_answer, caption="Student Answer Preview", use_column_width=True)
+            # 评分标准预览
+            if marking_scheme and marking_scheme.type != "application/json":
+                with preview_cols[2]:
+                    st.image(marking_scheme, caption="Marking Scheme Preview", use_column_width=True)
+            elif marking_scheme:
+                with preview_cols[2]:
+                    st.info("JSON Marking Scheme loaded")
+                    try:
+                        marking_content = marking_scheme.read().decode('utf-8')
+                        with st.expander("View Marking Scheme Content"):
+                            st.json(json.loads(marking_content))
+                    except Exception as e:
+                        st.warning(f"Unable to preview JSON content: {str(e)}")
+
+            # 显示批改结果
+            st.markdown("### AI Response")
+            st.markdown(str(st.session_state.correction_result))
+            
+            # 提供下载按钮
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            st.download_button(
+                label="Download Result",
+                data=str(st.session_state.correction_result),
+                file_name=f"correction_result_{timestamp}.txt",
+                mime="text/plain",
+                key=f"download_result_{timestamp}"
+            )
+            
+            # 显示历史结果
+            if st.session_state.correction_history:
+                with st.expander("View Correction History"):
+                    for idx, record in enumerate(reversed(st.session_state.correction_history)):
+                        st.markdown(f"### Result {idx + 1}")
+                        st.markdown(f"Time: {record['upload_time']}")
+                        st.markdown(record['content'])
+                        st.download_button(
+                            label=f"Download Result {idx + 1}",
+                            data=record['content'],
+                            file_name=record['filename'],
+                            mime="text/plain",
+                            key=f"download_history_{idx}"
+                        )
+                        st.markdown("---")
+
+        # 添加清除结果的按钮
+        if st.session_state.correction_success:
+            if st.button("Clear Results"):
+                st.session_state.correction_success = False
+                st.session_state.correction_result = None
+                st.rerun()
     
     # Tab 2: File List
     with tab2:
