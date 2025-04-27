@@ -2,8 +2,8 @@ import base64
 import requests  
 from openai import OpenAI
 
-# 完全重写提示词，使用最严格的格式要求禁止JSON输出
-marking_scheme_prompt="""你是一个优秀的教师助手，需要为各类学科题目生成评分方案。请使用自然语言格式，绝对禁止使用JSON或代码格式。
+# 完全重写提示词，使用最严格的格式要求禁止JSON输出，并为理科题目增加详细批注
+marking_scheme_prompt="""你是一个优秀的教师助手，需要为各类学科题目生成评分方案，特别是理科题目（数学、物理、化学、生物）需要更加详细的评分标准。请使用自然语言格式，绝对禁止使用JSON或代码格式。
 
 请按照以下结构组织你的回答：
 
@@ -24,13 +24,18 @@ marking_scheme_prompt="""你是一个优秀的教师助手，需要为各类学�
    - 扣分情况：
      * [情况1]
      * [情况2]
+   - 解题思路：[针对理科题目，详细说明此步骤的解题思路和原理]
+   - 常见错误分析：[针对理科题目，分析学生在这一步骤常见的错误及其原因]
 
 2. 第二步评分点
    [使用相同结构]
 
 ## 知识点分析
-- [知识点1]
-- [知识点2]
+- [知识点1]：[详细解释该知识点的核心概念和应用场景]
+- [知识点2]：[详细解释该知识点的核心概念和应用场景]
+
+## 公式和定理应用
+[针对理科题目，列出解题过程中涉及的关键公式和定理，并解释其应用]
 
 ## 特别说明
 [如有特殊评分要求，请在此说明]
@@ -38,7 +43,7 @@ marking_scheme_prompt="""你是一个优秀的教师助手，需要为各类学�
 记住：你必须使用纯文本格式回答，绝对不要使用JSON格式、代码块或任何编程语言结构。使用标题、列表和段落来组织信息。
 """
 
-correction_prompt="""你是一位专业的教师，需要对学生的答案进行详细批改。请使用自然语言和结构化格式，绝对禁止使用JSON或代码格式。
+correction_prompt="""你是一位专业的教师，需要对学生的答案进行详细批改，特别是对理科题目（数学、物理、化学、生物）需要提供更加详细的批注和分析。请使用自然语言和结构化格式，绝对禁止使用JSON或代码格式。
 
 请按照以下结构组织你的批改：
 
@@ -57,27 +62,36 @@ correction_prompt="""你是一位专业的教师，需要对学生的答案进�
    - 需要改进：
      * [错误点1]
      * [错误点2] 
+   - 错误分析：[针对理科题目，详细分析错误的原因和影响]
+   - 正确的解题思路：[针对理科题目，提供正确的解题思路和推导过程]
    - 改进建议：
      [具体建议]
 
 2. 第二部分
    [使用相同结构]
 
+## 公式和定理应用评价
+[针对理科题目，评价学生对公式和定理的理解和应用情况，指出正确和错误之处]
+
+## 计算过程评价
+[针对理科题目，评价学生的计算过程，包括数值计算、单位换算、有效数字处理等]
+
 ## 总体评价
 [整体评价内容，包括优点和不足]
 
 ## 知识点掌握情况
-- [知识点1]：[掌握程度]
-- [知识点2]：[掌握程度]
+- [知识点1]：[掌握程度，并提供详细分析]
+- [知识点2]：[掌握程度，并提供详细分析]
 
 ## 学习建议
-- [具体建议1]
-- [具体建议2]
+- [具体建议1：提供针对性的复习和练习建议]
+- [具体建议2：提供可参考的学习资源或方法]
+- [针对理科题目，提供相关拓展知识和应用场景]
 
 记住：你必须使用纯文本格式回答，绝对不要使用JSON格式、代码块或任何编程语言结构。使用标题、列表和段落来组织信息。将你的批改做成结构清晰但完全是自然语言的形式。
 """
 
-correction_with_images_prompt="""你是一位专业的教师，需要对学生的答案进行详细批改。请使用自然语言和结构化格式，绝对禁止使用JSON或代码格式。
+correction_with_images_prompt="""你是一位专业的教师，需要对学生的答案进行详细批改，特别是对理科题目（数学、物理、化学、生物）需要提供更加详细的批注和分析。请使用自然语言和结构化格式，绝对禁止使用JSON或代码格式。
 
 请按照以下结构组织你的批改：
 
@@ -96,22 +110,31 @@ correction_with_images_prompt="""你是一位专业的教师，需要对学生�
    - 需要改进：
      * [错误点1]
      * [错误点2] 
+   - 错误分析：[针对理科题目，详细分析错误的原因和影响]
+   - 正确的解题思路：[针对理科题目，提供正确的解题思路和推导过程]
    - 改进建议：
      [具体建议]
 
 2. 第二部分
    [使用相同结构]
 
+## 公式和定理应用评价
+[针对理科题目，评价学生对公式和定理的理解和应用情况，指出正确和错误之处]
+
+## 计算过程评价
+[针对理科题目，评价学生的计算过程，包括数值计算、单位换算、有效数字处理等]
+
 ## 总体评价
 [整体评价内容，包括优点和不足]
 
 ## 知识点掌握情况
-- [知识点1]：[掌握程度]
-- [知识点2]：[掌握程度]
+- [知识点1]：[掌握程度，并提供详细分析]
+- [知识点2]：[掌握程度，并提供详细分析]
 
 ## 学习建议
-- [具体建议1]
-- [具体建议2]
+- [具体建议1：提供针对性的复习和练习建议]
+- [具体建议2：提供可参考的学习资源或方法]
+- [针对理科题目，提供相关拓展知识和应用场景]
 
 记住：你必须使用纯文本格式回答，绝对不要使用JSON格式、代码块或任何编程语言结构。使用标题、列表和段落来组织信息。将你的批改做成结构清晰但完全是自然语言的形式。
 """
@@ -144,7 +167,7 @@ def call_api(input_text, *input_images):
     )
     
     # 强制修改输入提示，添加明确的自然语言输出要求
-    enhanced_prompt = input_text + "\n\n重要提示：你必须以纯自然语言形式回答，禁止使用任何JSON格式。"
+    enhanced_prompt = input_text + "\n\n重要提示：你必须以纯自然语言形式回答，禁止使用任何JSON格式。如果是理科题目（数学、物理、化学、生物），请提供更加详细的解析和批注。"
     content = [{"type": "text", "text": enhanced_prompt}]
     
     # 处理图片
@@ -167,7 +190,7 @@ def call_api(input_text, *input_images):
             "role": "user",
             "content": content
         }],
-        max_tokens=2048,
+        max_tokens=4096,  # 增加token数量以允许更详细的回答
         temperature=0.7
     )
 
@@ -185,14 +208,14 @@ def call_api(input_text, *input_images):
 default_api = call_api
 
 def generate_marking_scheme(*image_file, api=default_api):
-    """生成评分方案，返回纯文本形式"""
+    """生成评分方案，返回纯文本形式，对理科题目提供更详细的标准"""
     try:
         return api(marking_scheme_prompt, *image_file)
     except Exception as e:
         raise RuntimeError(f"生成评分方案失败: {str(e)}") from e
 
 def correction_with_marking_scheme(marking_scheme, *image_files, api=default_api):
-    """使用提供的评分方案进行批改，返回纯文本形式"""
+    """使用提供的评分方案进行批改，返回纯文本形式，对理科题目提供更详细的批注"""
     try:
         prompt = correction_prompt + "\n\n评分方案如下：\n" + str(marking_scheme)
         return api(prompt, *image_files)
@@ -200,14 +223,14 @@ def correction_with_marking_scheme(marking_scheme, *image_files, api=default_api
         raise RuntimeError(f"批改失败: {str(e)}") from e
 
 def correction_with_image_marking_scheme(*image_files_and_marking_scheme, api=default_api):
-    """使用图像中的评分方案进行批改，返回纯文本形式"""
+    """使用图像中的评分方案进行批改，返回纯文本形式，对理科题目提供更详细的批注"""
     try:
         return api(correction_with_images_prompt, *image_files_and_marking_scheme)
     except Exception as e:
         raise RuntimeError(f"批改失败: {str(e)}") from e
 
 def correction_without_marking_scheme(*images, api=default_api):
-    """自动生成评分方案并批改，返回纯文本形式"""
+    """自动生成评分方案并批改，返回纯文本形式，对理科题目提供更详细的批注"""
     marking_scheme = generate_marking_scheme(*images)
     return correction_with_marking_scheme(marking_scheme, *images, api=api)
 
