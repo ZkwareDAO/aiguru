@@ -47,22 +47,33 @@ if not os.path.exists(DATA_FILE):
         json.dump({}, f)
 
 def read_user_data():
-    """Read user data from JSON file or return default data"""
+    """从JSON文件读取用户数据，或返回默认数据"""
     try:
         with open(DATA_FILE, "r") as f:
-            return json.load(f)
+            data = json.load(f)
+            
+            # 确保测试账户存在并使用哈希密码
+            for test_user, details in TEST_ACCOUNTS.items():
+                if test_user not in data:
+                    data[test_user] = {
+                        "password": details["password"],  # 对于测试账户，保持原始密码
+                        "email": f"{test_user}@example.com",
+                        "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        "records": []
+                    }
+            
+            return data
     except FileNotFoundError:
-        # Return default data with test accounts
-        return {
-            "test_user_1": {
-                "password": "password1",
-                "records": []
-            },
-            "test_user_2": {
-                "password": "password2",
+        # 返回带有测试账户的默认数据
+        default_data = {}
+        for test_user, details in TEST_ACCOUNTS.items():
+            default_data[test_user] = {
+                "password": details["password"],
+                "email": f"{test_user}@example.com",
+                "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 "records": []
             }
-        }
+        return default_data
 
 def save_user_data(data):
     with open(DATA_FILE, "w") as f:
@@ -655,22 +666,29 @@ def save_uploaded_file(user_dir, uploaded_file, file_type, user_data):
     
     return file_path
 
+# 添加密码哈希函数
+def hash_password(password):
+    """对密码进行安全哈希处理"""
+    return hashlib.sha256(password.encode()).hexdigest()
+
+# 修改主函数添加注册功能
 def main():
-    # Initialize session state
+    # 初始化会话状态
     if 'logged_in' not in st.session_state:
         st.session_state.update({
             'logged_in': False,
             'current_user': None,
-            'page': 'main_menu'
+            'page': 'main_menu',
+            'show_register': False  # 添加新状态变量控制注册表单显示
         })
 
-    # Sidebar for navigation (only show when logged in)
+    # 侧边栏导航（只在登录后显示）
     if st.session_state.logged_in:
         with st.sidebar:
             st.title("🎓 AI Guru")
             st.write(f"Welcome, {st.session_state.current_user}!")
             
-            # Navigation menu
+            # 导航菜单
             st.subheader("📍 Navigation")
             menu_options = {
                 "main_menu": "🏠 Main Menu",
@@ -687,26 +705,93 @@ def main():
                 st.session_state.page = "main_menu"
                 st.rerun()
 
-    # Login page
+    # 登录和注册页面
     if not st.session_state.logged_in:
-        st.title("🔐 User Login")
-        with st.form("login_form"):
-            username = st.text_input("Username")
-            password = st.text_input("Password", type="password")
-            if st.form_submit_button("Login"):
-                if username in TEST_ACCOUNTS:
-                    if TEST_ACCOUNTS[username]['password'] == password:
-                        st.session_state.logged_in = True
-                        st.session_state.current_user = username
-                        st.success("Login successful!")
-                        st.rerun()
+        st.title("🔐 User Authentication")
+        
+        # 切换登录/注册按钮
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("Login", use_container_width=True, 
+                         type="primary" if not st.session_state.show_register else "secondary"):
+                st.session_state.show_register = False
+        with col2:
+            if st.button("Register", use_container_width=True,
+                         type="primary" if st.session_state.show_register else "secondary"):
+                st.session_state.show_register = True
+        
+        # 根据状态显示登录或注册表单
+        if st.session_state.show_register:
+            # 注册表单
+            with st.form("register_form"):
+                st.subheader("📝 Create New Account")
+                new_username = st.text_input("Username")
+                new_password = st.text_input("Password", type="password")
+                confirm_password = st.text_input("Confirm Password", type="password")
+                email = st.text_input("Email (optional)")
+                
+                register_submitted = st.form_submit_button("Register")
+                
+                if register_submitted:
+                    # 进行表单验证
+                    if not new_username or not new_password:
+                        st.error("Username and password are required.")
+                    elif new_password != confirm_password:
+                        st.error("Passwords do not match.")
                     else:
-                        st.error("Invalid password!")
-                else:
-                    st.error("User not found!")
+                        # 检查用户名是否已存在
+                        user_data = read_user_data()
+                        if new_username in user_data:
+                            st.error("Username already exists. Please choose another one.")
+                        else:
+                            # 创建新用户
+                            user_data[new_username] = {
+                                "password": hash_password(new_password),
+                                "email": email,
+                                "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                                "records": []
+                            }
+                            save_user_data(user_data)
+                            
+                            # 提示成功并自动设置为登录状态
+                            st.success("Registration successful! You can now log in.")
+                            st.session_state.show_register = False
+                            st.rerun()
+        else:
+            # 登录表单
+            with st.form("login_form"):
+                st.subheader("👤 Login to Your Account")
+                username = st.text_input("Username")
+                password = st.text_input("Password", type="password")
+                login_submitted = st.form_submit_button("Login")
+                
+                if login_submitted:
+                    if not username or not password:
+                        st.error("Please enter both username and password.")
+                    else:
+                        # 检查测试账户
+                        if username in TEST_ACCOUNTS and TEST_ACCOUNTS[username]['password'] == password:
+                            st.session_state.logged_in = True
+                            st.session_state.current_user = username
+                            st.success("Login successful!")
+                            st.rerun()
+                        else:
+                            # 检查注册用户
+                            user_data = read_user_data()
+                            if username in user_data and user_data[username].get('password') == hash_password(password):
+                                st.session_state.logged_in = True
+                                st.session_state.current_user = username
+                                st.success("Login successful!")
+                                st.rerun()
+                            else:
+                                st.error("Invalid username or password.")
+        
+        # 添加一个忘记密码的链接（可以在将来实现）
+        st.markdown("---")
+        st.markdown("<div style='text-align: center'>Forgot your password? Contact administrator.</div>", unsafe_allow_html=True)
         return
 
-    # Page routing
+    # 页面路由
     if st.session_state.page == "file_management":
         file_management_page()
     elif st.session_state.page == "ai_correction":
@@ -715,7 +800,7 @@ def main():
         st.title("🏠 Main Menu")
         st.write("Welcome to AI Guru! Select an option from the sidebar to get started.")
         
-        # Display usage statistics
+        # 显示使用统计
         user_data = read_user_data()
         user_records = user_data.get(st.session_state.current_user, {}).get('records', [])
         
