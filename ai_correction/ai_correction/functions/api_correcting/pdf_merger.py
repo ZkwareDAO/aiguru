@@ -35,62 +35,7 @@ class PDFWithChinese(FPDF):
 
 def replace_math_symbols(text):
     """替换数学符号为普通字符"""
-    replacements = {
-        '×': 'x',
-        '÷': '/',
-        '±': '+/-',
-        '≠': '!=',
-        '≤': '<=',
-        '≥': '>=',
-        '∞': 'infinity',
-        '∑': 'sum',
-        '∏': 'product',
-        '√': 'sqrt',
-        '∫': 'integral',
-        '∂': 'd',
-        '∆': 'delta',
-        'π': 'pi',
-        'θ': 'theta',
-        'α': 'alpha',
-        'β': 'beta',
-        'γ': 'gamma',
-        'μ': 'mu',
-        'σ': 'sigma',
-        'λ': 'lambda',
-        '∈': 'in',
-        '∉': 'not in',
-        '∪': 'union',
-        '∩': 'intersection',
-        '⊂': 'subset of',
-        '⊃': 'superset of',
-        '∀': 'for all',
-        '∃': 'exists',
-        '∄': 'not exists',
-        '∴': 'therefore',
-        '∵': 'because',
-        '≈': '~=',
-        '≡': '===',
-        '∝': 'proportional to',
-        '∥': 'parallel to',
-        '⊥': 'perpendicular to',
-        '∠': 'angle',
-        '°': ' degrees',
-        '′': "'",
-        '″': '"',
-        '∅': 'empty set',
-        '⊕': 'xor',
-        '⊗': 'tensor product',
-    }
-    
-    for old, new in replacements.items():
-        text = text.replace(old, new)
-    
-    # 处理上标和下标
-    text = text.replace('²', '^2')
-    text = text.replace('³', '^3')
-    text = text.replace('₁', '_1')
-    text = text.replace('₂', '_2')
-    
+    # 完全删除此函数或保留为空函数
     return text
 
 class PDFMerger:
@@ -188,7 +133,7 @@ class PDFMerger:
             story.append(Paragraph("AI Response:", heading_style))
             story.append(Spacer(1, 8))
             
-            # 处理原始文本，按段落分割
+            # 处理原始文本，按段落分割 - 不再对数学符号进行替换
             paragraphs = str(result_text).split('\n')
             for para in paragraphs:
                 if para.strip():
@@ -196,7 +141,7 @@ class PDFMerger:
                     para = para.replace('&', '&amp;')
                     para = para.replace('<', '&lt;')
                     para = para.replace('>', '&gt;')
-                    # 保持原始格式
+                    # 保持原始格式，不进行数学符号替换
                     story.append(Paragraph(para, body_style))
             
             # 生成PDF
