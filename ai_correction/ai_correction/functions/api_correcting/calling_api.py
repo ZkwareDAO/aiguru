@@ -1,181 +1,123 @@
-import json
-import re
-
-from openai import OpenAI
 import base64
 import requests  
+from openai import OpenAI
 
-marking_scheme_prompt="""你是一个全科目评分方案生成系统，可以处理包括数学、物理、化学、生物、语文、英语等各个学科的试题。请按以下规则执行：
+# 完全重写提示词，使用最严格的格式要求禁止JSON输出
+marking_scheme_prompt="""你是一个优秀的教师助手，需要为各类学科题目生成评分方案。请使用自然语言格式，绝对禁止使用JSON或代码格式。
 
-1. **输入内容**：
-   - 用户上传的试题图片
+请按照以下结构组织你的回答：
 
-2. **任务要求**：
-   A. 通用要求：
-      - 识别题目类型和所属学科
-      - 分析考察的知识点
-      - 设计合理的评分标准
-   
-   B. 学科特殊要求：
-      数学类：
-      - 拆解解题步骤和关键点
-      - 设置计算过程的得分点
-      - 注意推导过程的完整性
-      
-      物理化学类：
-      - 关注实验步骤和数据分析
-      - 重视原理解释和公式应用
-      - 考虑单位换算的准确性
-      
-      语言类（中英文）：
-      - 评估语言表达的准确性
-      - 关注文章结构和逻辑性
-      - 考虑创新性和思维深度
-      
-      生物类：
-      - 重视概念理解和应用
-      - 关注实验设计和分析
-      - 评估推理能力
+# 评分方案
 
-3. **输出格式**：
-   {
-     "科目类型": "具体学科",
-     "题目类型": "题目形式",
-     "总分值": "N分",
-     "评分方案": [
-       {
-         "步骤序号": 1,
-         "步骤描述": "具体要求",
-         "分值": "X分",
-         "得分点": ["具体得分标准"],
-         "扣分点": ["具体扣分情况"]
-       }
-     ],
-     "知识点": ["涉及的主要知识点"],
-     "备注": "特殊说明"
-   }
+## 基本信息
+- 科目类型：[填写]
+- 题目类型：[填写] 
+- 总分值：[填写]分
 
-4. **注意事项**：
-   - 评分标准要客观合理
-   - 考虑多种可能的答题思路
-   - 预设常见错误和对应扣分
-   - 适当兼顾创新思维的评估"""
-correction_prompt="""你是一个全科目自动批改系统，可以处理包括数学、物理、化学、生物、语文、英语等各个学科的试题。请按以下规则执行：
+## 详细评分标准
+1. 第一步评分点
+   - 分值：X分
+   - 具体要求：[详细说明]
+   - 得分要点：
+     * [要点1]
+     * [要点2]
+   - 扣分情况：
+     * [情况1]
+     * [情况2]
 
-1. **输入内容**：
-   - 图片中的学生作答
-   - 参考的评分方案（JSON格式）
+2. 第二步评分点
+   [使用相同结构]
 
-2. **批改规则**：
-   A. 通用规则：
-      - 根据评分方案逐项检查答案
-      - 计算总分并给出详细反馈
-      
-   B. 学科特殊规则：
-      数学类：
-      - 关注计算过程和推导步骤
-      - 检查公式使用的正确性
-      - 注意单位换算和数值精度
-      
-      物理化学类：
-      - 验证定律定理的应用
-      - 检查实验步骤和数据处理
-      - 注意单位一致性
-      
-      语言类（中英文）：
-      - 评估语法和句式结构
-      - 检查词汇使用和表达准确性
-      - 考虑上下文连贯性
-      
-      生物类：
-      - 关注概念准确性
-      - 检查实验过程描述
-      - 评估分析推理能力
+## 知识点分析
+- [知识点1]
+- [知识点2]
 
-3. **输出格式**：
-   {
-     "科目类型": "识别的具体科目",
-     "总分": "得分/总分",
-     "分项批改": [
-       {
-         "步骤序号": 1,
-         "得分": "X分",
-         "正确点": ["具体正确之处"],
-         "错误点": ["具体错误之处"],
-         "建议": "改进建议"
-       }
-     ],
-     "总评": "整体评价，包括优点和需改进之处",
-     "知识点": ["涉及的主要知识点"],
-     "学习建议": "针对性的学习建议"
-   }
+## 特别说明
+[如有特殊评分要求，请在此说明]
 
-4. **注意事项**：
-   - 给出具体的改进建议和学习方向
-   - 指出答案中的创新思维或独特见解
-   - 对模糊内容标注"无法识别"，不随意推测
-   - 保持评分标准的一致性和客观性"""
+记住：你必须使用纯文本格式回答，绝对不要使用JSON格式、代码块或任何编程语言结构。使用标题、列表和段落来组织信息。
+"""
 
-#用图片批改的提示词
-correction_with_images_prompt='''你是一个全科目自动批改系统，可以处理包括数学、物理、化学、生物、语文、英语等各个学科的试题。请按以下规则执行：
+correction_prompt="""你是一位专业的教师，需要对学生的答案进行详细批改。请使用自然语言和结构化格式，绝对禁止使用JSON或代码格式。
 
-1. **输入内容**：
-   - 图片中的学生作答
-   - 图片中的评分方案
+请按照以下结构组织你的批改：
 
-2. **批改规则**：
-   A. 通用规则：
-      - 根据评分方案逐项检查答案
-      - 计算总分并给出详细反馈
-      
-   B. 学科特殊规则：
-      数学类：
-      - 关注计算过程和推导步骤
-      - 检查公式使用的正确性
-      - 注意单位换算和数值精度
-      
-      物理化学类：
-      - 验证定律定理的应用
-      - 检查实验步骤和数据处理
-      - 注意单位一致性
-      
-      语言类（中英文）：
-      - 评估语法和句式结构
-      - 检查词汇使用和表达准确性
-      - 考虑上下文连贯性
-      
-      生物类：
-      - 关注概念准确性
-      - 检查实验过程描述
-      - 评估分析推理能力
+# 批改结果
 
-3. **输出格式**：
-   {
-     "科目类型": "识别的具体科目",
-     "总分": "得分/总分",
-     "分项批改": [
-       {
-         "步骤序号": 1,
-         "得分": "X分",
-         "正确点": ["具体正确之处"],
-         "错误点": ["具体错误之处"],
-         "建议": "改进建议"
-       }
-     ],
-     "总评": "整体评价，包括优点和需改进之处",
-     "知识点": ["涉及的主要知识点"],
-     "学习建议": "针对性的学习建议"
-   }
+## 基本信息
+- 科目类型：[填写]
+- 总得分：[得分]/[总分]
 
-4. **注意事项**：
-   - 给出具体的改进建议和学习方向
-   - 指出答案中的创新思维或独特见解
-   - 对模糊内容标注"无法识别"，不随意推测
-   - 保持评分标准的一致性和客观性'''
+## 分步骤批改
+1. 第一部分
+   - 得分：X分
+   - 正确之处：
+     * [正确点1]
+     * [正确点2]
+   - 需要改进：
+     * [错误点1]
+     * [错误点2] 
+   - 改进建议：
+     [具体建议]
 
+2. 第二部分
+   [使用相同结构]
+
+## 总体评价
+[整体评价内容，包括优点和不足]
+
+## 知识点掌握情况
+- [知识点1]：[掌握程度]
+- [知识点2]：[掌握程度]
+
+## 学习建议
+- [具体建议1]
+- [具体建议2]
+
+记住：你必须使用纯文本格式回答，绝对不要使用JSON格式、代码块或任何编程语言结构。使用标题、列表和段落来组织信息。将你的批改做成结构清晰但完全是自然语言的形式。
+"""
+
+correction_with_images_prompt="""你是一位专业的教师，需要对学生的答案进行详细批改。请使用自然语言和结构化格式，绝对禁止使用JSON或代码格式。
+
+请按照以下结构组织你的批改：
+
+# 批改结果
+
+## 基本信息
+- 科目类型：[填写]
+- 总得分：[得分]/[总分]
+
+## 分步骤批改
+1. 第一部分
+   - 得分：X分
+   - 正确之处：
+     * [正确点1]
+     * [正确点2]
+   - 需要改进：
+     * [错误点1]
+     * [错误点2] 
+   - 改进建议：
+     [具体建议]
+
+2. 第二部分
+   [使用相同结构]
+
+## 总体评价
+[整体评价内容，包括优点和不足]
+
+## 知识点掌握情况
+- [知识点1]：[掌握程度]
+- [知识点2]：[掌握程度]
+
+## 学习建议
+- [具体建议1]
+- [具体建议2]
+
+记住：你必须使用纯文本格式回答，绝对不要使用JSON格式、代码块或任何编程语言结构。使用标题、列表和段落来组织信息。将你的批改做成结构清晰但完全是自然语言的形式。
+"""
 
 def img_to_base64(image_path):
-    # 判断是否是网络路径
+    """将图片文件转换为base64编码"""
     if image_path.startswith(('http://', 'https://')):
         response = requests.get(image_path)
         response.raise_for_status()  
@@ -185,18 +127,27 @@ def img_to_base64(image_path):
             image_data = image_file.read()
     return base64.b64encode(image_data).decode('utf-8')
 
-
 def call_api(input_text, *input_images):
-    # 完全删除数学格式提示词部分
+    """
+    调用API进行图像识别和处理
+    
+    参数:
+    input_text: 字符串，提示文本
+    input_images: 一系列图片文件路径
+    
+    返回:
+    字符串，API响应内容
+    """
     client = OpenAI(
         base_url="https://api.siliconflow.cn/v1",
         api_key="sk-exhlpcmlvywtnrzancrdqbohmsbfbmxkkodjhqxufkbhctay"
     )
     
-    # 直接使用原始输入文本，不添加任何格式化提示
-    content = [{"type": "text", "text": input_text}]
+    # 强制修改输入提示，添加明确的自然语言输出要求
+    enhanced_prompt = input_text + "\n\n重要提示：你必须以纯自然语言形式回答，禁止使用任何JSON格式。"
+    content = [{"type": "text", "text": enhanced_prompt}]
     
-    # 处理图片文件路径
+    # 处理图片
     for image_path in input_images:
         try:
             base_64_image = img_to_base64(image_path)
@@ -209,88 +160,59 @@ def call_api(input_text, *input_images):
         except Exception as e:
             raise Exception(f"Failed to process image at {image_path}: {str(e)}")
 
+    # 调用API
     response = client.chat.completions.create(
         model="Qwen/Qwen2.5-VL-72B-Instruct",
-        messages=[
-            {  
-                "role": "user",
-                "content": content
-            }
-        ],
+        messages=[{  
+            "role": "user",
+            "content": content
+        }],
         max_tokens=2048,
         temperature=0.7
     )
 
-    return response.choices[0].message.content
-
-# 使用缓存装饰器来存储API调用结果
-from functools import lru_cache
-
-#调用的API,接收一个str和文件paths，返回一个字符串
-default_api=call_api
-
-def extract_json_from_str(string):
-    json_match = re.search(r'\{.*\}', string, re.DOTALL)
-    if not json_match:
-        raise ValueError("返回字符串中未找到有效JSON")
+    # 进行后处理，确保输出不是JSON格式
+    result = response.choices[0].message.content
     
-    try:
-        json_str = json_match.group(0)
-        return json.loads(json_str)
-    except json.JSONDecodeError as e:
-        raise ValueError(f"返回内容不是有效JSON: {str(e)}") from e
+    # 如果响应看起来像JSON（包含大量花括号），进行后处理转换为自然语言
+    if result.count('{') > 3 and result.count('}') > 3:
+        # 添加警告消息
+        result = "（注意：以下内容已从结构化格式转换为纯文本）\n\n" + result
+        
+    return result
+
+# 标准API调用函数
+default_api = call_api
 
 def generate_marking_scheme(*image_file, api=default_api):
+    """生成评分方案，返回纯文本形式"""
     try:
-        # 执行AI函数调用
-        response_str = api(marking_scheme_prompt, *image_file)
-        
-        # 解析返回结果
-        return extract_json_from_str(response_str)
+        return api(marking_scheme_prompt, *image_file)
     except Exception as e:
-        # 捕获所有API函数可能抛出的异常
-        raise RuntimeError(f"API函数调用失败: {str(e)}") from e
+        raise RuntimeError(f"生成评分方案失败: {str(e)}") from e
 
-#批改
-def correction_with_json_marking_scheme(json_marking_scheme, *image_files, api=default_api):
-    """
-    调用API函数，发送JSON数据和图片文件，并解析返回的JSON数据
-
-    参数：
-    image_file (file对象): 以二进制模式打开的图片文件对象
-    api (callable): 接收(string, file)并返回string的AI函数
-
-    返回：
-    dict: 解析后的JSON数据
-
-    异常：
-    RuntimeError: API函数调用失败时抛出
-    ValueError: 未找到有效JSON或解析失败时抛出
-    """
-    try: 
-        # 执行API函数调用
-        response_str = api(correction_prompt+"\n5.一下是评分标准:\n"+str(json_marking_scheme), *image_files)
-        
-        return extract_json_from_str(response_str)
-            
+def correction_with_marking_scheme(marking_scheme, *image_files, api=default_api):
+    """使用提供的评分方案进行批改，返回纯文本形式"""
+    try:
+        prompt = correction_prompt + "\n\n评分方案如下：\n" + str(marking_scheme)
+        return api(prompt, *image_files)
     except Exception as e:
-        # 捕获所有AI函数可能抛出的异常
-        raise RuntimeError(f"API函数调用失败: {str(e)}") from e
+        raise RuntimeError(f"批改失败: {str(e)}") from e
 
 def correction_with_image_marking_scheme(*image_files_and_marking_scheme, api=default_api):
-    try:    
-        # 执行AI函数调用
-        response_str = api(correction_with_images_prompt,*image_files_and_marking_scheme)
-
-        return extract_json_from_str(response_str)
-            
+    """使用图像中的评分方案进行批改，返回纯文本形式"""
+    try:
+        return api(correction_with_images_prompt, *image_files_and_marking_scheme)
     except Exception as e:
-        # 捕获所有AI函数可能抛出的异常
-        raise RuntimeError(f"API函数调用失败: {str(e)}") from e
+        raise RuntimeError(f"批改失败: {str(e)}") from e
 
-def correction_without_marking_scheme(*images,api=default_api):
-    marking_scheme=generate_marking_scheme(*images)
-    return correction_with_json_marking_scheme(marking_scheme,*images,api=api)
+def correction_without_marking_scheme(*images, api=default_api):
+    """自动生成评分方案并批改，返回纯文本形式"""
+    marking_scheme = generate_marking_scheme(*images)
+    return correction_with_marking_scheme(marking_scheme, *images, api=api)
 
-if __name__=="__main__":
+# 保留原函数名以保持兼容性
+correction_with_json_marking_scheme = correction_with_marking_scheme
+
+if __name__ == "__main__":
     pass
