@@ -123,33 +123,68 @@ def file_management_page():
                     current_time = datetime.now().strftime('%Y%m%d_%H%M%S')
                     pdf_filename = f"correction_result_{current_time}.pdf"
                     
+                    # 导入 PDFMerger 类
+                    from functions.api_correcting.pdf_merger import PDFMerger
+                    
+                    # 创建 PDFMerger 实例
                     pdf_merger = PDFMerger(UPLOAD_DIR)
                     
+                    # 创建临时文件对象来模拟UploadedFile对象
+                    class MockFileObject:
+                        def __init__(self, path):
+                            self.path = path
+                            self.type = self._determine_type(path)
+                            
+                        def _determine_type(self, path):
+                            suffix = Path(path).suffix.lower()
+                            if suffix in ['.jpg', '.jpeg']:
+                                return 'image/jpeg'
+                            elif suffix == '.png':
+                                return 'image/png'
+                            elif suffix == '.pdf':
+                                return 'application/pdf'
+                            else:
+                                return 'application/octet-stream'
+                                
+                        def getvalue(self):
+                            with open(self.path, 'rb') as f:
+                                return f.read()
+                    
                     # 准备上传文件信息
-                    uploaded_files = {}
+                    files_to_include = {}
                     for file_type, file_info in record.get('files', {}).items():
                         if isinstance(file_info, dict) and 'saved_path' in file_info:
-                            if os.path.exists(file_info['saved_path']):
-                                uploaded_files[file_type] = file_info['saved_path']
+                            saved_path = file_info['saved_path']
+                            if os.path.exists(saved_path):
+                                # 创建模拟文件对象
+                                files_to_include[file_type] = MockFileObject(saved_path)
                     
-                    pdf_path = pdf_merger.merge_pdfs(
-                        content=content,
-                        output_filename=pdf_filename,
-                        uploaded_files=uploaded_files
+                    output_path = UPLOAD_DIR / st.session_state.current_user / pdf_filename
+                    
+                    # 调用 merge_pdfs 方法生成 PDF
+                    success, pdf_path = pdf_merger.merge_pdfs(
+                        files_to_include,
+                        content,
+                        "AI Correction Results",
+                        output_path
                     )
                     
-                    with open(pdf_path, 'rb') as pdf_file:
-                        pdf_bytes = pdf_file.read()
-                        st.download_button(
-                            label="Download as PDF",
-                            data=pdf_bytes,
-                            file_name=pdf_filename,
-                            mime="application/pdf",
-                            key=f"pdf_{idx}"
-                        )
-                    
-                    if os.path.exists(pdf_path):
-                        os.remove(pdf_path)
+                    if success:
+                        with open(pdf_path, 'rb') as pdf_file:
+                            pdf_bytes = pdf_file.read()
+                            st.download_button(
+                                label="Download as PDF",
+                                data=pdf_bytes,
+                                file_name=pdf_filename,
+                                mime="application/pdf",
+                                key=f"pdf_{idx}"
+                            )
+                        
+                        # 删除临时生成的PDF
+                        if os.path.exists(pdf_path):
+                            os.remove(pdf_path)
+                    else:
+                        st.error(f"Failed to generate PDF: {pdf_path}")
                         
                 except Exception as e:
                     st.error(f"Failed to generate PDF: {str(e)}")

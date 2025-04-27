@@ -234,10 +234,11 @@ def call_api(input_text, *input_images):
     for image_path in input_images:
         try:
             base_64_image = img_to_base64(image_path)
+            # 修复 URL 格式，移除多余的 "data:" 前缀
             content.append({
                 "type": "image_url",
                 "image_url": {
-                    "url": f"data:data:image/jpeg;base64,{base_64_image}"
+                    "url": f"data:image/jpeg;base64,{base_64_image}"
                 }
             })
         except Exception as e:
