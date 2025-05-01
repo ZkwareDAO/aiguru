@@ -79,94 +79,16 @@ def save_user_data(data):
     with open(DATA_FILE, "w") as f:
         json.dump(data, f, indent=2)
 
-# 添加一个自然语言转换函数
-def ensure_natural_language(text):
-    """确保文本是自然语言格式，而不是JSON格式"""
-    # 如果文本看起来像JSON（包含多个花括号或引号），进行转换
-    if (text.count('{') > 2 and text.count('}') > 2) or ('"' in text and ':' in text):
-        try:
-            # 尝试解析JSON
-            import json
-            try:
-                parsed = json.loads(text)
-                # 如果成功解析为JSON，将其转换为自然语言文本
-                converted_text = "# 批改结果\n\n"
-                
-                # 处理常见的JSON键
-                if isinstance(parsed, dict):
-                    if "科目类型" in parsed:
-                        converted_text += f"## 基本信息\n- 科目类型：{parsed.get('科目类型', '未指定')}\n"
-                    if "总分" in parsed:
-                        converted_text += f"- 总得分：{parsed.get('总分', '未计算')}\n\n"
-                    
-                    # 处理分项批改
-                    if "分项批改" in parsed and isinstance(parsed["分项批改"], list):
-                        converted_text += "## 分步骤批改\n"
-                        for i, item in enumerate(parsed["分项批改"], 1):
-                            converted_text += f"{i}. "
-                            if "步骤序号" in item:
-                                converted_text += f"第{item['步骤序号']}部分\n"
-                            else:
-                                converted_text += f"第{i}部分\n"
-                                
-                            if "得分" in item:
-                                converted_text += f"   - 得分：{item['得分']}\n"
-                            
-                            if "正确点" in item and isinstance(item["正确点"], list):
-                                converted_text += "   - 正确之处：\n"
-                                for point in item["正确点"]:
-                                    converted_text += f"     * {point}\n"
-                            
-                            if "错误点" in item and isinstance(item["错误点"], list):
-                                converted_text += "   - 需要改进：\n"
-                                for point in item["错误点"]:
-                                    converted_text += f"     * {point}\n"
-                            
-                            if "建议" in item:
-                                converted_text += f"   - 改进建议：{item['建议']}\n\n"
-                    
-                    # 总评
-                    if "总评" in parsed:
-                        converted_text += f"## 总体评价\n{parsed['总评']}\n\n"
-                    
-                    # 知识点
-                    if "知识点" in parsed and isinstance(parsed["知识点"], list):
-                        converted_text += "## 知识点掌握情况\n"
-                        for point in parsed["知识点"]:
-                            converted_text += f"- {point}\n"
-                        converted_text += "\n"
-                    
-                    # 学习建议
-                    if "学习建议" in parsed:
-                        converted_text += f"## 学习建议\n{parsed['学习建议']}\n"
-                
-                # 如果无法识别JSON结构，则简单地将键值对转换为文本
-                else:
-                    converted_text += "无法完全解析批改结果，以下是关键信息：\n\n"
-                    converted_text += str(parsed).replace("{", "").replace("}", "").replace(",", "\n").replace("'", "").replace('"', "")
-                
-                # 添加转换提示
-                return "【注意：系统已将结构化数据转换为自然语言格式】\n\n" + converted_text
-            
-            except json.JSONDecodeError:
-                # 如果不是有效的JSON，但看起来像JSON，做简单的文本替换
-                text = re.sub(r'[{}\[\]"]', '', text)
-                text = re.sub(r':\s*', ': ', text)
-                text = re.sub(r',\s*', '\n', text)
-                return "【注意：系统已尝试移除JSON格式】\n\n" + text
-        except Exception as e:
-            # 任何转换错误，添加警告并返回原始文本
-            return f"【警告：无法处理可能的JSON格式 ({str(e)})】\n\n" + text
-    
-    # 如果文本不是JSON格式，直接返回
-    return text
-
 def file_management_page():
     """File management and history page"""
     st.title("📁 File Management Center")
     
     user_data = read_user_data()
-    user_records = user_data.get(st.session_state.current_user, {}).get('records', [])
+    # Filter out records with empty content
+    user_records = [
+        record for record in user_data.get(st.session_state.current_user, {}).get('records', [])
+        if record.get('content') and record['content'].strip()
+    ]
     
     if not user_records:
         st.info("No correction records found.")
@@ -193,21 +115,20 @@ def file_management_page():
                                 except Exception:
                                     st.write("(File preview not available)")
 
-            # 显示结果内容 - 添加自然语言转换
+            # 显示结果内容 - 移除自然语言转换
             st.write("🔍 Correction Result:")
             content = record.get('content', 'No content available')
-            # 添加: 确保显示的内容是自然语言格式
-            content = ensure_natural_language(content)
+            # 删除: 确保显示的内容是自然语言格式的调用
             st.write(content)
 
-            # 添加下载按钮 - 也需要确保下载的内容是自然语言
+            # 添加下载按钮 - 移除自然语言转换
             col1, col2 = st.columns(2)
             with col1:
                 # TXT下载
                 current_time = datetime.now().strftime('%Y%m%d_%H%M%S')
                 st.download_button(
                     label="Download as TXT",
-                    data=content.encode('utf-8'),  # 使用转换后的内容
+                    data=content.encode('utf-8'),  # 使用原始内容
                     file_name=f"correction_result_{current_time}.txt",
                     mime="text/plain",
                     key=f"txt_{idx}"
@@ -260,7 +181,7 @@ def file_management_page():
                     # 调用 merge_pdfs 方法生成 PDF
                     success, pdf_path = pdf_merger.merge_pdfs(
                         files_to_include,
-                        content,  # 使用转换后的内容
+                        content,  # 使用原始内容
                         "AI Correction Results",
                         output_path
                     )
@@ -317,6 +238,15 @@ def ai_correction_page():
         with col3:
             st.subheader("Marking Scheme")
             marking_scheme = st.file_uploader("Upload marking scheme (optional)", type=["pdf", "jpg", "jpeg", "png", "json"], key="marking_scheme_file")
+
+        # 添加批改严格程度选择
+        st.subheader("批改设置")
+        strictness_level = st.select_slider(
+            "批改严格程度",
+            options=["宽松", "中等", "严格"],
+            value="中等",
+            help="选择批改的严格程度：宽松(对错误较为宽容)、中等(标准评分)、严格(严格扣分)"
+        )
 
         # 添加分隔线
         st.markdown("---")
@@ -378,11 +308,8 @@ def ai_correction_page():
                         if marking_file:
                             api_inputs.append(str(marking_file))
                         
-                        # 调用API处理函数
-                        result = call_api(*api_inputs)
-                        
-                        # 添加: 确保结果是自然语言格式
-                        result = ensure_natural_language(result)
+                        # 调用API处理函数，传递严格程度参数
+                        result = call_api(*api_inputs, strictness_level=strictness_level)
                         
                         if result:
                             st.session_state.correction_success = True
@@ -522,7 +449,7 @@ def ai_correction_page():
                         
                         success, result_path = merger.merge_pdfs(
                             files_to_include,
-                            full_result,  # 传递完整的响应内容
+                            full_result,  # 使用原始响应内容，不需要转换
                             "AI Correction Results",
                             output_path
                         )
