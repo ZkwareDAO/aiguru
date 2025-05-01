@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800" height="400" xmlns="http://www.w3.org/2000/svg">
+    <!-- 背景 -->
+    <rect width="800" height="400" fill="#f8f9fa"/>
+    
+    <!-- 标题 -->
+    <text x="400" y="50" text-anchor="middle" font-size="24" fill="#333">AI批改系统工作流程</text>
+    
+    <!-- 步骤1：上传文件 -->
+    <g transform="translate(100,150)">
+        <rect width="150" height="80" rx="10" fill="#007bff" opacity="0.8"/>
+        <text x="75" y="45" text-anchor="middle" fill="white" font-size="14">上传文件</text>
+    </g>
+    
+    <!-- 步骤2：AI处理 -->
+    <g transform="translate(325,150)">
+        <rect width="150" height="80" rx="10" fill="#28a745" opacity="0.8"/>
+        <text x="75" y="45" text-anchor="middle" fill="white" font-size="14">AI智能批改</text>
+    </g>
+    
+    <!-- 步骤3：查看结果 -->
+    <g transform="translate(550,150)">
+        <rect width="150" height="80" rx="10" fill="#dc3545" opacity="0.8"/>
+        <text x="75" y="45" text-anchor="middle" fill="white" font-size="14">查看结果</text>
+    </g>
+    
+    <!-- 连接箭头 -->
+    <g fill="none" stroke="#666" stroke-width="2">
+        <path d="M250,190 L325,190" marker-end="url(#arrow)"/>
+        <path d="M475,190 L550,190" marker-end="url(#arrow)"/>
+    </g>
+    
+    <!-- 箭头标记定义 -->
+    <defs>
+        <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto">
+            <path d="M0,0 L10,5 L0,10 L2,5 Z" fill="#666"/>
+        </marker>
+    </defs>
+</svg>
