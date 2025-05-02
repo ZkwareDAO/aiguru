@@ -24,6 +24,15 @@ TEST_ACCOUNTS = {
     "test_user_2": {"password": "password2"}
 }
 
+try:
+    from fpdf import FPDF
+except ImportError:
+    import subprocess
+    import sys
+    logging.info("Installing required package: fpdf")
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "fpdf", "Pillow"])
+    from fpdf import FPDF
+
 def setup_logger(log_dir="logs"):
     if not os.path.exists(log_dir): 
         os.makedirs(log_dir) 
@@ -424,52 +433,78 @@ def ai_correction_page():
                 
                 if st.button("Generate and Download PDF"):
                     try:
-                        from functions.api_correcting.pdf_merger import PDFMerger
-                        
-                        # 创建PDF合并器
-                        merger = PDFMerger(UPLOAD_DIR)
-                        
-                        # 准备要包含的文件，直接使用文件对象而不是保存后的路径
-                        files_to_include = {}
-                        
-                        if include_question and question:
-                            files_to_include['question'] = question
-                        if include_answer and student_answer:
-                            files_to_include['answer'] = student_answer
-                        if include_marking and marking_scheme:
-                            files_to_include['marking'] = marking_scheme
-                        
-                        # 生成PDF
-                        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                        output_filename = f"correction_result_{timestamp}.pdf"
-                        output_path = user_dir / output_filename
-                        
-                        # 确保传递完整的AI响应内容
-                        full_result = str(st.session_state.correction_result)
-                        
-                        success, result_path = merger.merge_pdfs(
-                            files_to_include,
-                            full_result,  # 使用原始响应内容，不需要转换
-                            "AI Correction Results",
-                            output_path
-                        )
-                        
-                        if success:
-                            with open(result_path, "rb") as pdf_file:
-                                pdf_data = pdf_file.read()
-                                st.download_button(
-                                    label="Download PDF",
-                                    data=pdf_data,
-                                    file_name=output_filename,
-                                    mime="application/pdf",
-                                    key=f"download_pdf_{timestamp}"
-                                )
-                        else:
-                            st.error(f"Failed to generate PDF: {result_path}")
+                        # 显示生成中的提示
+                        with st.spinner("Generating PDF..."):
+                            from functions.api_correcting.pdf_merger import PDFMerger
                             
+                            # 创建PDF合并器
+                            merger = PDFMerger(UPLOAD_DIR)
+                            
+                            # 准备要包含的文件
+                            files_to_include = {}
+                            
+                            if include_question and question:
+                                files_to_include['question'] = question
+                            if include_answer and student_answer:
+                                files_to_include['answer'] = student_answer
+                            if include_marking and marking_scheme:
+                                files_to_include['marking'] = marking_scheme
+                            
+                            # 生成PDF
+                            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                            output_filename = f"correction_result_{timestamp}.pdf"
+                            output_path = user_dir / output_filename
+                            
+                            # 确保传递完整的AI响应内容
+                            full_result = str(st.session_state.correction_result)
+                            
+                            success, result = merger.merge_pdfs(
+                                files_to_include,
+                                full_result,
+                                "AI Correction Results",
+                                output_path
+                            )
+                            
+                            if success and os.path.exists(result):
+                                with open(result, "rb") as pdf_file:
+                                    pdf_data = pdf_file.read()
+                                    st.download_button(
+                                        label="Download PDF",
+                                        data=pdf_data,
+                                        file_name=output_filename,
+                                        mime="application/pdf",
+                                        key=f"download_pdf_{timestamp}"
+                                    )
+                                
+                                # 删除临时生成的PDF
+                                try:
+                                    os.remove(result)
+                                except Exception as e:
+                                    logging.warning(f"Failed to remove temp PDF: {str(e)}")
+                            else:
+                                st.error(f"Failed to generate PDF: {result}")
+                                # 提供纯文本下载作为备选
+                                st.info("PDF generation failed. Try downloading as text instead.")
+                                st.download_button(
+                                    label="Download as Text",
+                                    data=full_result.encode('utf-8'),
+                                    file_name=f"correction_result_{timestamp}.txt",
+                                    mime="text/plain",
+                                    key=f"fallback_txt_{timestamp}"
+                                )
                     except Exception as e:
                         st.error(f"Error generating PDF: {str(e)}")
                         logging.error(f"PDF generation error: {str(e)}")
+                        # 提供纯文本下载作为备选
+                        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                        st.info("PDF generation failed. Try downloading as text instead.")
+                        st.download_button(
+                            label="Download as Text",
+                            data=str(st.session_state.correction_result).encode('utf-8'),
+                            file_name=f"correction_result_{timestamp}.txt",
+                            mime="text/plain",
+                            key=f"fallback_txt_error_{timestamp}"
+                        )
             
             else:  # Text file
                 # 原有的文本文件下载逻辑

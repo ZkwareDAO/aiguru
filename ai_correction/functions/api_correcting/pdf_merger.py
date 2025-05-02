@@ -44,15 +44,45 @@ class PDFMerger:
         self.upload_dir.mkdir(exist_ok=True)
         
         # 注册中文字体
-        try:
-            # 尝试注册微软雅黑字体
-            pdfmetrics.registerFont(TTFont('SimSun', 'C:/Windows/Fonts/simsun.ttc'))
-        except:
-            try:
-                # 备选：尝试注册宋体
-                pdfmetrics.registerFont(TTFont('SimSun', 'C:/Windows/Fonts/simfang.ttf'))
-            except:
-                print("Warning: Chinese font not found. Text might not display correctly.")
+        self.setup_chinese_font()
+
+    def setup_chinese_font(self):
+        """设置中文字体"""
+        # 定义可能的字体路径
+        font_paths = [
+            # Linux 中文字体路径
+            '/usr/share/fonts/truetype/wqy/wqy-microhei.ttc',  # 文泉驿微米黑
+            '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc',  # Noto Sans CJK
+            
+            # macOS 中文字体路径
+            '/Library/Fonts/Arial Unicode.ttf',
+            '/System/Library/Fonts/PingFang.ttc',
+            
+            # Windows 中文字体路径
+            'C:/Windows/Fonts/simsun.ttc',  # 宋体
+            'C:/Windows/Fonts/simhei.ttf',  # 黑体
+            'C:/Windows/Fonts/msyh.ttc',    # 微软雅黑
+            
+            # 退路 - 使用 ReportLab 内置字体
+            None
+        ]
+        
+        # 尝试注册第一个可用的字体
+        self.chinese_font_name = 'Helvetica'  # 默认退路字体
+        
+        for font_path in font_paths:
+            if font_path and os.path.exists(font_path):
+                try:
+                    font_name = os.path.basename(font_path).split('.')[0]
+                    pdfmetrics.registerFont(TTFont(font_name, font_path))
+                    self.chinese_font_name = font_name
+                    print(f"Using Chinese font: {font_name}")
+                    break
+                except Exception as e:
+                    print(f"Failed to register font {font_path}: {str(e)}")
+            elif font_path is None:
+                # 没有找到合适的中文字体，使用内置字体
+                print("No Chinese font found, using Helvetica (Chinese characters may show as blocks)")
 
     def merge_pdfs(self, files_to_include, result_text, title, output_path):
         temp_files = []
@@ -72,21 +102,21 @@ class PDFMerger:
             title_style = ParagraphStyle(
                 'CustomTitle',
                 parent=styles['Title'],
-                fontName='SimSun',
+                fontName=self.chinese_font_name,  # 使用找到的中文字体
                 fontSize=16,        # 减小标题字号
                 spaceAfter=10      # 减小标题后的空间
             )
             heading_style = ParagraphStyle(
                 'CustomHeading',
                 parent=styles['Heading1'],
-                fontName='SimSun',
+                fontName=self.chinese_font_name,  # 使用找到的中文字体
                 fontSize=14,        # 减小子标题字号
                 spaceAfter=8       # 减小子标题后的空间
             )
             body_style = ParagraphStyle(
                 'CustomBody',
                 parent=styles['Normal'],
-                fontName='SimSun',
+                fontName=self.chinese_font_name,  # 使用找到的中文字体
                 fontSize=12,
                 spaceAfter=6,      # 减小段落间距
                 leading=16         # 减小行距
