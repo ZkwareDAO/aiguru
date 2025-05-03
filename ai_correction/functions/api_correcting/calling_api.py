@@ -86,14 +86,41 @@ correction_with_images_prompt = correction_prompt + """
 尤其要注意学生解答中的数学符号、计算过程和最终结果，确保您的批改准确无误。"""
 
 def img_to_base64(image_path):
-    """将图片文件转换为base64编码"""
-    if image_path.startswith(('http://', 'https://')):
+    """
+    将图片文件转换为base64编码
+    支持本地文件路径、URL和Streamlit上传的文件对象
+    """
+    import io
+    
+    # 处理URL
+    if isinstance(image_path, str) and image_path.startswith(('http://', 'https://')):
         response = requests.get(image_path)
         response.raise_for_status()  
         image_data = response.content
-    else:
+    # 处理Streamlit上传的文件对象
+    elif hasattr(image_path, 'read') and callable(image_path.read):
+        try:
+            # 保存当前文件位置
+            if hasattr(image_path, 'tell') and callable(image_path.tell):
+                current_position = image_path.tell()
+            else:
+                current_position = 0
+                
+            # 读取文件数据
+            image_data = image_path.read()
+            
+            # 恢复文件位置
+            if hasattr(image_path, 'seek') and callable(image_path.seek):
+                image_path.seek(current_position)
+        except Exception as e:
+            raise Exception(f"Failed to read uploaded file: {str(e)}")
+    # 处理本地文件路径
+    elif isinstance(image_path, str):
         with open(image_path, "rb") as image_file:
             image_data = image_file.read()
+    else:
+        raise Exception(f"Unsupported image source type: {type(image_path)}")
+        
     return base64.b64encode(image_data).decode('utf-8')
 
 def force_natural_language(text):

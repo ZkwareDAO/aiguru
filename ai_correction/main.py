@@ -7,7 +7,7 @@ import time
 import logging
 from pathlib import Path
 # from functions.api_correcting.pdf_merger import ImageToPDFConverter
-from functions.api_correcting.calling_api import call_api
+from functions.api_correcting.calling_api import call_api, correction_with_image_marking_scheme
 import re
 
 # Constants
@@ -88,6 +88,110 @@ def save_user_data(data):
     with open(DATA_FILE, "w") as f:
         json.dump(data, f, indent=2)
 
+# Replace the create_download_buttons function with a unified approach
+def create_download_options(content, prefix="correction_result"):
+    """Create unified download options for content in TXT, PDF and Word formats"""
+    current_time = datetime.now().strftime('%Y%m%d_%H%M%S')
+    
+    # Create the dropdown menu for download options
+    download_option = st.selectbox(
+        "Download Format",
+        ["Select format...", "Text file (.txt)", "PDF Document (.pdf)", "Word Document (.docx)"],
+        key=f"download_format_{prefix}"
+    )
+    
+    # Handle download based on selected option
+    if download_option == "Text file (.txt)":
+        st.download_button(
+            label="Download result",
+            data=content.encode('utf-8'),
+            file_name=f"{prefix}_{current_time}.txt",
+            mime="text/plain",
+            key=f"download_txt_{current_time}"
+        )
+    
+    elif download_option == "PDF Document (.pdf)":
+        try:
+            # Import PDFMerger and create instance
+            from functions.api_correcting.pdf_merger import PDFMerger
+            pdf_merger = PDFMerger(UPLOAD_DIR)
+            
+            # Generate PDF and provide download button
+            pdf_filename = f"{prefix}_{current_time}.pdf"
+            output_path = UPLOAD_DIR / st.session_state.current_user / pdf_filename
+            
+            # Empty dictionary for files to include (no files by default)
+            files_to_include = {}
+            success, pdf_path = pdf_merger.merge_pdfs(
+                files_to_include,
+                content,
+                "AI Correction Results",
+                output_path
+            )
+            
+            if success and os.path.exists(pdf_path):
+                with open(pdf_path, 'rb') as pdf_file:
+                    pdf_bytes = pdf_file.read()
+                    st.download_button(
+                        label="Download result",
+                        data=pdf_bytes,
+                        file_name=pdf_filename,
+                        mime="application/pdf",
+                        key=f"download_pdf_{current_time}"
+                    )
+                # Clean up temporary file
+                if os.path.exists(pdf_path):
+                    os.remove(pdf_path)
+            else:
+                st.error("PDF generation failed. Try downloading as text.")
+        except Exception as e:
+            st.error(f"PDF generation failed: {str(e)}")
+            logging.error(f"PDF generation error: {str(e)}")
+    
+    elif download_option == "Word Document (.docx)":
+        try:
+            # Import python-docx for Word document creation
+            try:
+                import docx
+            except ImportError:
+                import subprocess
+                import sys
+                logging.info("Installing required package: python-docx")
+                subprocess.check_call([sys.executable, "-m", "pip", "install", "python-docx"])
+                import docx
+            
+            # Create a simple Word document with the content
+            doc = docx.Document()
+            doc.add_heading('AI Correction Results', 0)
+            
+            # Split the content by lines and add each paragraph
+            for paragraph in content.split('\n'):
+                if paragraph.strip():  # Skip empty lines
+                    doc.add_paragraph(paragraph)
+            
+            # Save the document to a temporary file
+            docx_filename = f"{prefix}_{current_time}.docx"
+            temp_path = UPLOAD_DIR / st.session_state.current_user / docx_filename
+            doc.save(str(temp_path))
+            
+            # Provide download button
+            with open(temp_path, 'rb') as docx_file:
+                docx_bytes = docx_file.read()
+                st.download_button(
+                    label="Download result",
+                    data=docx_bytes,
+                    file_name=docx_filename,
+                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    key=f"download_docx_{current_time}"
+                )
+            
+            # Clean up temporary file
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+        except Exception as e:
+            st.error(f"Word document generation failed: {str(e)}")
+            logging.error(f"Word document generation error: {str(e)}")
+
 def file_management_page():
     """File management and history page"""
     st.title("📁 File Management Center")
@@ -124,106 +228,31 @@ def file_management_page():
                                 except Exception:
                                     st.write("(File preview not available)")
 
-            # 显示结果内容 - 移除自然语言转换
+            # 显示结果内容
             st.write("🔍 Correction Result:")
             content = record.get('content', 'No content available')
-            # 删除: 确保显示的内容是自然语言格式的调用
             st.write(content)
 
-            # 添加下载按钮 - 移除自然语言转换
-            col1, col2 = st.columns(2)
-            with col1:
-                # TXT下载
-                current_time = datetime.now().strftime('%Y%m%d_%H%M%S')
-                st.download_button(
-                    label="Download as TXT",
-                    data=content.encode('utf-8'),  # 使用原始内容
-                    file_name=f"correction_result_{current_time}.txt",
-                    mime="text/plain",
-                    key=f"txt_{idx}"
-                )
-
-            with col2:
-                # PDF下载
-                try:
-                    current_time = datetime.now().strftime('%Y%m%d_%H%M%S')
-                    pdf_filename = f"correction_result_{current_time}.pdf"
-                    
-                    # 导入 PDFMerger 类
-                    from functions.api_correcting.pdf_merger import PDFMerger
-                    
-                    # 创建 PDFMerger 实例
-                    pdf_merger = PDFMerger(UPLOAD_DIR)
-                    
-                    # 创建临时文件对象来模拟UploadedFile对象
-                    class MockFileObject:
-                        def __init__(self, path):
-                            self.path = path
-                            self.type = self._determine_type(path)
-                            
-                        def _determine_type(self, path):
-                            suffix = Path(path).suffix.lower()
-                            if suffix in ['.jpg', '.jpeg']:
-                                return 'image/jpeg'
-                            elif suffix == '.png':
-                                return 'image/png'
-                            elif suffix == '.pdf':
-                                return 'application/pdf'
-                            else:
-                                return 'application/octet-stream'
-                                
-                        def getvalue(self):
-                            with open(self.path, 'rb') as f:
-                                return f.read()
-                    
-                    # 准备上传文件信息
-                    files_to_include = {}
-                    for file_type, file_info in record.get('files', {}).items():
-                        if isinstance(file_info, dict) and 'saved_path' in file_info:
-                            saved_path = file_info['saved_path']
-                            if os.path.exists(saved_path):
-                                # 创建模拟文件对象
-                                files_to_include[file_type] = MockFileObject(saved_path)
-                    
-                    output_path = UPLOAD_DIR / st.session_state.current_user / pdf_filename
-                    
-                    # 调用 merge_pdfs 方法生成 PDF
-                    success, pdf_path = pdf_merger.merge_pdfs(
-                        files_to_include,
-                        content,  # 使用原始内容
-                        "AI Correction Results",
-                        output_path
-                    )
-                    
-                    if success:
-                        with open(pdf_path, 'rb') as pdf_file:
-                            pdf_bytes = pdf_file.read()
-                            st.download_button(
-                                label="Download as PDF",
-                                data=pdf_bytes,
-                                file_name=pdf_filename,
-                                mime="application/pdf",
-                                key=f"pdf_{idx}"
-                            )
-                        
-                        # 删除临时生成的PDF
-                        if os.path.exists(pdf_path):
-                            os.remove(pdf_path)
-                    else:
-                        st.error(f"Failed to generate PDF: {pdf_path}")
-                        
-                except Exception as e:
-                    st.error(f"Failed to generate PDF: {str(e)}")
-                    logging.error(f"Error during PDF generation: {str(e)}")
+            # Replace download buttons with unified download options
+            create_download_options(content, f"record_{len(user_records)-idx}")
 
     st.info("Please use the AI Correction module to upload files and process them.")
 
 def ai_correction_page():
-    """AI correction management page with integrated file list"""
-    st.title("🤖 AI Correction")
+    """AI correction management page with enhanced UI"""
+    # 设置页面标题和说明，增加视觉吸引力
+    st.markdown("""
+    <div style="display: flex; align-items: center; margin-bottom: 20px;">
+        <div style="font-size: 32px; margin-right: 10px;">🤖</div>
+        <div>
+            <h1 style="margin: 0; padding: 0; font-size: 1.5em;">AI Correction</h1>
+            <p style="color: #666; margin-top: 5px; font-size: 0.9em;">Upload files and get instant AI-powered feedback on student answers</p>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
     
-    # 创建页面选项卡
-    tab1, tab2 = st.tabs(["AI Correction", "File List"])
+    # 添加分隔线提高视觉层次感
+    st.markdown('<hr style="margin-bottom: 30px;">', unsafe_allow_html=True)
     
     # 确保用户目录存在
     user_dir = UPLOAD_DIR / st.session_state.current_user
@@ -234,365 +263,326 @@ def ai_correction_page():
     if st.session_state.current_user not in user_data:
         user_data[st.session_state.current_user] = {"records": []}
     
-    # Tab 1: AI Correction
-    with tab1:
-        # 上传区域：三列同一排
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.subheader("Question")
-            question = st.file_uploader("Upload question (optional)", type=["pdf", "jpg", "jpeg", "png"], key="question_file")
-        with col2:
-            st.subheader("Student Answer")  
-            student_answer = st.file_uploader("Upload student answer", type=["pdf", "jpg", "jpeg", "png"], key="student_answer_file")
-        with col3:
-            st.subheader("Marking Scheme")
-            marking_scheme = st.file_uploader("Upload marking scheme (optional)", type=["pdf", "jpg", "jpeg", "png", "json"], key="marking_scheme_file")
+    # 显示文件上传进度指示器
+    st.markdown("""
+    <div style="background-color: #f8f9fa; border-radius: 10px; padding: 20px; margin-bottom: 30px;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+            <div style="font-weight: bold; color: #4a4a4a; font-size: 0.9em;">Step 1: Upload Files</div>
+            <div style="font-weight: bold; color: #4a4a4a; font-size: 0.9em;">Step 2: Process</div>
+            <div style="font-weight: bold; color: #4a4a4a; font-size: 0.9em;">Step 3: Results</div>
+        </div>
+        <div style="height: 6px; background-color: #e9ecef; border-radius: 3px; position: relative;">
+            <div style="height: 100%; width: 33%; background-color: #5cb85c; border-radius: 3px;"></div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # 上传区域：三列同一排，添加容器样式提高视觉分离度
+    st.markdown('<div style="background-color: #f8f9fa; border-radius: 10px; padding: 20px; margin-bottom: 30px;">', unsafe_allow_html=True)
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.markdown('<div style="padding: 10px; border-radius: 5px; background-color: #ffffff; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">', unsafe_allow_html=True)
+        st.markdown('<div style="font-size: 1em; font-weight: bold; margin-bottom: 10px; color: #333;">Question</div>', unsafe_allow_html=True)
+        question = st.file_uploader("Upload question (optional)", type=["pdf", "jpg", "jpeg", "png"], key="question_file")
+        if not question:
+            st.markdown('<div style="color: #666; font-size: 0.9em; margin-top: 10px;">Helps provide context for the correction</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown('<div style="padding: 10px; border-radius: 5px; background-color: #ffffff; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">', unsafe_allow_html=True)
+        st.markdown('<div style="font-size: 1em; font-weight: bold; margin-bottom: 10px; color: #333;">Student Answer</div>', unsafe_allow_html=True)
+        student_answer = st.file_uploader("Upload student answer", type=["pdf", "jpg", "jpeg", "png"], key="student_answer_file")
+        if not student_answer:
+            st.markdown('<div style="color: #ff4b4b; font-size: 0.9em; margin-top: 10px; font-weight: bold;">Required file for correction</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+    
+    with col3:
+        st.markdown('<div style="padding: 10px; border-radius: 5px; background-color: #ffffff; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">', unsafe_allow_html=True)
+        st.markdown('<div style="font-size: 1em; font-weight: bold; margin-bottom: 10px; color: #333;">Marking Scheme</div>', unsafe_allow_html=True)
+        marking_scheme = st.file_uploader("Upload marking scheme (optional)", type=["pdf", "jpg", "jpeg", "png", "json"], key="marking_scheme_file")
+        if not marking_scheme:
+            st.markdown('<div style="color: #666; font-size: 0.9em; margin-top: 10px;">Improves accuracy of grading</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
-        # 添加批改严格程度选择
-        st.subheader("批改设置")
-        strictness_level = st.select_slider(
-            "批改严格程度",
-            options=["宽松", "中等", "严格"],
-            value="中等",
-            help="选择批改的严格程度：宽松(对错误较为宽容)、中等(标准评分)、严格(严格扣分)"
-        )
+    # 添加批改严格程度选择
+    st.markdown('<div style="padding: 10px; border-radius: 5px; background-color: #ffffff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-top: 20px;">', unsafe_allow_html=True)
+    st.markdown('<div style="font-size: 1em; font-weight: bold; margin-bottom: 10px; color: #333;">Correction Settings</div>', unsafe_allow_html=True)
+    
+    # 添加文件格式提示
+    st.markdown("""
+    <div style="background-color: #f8f9fb; padding: 10px; border-radius: 5px; margin-bottom: 15px; border-left: 4px solid #4b8bf4;">
+        <h4 style="margin-top: 0;">File Requirements:</h4>
+        <ul style="margin-bottom: 0;">
+            <li>Supported formats: JPEG, PNG, PDF</li>
+            <li>Maximum file size: 5MB per file</li>
+            <li>Images should be clear and readable</li>
+            <li>Student answer file is required</li>
+        </ul>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # 严格程度选择器
+    strictness_options = {
+        "宽松": "Lenient - Focus on major concepts, be forgiving of minor errors",
+        "中等": "Moderate - Balance between strictness and leniency (Default)",
+        "严格": "Strict - Rigorous grading with detailed error analysis"
+    }
+    strictness_level = st.select_slider(
+        "Grading Strictness",
+        options=list(strictness_options.keys()),
+        value="中等",
+        format_func=lambda x: strictness_options[x]
+    )
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    # 提交按钮区域，增加醒目程度
+    st.markdown('<div style="display: flex; justify-content: center; margin: 20px 0 30px 0;">', unsafe_allow_html=True)
+    process_button = st.button("📝 Process Correction", type="primary", use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
-        # 添加分隔线
-        st.markdown("---")
-
-        # session state用于保存结果
-        if 'correction_result' not in st.session_state:
-            st.session_state.correction_result = None
-        if 'correction_success' not in st.session_state:
-            st.session_state.correction_success = False
-        if 'correction_history' not in st.session_state:
-            st.session_state.correction_history = []
-
-        # AI批改处理逻辑
-        if student_answer is not None:
-            # 保存上传的文件
-            file_size = student_answer.size / 1024  # Convert to KB
+    # 检查是否有文件提交且点击了提交按钮
+    if process_button:
+        if not student_answer:
+            st.error("⚠️ Student answer file is required for correction.")
+            return
+        else:
+            # 更新处理指示器
+            st.markdown("""
+            <div style="background-color: #f8f9fa; border-radius: 10px; padding: 20px; margin-bottom: 30px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                    <div style="font-weight: bold; color: #4a4a4a; font-size: 0.9em;">Step 1: Upload Files ✓</div>
+                    <div style="font-weight: bold; color: #5cb85c; font-size: 0.9em;">Step 2: Processing...</div>
+                    <div style="font-weight: bold; color: #4a4a4a; font-size: 0.9em;">Step 3: Results</div>
+                </div>
+                <div style="height: 6px; background-color: #e9ecef; border-radius: 3px; position: relative;">
+                    <div style="height: 100%; width: 66%; background-color: #5cb85c; border-radius: 3px;"></div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
             
-            if file_size > MAX_FILE_SIZE:
-                st.error(f"File size exceeds maximum limit of {MAX_FILE_SIZE}KB")
+            # 显示处理中的消息和动画
+            with st.spinner("AI analyzing student answer. This may take a moment..."):
+                # 保存上传的文件（如果存在）
+                user_files = {}
+                if question:
+                    question_path = save_uploaded_file(user_dir, question, "question", user_data)
+                    user_files["question"] = {"filename": question.name, "saved_path": str(question_path)}
+                
+                if student_answer:
+                    student_answer_path = save_uploaded_file(user_dir, student_answer, "student_answer", user_data)
+                    user_files["student_answer"] = {"filename": student_answer.name, "saved_path": str(student_answer_path)}
+                
+                if marking_scheme:
+                    marking_scheme_path = save_uploaded_file(user_dir, marking_scheme, "marking_scheme", user_data)
+                    user_files["marking_scheme"] = {"filename": marking_scheme.name, "saved_path": str(marking_scheme_path)}
+                
+                try:
+                    # 确保至少有学生答案文件
+                    if not student_answer:
+                        st.error("⚠️ Student answer file is required for correction.")
+                        return
+                    
+                    # 验证文件是否成功读取
+                    try:
+                        # 尝试读取文件内容验证文件完整性
+                        student_answer_contents = student_answer.read()
+                        student_answer.seek(0)  # 重置文件指针以便后续使用
+                        
+                        if not student_answer_contents:
+                            st.error("⚠️ Student answer file appears to be empty. Please check that the file contains actual content and try again.")
+                            logging.error(f"Empty file uploaded: {student_answer.name}")
+                            return
+                            
+                        logging.info(f"Successfully validated student answer file: {student_answer.name}, size: {len(student_answer_contents)} bytes")
+                    except Exception as file_error:
+                        st.error(f"⚠️ Error reading student answer file: {str(file_error)}")
+                        logging.error(f"File validation error: {str(file_error)}")
+                        return
+                        
+                    # 创建图像文件列表，过滤掉None值
+                    image_files = []
+                    if question:
+                        image_files.append(question)
+                        logging.info(f"Added question file: {question.name}")
+                    if student_answer:
+                        image_files.append(student_answer)
+                        logging.info(f"Added student answer file: {student_answer.name}")
+                    if marking_scheme:
+                        image_files.append(marking_scheme)
+                        logging.info(f"Added marking scheme file: {marking_scheme.name}")
+                    
+                    logging.info(f"Preparing to call API with {len(image_files)} files and strictness level: {strictness_level}")
+                        
+                    # 使用展开运算符传递文件列表作为位置参数
+                    api_result = correction_with_image_marking_scheme(
+                        *image_files, 
+                        strictness_level=strictness_level
+                    )
+                    
+                    if api_result and isinstance(api_result, str):
+                        # 保存结果到会话状态
+                        st.session_state.correction_success = True
+                        st.session_state.correction_result = api_result
+                        
+                        # 保存结果到用户记录
+                        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                        correction_record = {
+                            "timestamp": timestamp,
+                            "content": api_result,
+                            "files": user_files
+                        }
+                        
+                        user_data[st.session_state.current_user]["records"].append(correction_record)
+                        save_user_data(user_data)
+                        
+                        # 更新进度指示器到第3步
+                        st.markdown("""
+                        <div style="background-color: #f8f9fa; border-radius: 10px; padding: 20px; margin-bottom: 30px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                                <div style="font-weight: bold; color: #4a4a4a; font-size: 0.9em;">Step 1: Upload Files ✓</div>
+                                <div style="font-weight: bold; color: #4a4a4a; font-size: 0.9em;">Step 2: Process ✓</div>
+                                <div style="font-weight: bold; color: #5cb85c; font-size: 0.9em;">Step 3: Results Ready</div>
+                            </div>
+                            <div style="height: 6px; background-color: #e9ecef; border-radius: 3px; position: relative;">
+                                <div style="height: 100%; width: 100%; background-color: #5cb85c; border-radius: 3px;"></div>
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                        # 显示成功消息
+                        st.success("✅ Correction processed successfully!")
+                    else:
+                        st.error("❌ Failed to process correction. API returned an invalid result.")
+                        st.session_state.correction_success = False
+                except Exception as e:
+                    error_message = str(e)
+                    st.error(f"❌ Error processing correction: {error_message}")
+                    
+                    # 针对常见错误提供更具体的帮助信息
+                    if "No module named" in error_message:
+                        st.info("Missing required module. Attempting to install...")
+                        try:
+                            import subprocess
+                            import sys
+                            if "PyPDF2" in error_message:
+                                subprocess.check_call([sys.executable, "-m", "pip", "install", "PyPDF2"])
+                                st.success("Required module installed. Please try uploading files again.")
+                            elif "Pillow" in error_message:
+                                subprocess.check_call([sys.executable, "-m", "pip", "install", "Pillow"])
+                                st.success("Required module installed. Please try uploading files again.")
+                        except Exception as install_error:
+                            st.error(f"Failed to install module: {str(install_error)}")
+                    elif "timeout" in error_message.lower() or "connection" in error_message.lower():
+                        st.info("Failed to connect to API server. Please check your network connection and try again later.")
+                    elif "api key" in error_message.lower():
+                        st.info("API key issue. Please contact administrator to check API settings.")
+                    elif "'NoneType' object has no attribute" in error_message:
+                        st.info("There was an issue processing one of the uploaded files. Please ensure your files are valid images or PDFs and try again.")
+                        logging.error(f"File processing error: Likely caused by an invalid file upload or format issue.")
+                    elif "Failed to read uploaded file" in error_message:
+                        st.info("Unable to read one of the uploaded files. Please ensure your files are not corrupted and try uploading again.")
+                        logging.error(f"File reading error: {error_message}")
+                    elif "Unsupported image source type" in error_message:
+                        st.info("One of your files has an unsupported format. Please use JPG, PNG, or PDF files only.")
+                        logging.error(f"Unsupported file type error: {error_message}")
+                    elif "批改失败" in error_message:
+                        # 这是API内部错误，提供更友好的错误消息
+                        st.info("The AI correction service encountered an error. This might be due to temporarily high load or issues with the file format.")
+                        logging.error(f"API correction error: {error_message}")
+                        
+                    logging.error(f"Correction processing error: {error_message}")
+                    st.session_state.correction_success = False
+    
+    # 显示结果区域
+    if hasattr(st.session_state, 'correction_success') and st.session_state.correction_success:
+        st.markdown('<div style="background-color: #f8f9fa; border-radius: 10px; padding: 20px; margin-bottom: 30px;">', unsafe_allow_html=True)
+        st.markdown('<div style="font-size: 1.1em; font-weight: bold; color: #333; margin-bottom: 15px;">Correction Results</div>', unsafe_allow_html=True)
+        
+        # 增强结果显示区域
+        st.markdown('<div style="background-color: white; border-radius: 5px; padding: 20px; border-left: 5px solid #5cb85c; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">', unsafe_allow_html=True)
+        
+        # 优化结果的显示方式，替换纯文本为格式化内容
+        result_text = st.session_state.correction_result
+        
+        # 首先处理主要的标题格式
+        result_text = re.sub(r'# (.*?)(\n|$)', r'<div style="font-weight: bold; font-size: 1.1em; color: #333; margin: 10px 0 5px 0; border-bottom: 1px solid #eee; padding-bottom: 5px;">\1</div>', result_text)
+        result_text = re.sub(r'## (.*?)(\n|$)', r'<div style="font-weight: bold; font-size: 1em; color: #444; margin: 8px 0 4px 0;">\1</div>', result_text)
+        result_text = re.sub(r'### (.*?)(\n|$)', r'<div style="font-weight: bold; font-size: 0.95em; color: #555; margin: 6px 0 3px 0;">\1</div>', result_text)
+        
+        # 处理其他特定标题格式
+        result_text = re.sub(r'学生答案批改如下:', r'<div style="font-weight: bold; font-size: 1em; color: #333;">学生答案批改如下:</div>', result_text)
+        
+        # 处理分数显示
+        result_text = re.sub(r'总分：(\d+)/(\d+)', r'<div style="font-size: 0.95em; margin: 5px 0;">总分：<span style="font-weight: bold; color: #5cb85c;">\1</span>/\2</div>', result_text)
+        result_text = re.sub(r'(\d+)\s*\([Ii]\)', r'<div style="font-size: 1em; font-weight: bold; color: #5cb85c; margin: 8px 0;">\1 分</div>', result_text)
+        
+        # 处理步骤评分
+        result_text = re.sub(r'(\d+)\. 第\d+步：(.*?) - (\d+)/(\d+)', r'<div style="font-size: 0.95em; margin: 10px 0 5px 0;"><span style="font-weight: bold;">\1. 第\1步：\2</span> - <span style="color: #5cb85c; font-weight: bold;">\3</span>/\4</div>', result_text)
+        
+        # 处理正确和错误点
+        result_text = re.sub(r'- ✓ 正确点：(.*?)(\n|$)', r'<div style="color: #5cb85c; margin-left: 20px; font-size: 0.9em;">✓ 正确点：\1</div>', result_text)
+        result_text = re.sub(r'- ✗ 错误点：(.*?)(\n|$)', r'<div style="color: #d9534f; margin-left: 20px; font-size: 0.9em;">✗ 错误点：\1</div>', result_text)
+        result_text = re.sub(r'- 扣分原因：(.*?)(\n|$)', r'<div style="color: #777; margin-left: 20px; font-size: 0.9em;">🔍 扣分原因：\1</div>', result_text)
+        
+        # 科目和题型信息
+        result_text = re.sub(r'- 科目：(.*?)(\n|$)', r'<div style="font-size: 0.9em; margin: 3px 0;">📚 科目：<span style="color: #333;">\1</span></div>', result_text)
+        result_text = re.sub(r'- 题目类型：(.*?)(\n|$)', r'<div style="font-size: 0.9em; margin: 3px 0;">📝 题目类型：<span style="color: #333;">\1</span></div>', result_text)
+        
+        # 处理一般列表项
+        lines = result_text.split('\n')
+        formatted_lines = []
+        for line in lines:
+            # 跳过已经处理过的行
+            if '<div' in line:
+                formatted_lines.append(line)
+                continue
+                
+            # 处理列表项
+            if line.strip().startswith('-') or line.strip().startswith('•'):
+                line = f'<div style="margin-left: 15px; font-size: 0.9em;">{line}</div>'
+            # 处理缩进的数学公式
+            elif line.strip().startswith('∴') or line.strip().startswith('∵'):
+                line = f'<div style="margin-left: 15px; font-family: monospace; font-size: 0.9em;">{line}</div>'
+            # 处理普通文本
+            elif line.strip():
+                line = f'<div style="font-size: 0.9em; line-height: 1.4; margin: 3px 0;">{line}</div>'
             else:
-                # 保存学生答案文件
-                student_file = save_uploaded_file(user_dir, student_answer, "student_answer", user_data)
-                
-                # 保存题目文件（如果有）
-                question_file = None
-                if question is not None:
-                    question_file = save_uploaded_file(user_dir, question, "question", user_data)
-                
-                # 保存评分标准文件（如果有）
-                marking_file = None
-                if marking_scheme is not None:
-                    marking_file = save_uploaded_file(user_dir, marking_scheme, "marking_scheme", user_data)
-                
-                # 处理文件开始按钮
-                if st.button("Start AI Correction"):
-                    st.info("Processing files with AI correction...")
-                    
-                    progress_bar = st.progress(0)
-                    for i in range(10):
-                        # 模拟处理过程
-                        time.sleep(0.1)
-                        progress_bar.progress((i+1)/10)
-                    
-                    try:
-                        # 准备API调用的文本内容
-                        prompt_text = "请批改以下学生答案"
-                        
-                        # 准备文件内容
-                        api_inputs = [prompt_text]  # 第一个参数始终是文本提示
-                        
-                        # 添加题目文件内容（如果有）
-                        if question_file:
-                            api_inputs.append(str(question_file))
-                        
-                        # 添加学生答案文件内容（必需）
-                        api_inputs.append(str(student_file))
-                        
-                        # 添加评分标准文件内容（如果有）
-                        if marking_file:
-                            api_inputs.append(str(marking_file))
-                        
-                        # 调用API处理函数，传递严格程度参数
-                        result = call_api(*api_inputs, strictness_level=strictness_level)
-                        
-                        if result:
-                            st.session_state.correction_success = True
-                            st.session_state.correction_result = result
-                            
-                            # 保存结果到用户记录
-                            user_data = read_user_data()
-                            if st.session_state.current_user not in user_data:
-                                user_data[st.session_state.current_user] = {'records': []}
-
-                            # 在处理结果时保存更详细的文件信息
-                            uploaded_files = {}
-                            for file_type, file_obj in [
-                                ('question', question_file),
-                                ('answer', student_file),
-                                ('marking', marking_file)
-                            ]:
-                                if file_obj:
-                                    # 检查是否是 UploadedFile 对象
-                                    if hasattr(file_obj, 'name') and hasattr(file_obj, 'getvalue'):
-                                        # 处理新上传的文件
-                                        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-                                        file_ext = os.path.splitext(file_obj.name)[1]
-                                        saved_filename = f"{file_type}_{timestamp}{file_ext}"
-                                        save_path = UPLOAD_DIR / st.session_state.current_user / saved_filename
-                                        
-                                        save_path.parent.mkdir(parents=True, exist_ok=True)
-                                        with open(save_path, 'wb') as f:
-                                            f.write(file_obj.getvalue())
-                                        
-                                        uploaded_files[file_type] = {
-                                            'filename': file_obj.name,
-                                            'saved_path': str(save_path),
-                                            'timestamp': timestamp
-                                        }
-                                    elif isinstance(file_obj, (str, Path)):
-                                        # 处理已经保存的文件路径
-                                        file_path = Path(file_obj)
-                                        if file_path.exists():
-                                            uploaded_files[file_type] = {
-                                                'filename': file_path.name,
-                                                'saved_path': str(file_path),
-                                                'timestamp': datetime.fromtimestamp(file_path.stat().st_mtime).strftime('%Y%m%d_%H%M%S')
-                                            }
-
-                            record = {
-                                'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                                'content': result,
-                                'files': uploaded_files
-                            }
-
-                            user_data[st.session_state.current_user]['records'].append(record)
-                            save_user_data(user_data)
-                            
-                    except Exception as e:
-                        st.error(f"Error during correction: {str(e)}")
-                        st.text("Full error details:")
-                        st.exception(e)
-                        logging.error(f"AI correction error: {str(e)}")
-
-        # 只在批改结果出来后显示预览
-        if st.session_state.correction_success and st.session_state.correction_result:
-            st.success("AI Correction completed!")
-
-            # 预览区
-            st.markdown("### Uploaded Files Preview")
-            preview_cols = st.columns(3)
-            # 题目预览
-            if question:
-                with preview_cols[0]:
-                    st.image(question, caption="Question Preview", use_column_width=True)
-            # 学生答案预览
-            if student_answer:
-                with preview_cols[1]:
-                    st.image(student_answer, caption="Student Answer Preview", use_column_width=True)
-            # 评分标准预览
-            if marking_scheme and marking_scheme.type != "application/json":
-                with preview_cols[2]:
-                    st.image(marking_scheme, caption="Marking Scheme Preview", use_column_width=True)
-            elif marking_scheme:
-                with preview_cols[2]:
-                    st.info("JSON Marking Scheme loaded")
-                    try:
-                        marking_content = marking_scheme.read().decode('utf-8')
-                        with st.expander("View Marking Scheme Content"):
-                            st.json(json.loads(marking_content))
-                    except Exception as e:
-                        st.warning(f"Unable to preview JSON content: {str(e)}")
-
-            # 显示批改结果
-            st.markdown("### AI Response")
-            st.markdown(str(st.session_state.correction_result))
-            
-            # 修改下载部分
-            st.markdown("### Download Options")
-            download_col1, download_col2 = st.columns([2, 1])
-            
-            with download_col1:
-                file_type = st.selectbox(
-                    "Select file type",
-                    ["Text (.txt)", "PDF (.pdf)"],
-                    key="download_type"
-                )
-            
-            if file_type == "PDF (.pdf)":
-                # PDF选项
-                st.markdown("#### PDF Options")
-                include_images = st.checkbox("Include uploaded images", value=True)
-                include_question = st.checkbox("Include question", value=True)
-                include_answer = st.checkbox("Include student answer", value=True)
-                include_marking = st.checkbox("Include marking scheme", value=True)
-                
-                if st.button("Generate and Download PDF"):
-                    try:
-                        # 显示生成中的提示
-                        with st.spinner("Generating PDF..."):
-                            from functions.api_correcting.pdf_merger import PDFMerger
-                            
-                            # 创建PDF合并器
-                            merger = PDFMerger(UPLOAD_DIR)
-                            
-                            # 准备要包含的文件
-                            files_to_include = {}
-                            
-                            if include_question and question:
-                                files_to_include['question'] = question
-                            if include_answer and student_answer:
-                                files_to_include['answer'] = student_answer
-                            if include_marking and marking_scheme:
-                                files_to_include['marking'] = marking_scheme
-                            
-                            # 生成PDF
-                            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                            output_filename = f"correction_result_{timestamp}.pdf"
-                            output_path = user_dir / output_filename
-                            
-                            # 确保传递完整的AI响应内容
-                            full_result = str(st.session_state.correction_result)
-                            
-                            success, result = merger.merge_pdfs(
-                                files_to_include,
-                                full_result,
-                                "AI Correction Results",
-                                output_path
-                            )
-                            
-                            if success and os.path.exists(result):
-                                with open(result, "rb") as pdf_file:
-                                    pdf_data = pdf_file.read()
-                                    st.download_button(
-                                        label="Download PDF",
-                                        data=pdf_data,
-                                        file_name=output_filename,
-                                        mime="application/pdf",
-                                        key=f"download_pdf_{timestamp}"
-                                    )
-                                
-                                # 删除临时生成的PDF
-                                try:
-                                    os.remove(result)
-                                except Exception as e:
-                                    logging.warning(f"Failed to remove temp PDF: {str(e)}")
-                            else:
-                                st.error(f"Failed to generate PDF: {result}")
-                                # 提供纯文本下载作为备选
-                                st.info("PDF generation failed. Try downloading as text instead.")
-                                st.download_button(
-                                    label="Download as Text",
-                                    data=full_result.encode('utf-8'),
-                                    file_name=f"correction_result_{timestamp}.txt",
-                                    mime="text/plain",
-                                    key=f"fallback_txt_{timestamp}"
-                                )
-                    except Exception as e:
-                        st.error(f"Error generating PDF: {str(e)}")
-                        logging.error(f"PDF generation error: {str(e)}")
-                        # 提供纯文本下载作为备选
-                        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                        st.info("PDF generation failed. Try downloading as text instead.")
-                        st.download_button(
-                            label="Download as Text",
-                            data=str(st.session_state.correction_result).encode('utf-8'),
-                            file_name=f"correction_result_{timestamp}.txt",
-                            mime="text/plain",
-                            key=f"fallback_txt_error_{timestamp}"
-                        )
-            
-            else:  # Text file
-                # 原有的文本文件下载逻辑
-                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                st.download_button(
-                    label="Download Text",
-                    data=str(st.session_state.correction_result),
-                    file_name=f"correction_result_{timestamp}.txt",
-                    mime="text/plain",
-                    key=f"download_result_{timestamp}"
-                )
-
-        # 添加清除结果的按钮
+                line = '<div style="height: 8px;"></div>'  # 空行
+            formatted_lines.append(line)
+        
+        result_text = ''.join(formatted_lines)
+        
+        # 应用一致的基础字体大小和行高
+        result_text = f'<div style="font-size: 14px; line-height: 1.4;">{result_text}</div>'
+        
+        st.markdown(result_text, unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        # 提供下载选项
+        st.markdown('<div style="font-size: 1em; font-weight: bold; color: #333; margin: 20px 0 15px 0;">Download Options</div>', unsafe_allow_html=True)
+        
+        # 使用统一的下载选项函数
+        create_download_options(st.session_state.correction_result)
+        
+        # 添加清除结果的按钮，更直观友好
+        st.markdown('<div style="display: flex; justify-content: center; margin-top: 20px;">', unsafe_allow_html=True)
         if st.session_state.correction_success:
-            if st.button("Clear Results"):
+            if st.button("🔄 Start New Correction", use_container_width=True):
                 st.session_state.correction_success = False
                 st.session_state.correction_result = None
                 st.rerun()
-    
-    # Tab 2: File List
-    with tab2:
-        user_records = user_data.get(st.session_state.current_user, {}).get('records', [])
+        st.markdown('</div>', unsafe_allow_html=True)
         
-        # 分类显示文件
-        file_categories = {
-            "题目文件": "question",
-            "评分标准文件": "marking_scheme",
-            "学生作答文件": "student_answer",
-            "批改结果": "correction_result",
-            "批注文件": "annotated_pdf"
-        }
-        
-        for title, file_type in file_categories.items():
-            st.write(f"### {title}")
-            filtered_files = [r for r in user_records if r.get("file_type") == file_type]
-            
-            if filtered_files:
-                for record in filtered_files:
-                    cols = st.columns([5, 2, 2, 2])
-                    cols[0].write(record["filename"])
-                    cols[1].metric("Size", f"{record['file_size']}KB")
-                    cols[2].write(record["upload_time"])
-                    
-                    # 处理文件操作
-                    file_path = user_dir / record["filename"]
-                    if os.path.exists(file_path):
-                        # 提供文件删除功能
-                        if cols[3].button("删除", key=f"del_{file_type}_{record['filename']}_{id(record)}"):
-                            try:
-                                os.remove(file_path)
-                                # 更新记录
-                                updated_records = [r for r in user_records if r['filename'] != record['filename']]
-                                user_data[st.session_state.current_user]['records'] = updated_records
-                                save_user_data(user_data)
-                                st.success(f"文件 {record['filename']} 已删除")
-                                st.rerun()
-                            except Exception as e:
-                                st.error(f"删除文件时出错: {str(e)}")
-                        
-                        # 为可下载文件提供下载按钮
-                        if file_type in ["correction_result", "annotated_pdf"]:
-                            file_ext = record["filename"].split(".")[-1].lower()
-                            mime_type = {
-                                "json": "application/json",
-                                "pdf": "application/pdf",
-                                "txt": "text/plain"
-                            }.get(file_ext, "application/octet-stream")
-                            
-                            # Modified file reading code with proper encoding handling
-                            if file_ext in ["json", "txt"]:
-                                with open(file_path, "r", encoding="utf-8") as f:
-                                    download_data = f.read()
-                            else:
-                                with open(file_path, "rb") as f:
-                                    download_data = f.read()
-                            
-                            # 为下载按钮创建一个新的列
-                            st.download_button(
-                                label="下载",
-                                data=download_data,
-                                file_name=record["filename"],
-                                mime=mime_type,
-                                key=f"dl_{file_type}_{record['filename']}_{id(record)}"
-                            )
-                    else:
-                        cols[3].warning("文件不存在")
-            else:
-                st.info(f"暂无{title}")
+        st.markdown('</div>', unsafe_allow_html=True)  # 关闭结果区域容器
+
+    # 添加页脚
+    st.markdown("""
+    <div style="text-align: center; margin-top: 30px; padding-top: 15px; border-top: 1px solid #eee; color: #666; font-size: 0.8em;">
+        AI Guru Correction System • Powered by advanced AI • © 2025
+    </div>
+    """, unsafe_allow_html=True)
 
 # 新增辅助函数用于保存上传的文件
 def save_uploaded_file(user_dir, uploaded_file, file_type, user_data):

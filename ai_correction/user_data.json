@@ -81,6 +81,111 @@
         "file_size": 173.99,
         "file_type": "student_answer",
         "processing_result": "Uploaded"
+      },
+      {
+        "filename": "fee58e639eef42b68791a965912fefad.jpeg",
+        "upload_time": "2025-05-03 22:05:48",
+        "file_size": 45.27,
+        "file_type": "student_answer",
+        "processing_result": "Uploaded"
+      },
+      {
+        "filename": "fee58e639eef42b68791a965912fefad.jpeg",
+        "upload_time": "2025-05-03 22:05:48",
+        "file_size": 45.27,
+        "file_type": "student_answer",
+        "processing_result": "Uploaded"
+      },
+      {
+        "filename": "fee58e639eef42b68791a965912fefad.jpeg",
+        "upload_time": "2025-05-03 22:05:49",
+        "file_size": 45.27,
+        "file_type": "student_answer",
+        "processing_result": "Uploaded"
+      },
+      {
+        "timestamp": "2025-05-03 22:06:17",
+        "content": "\u5b66\u751f\u7b54\u6848\u6279\u6539\u5982\u4e0b\uff1a\n\n### 16 (I)\n\u5b66\u751f\u89e3\u7b54\u6b63\u786e\uff0c\u6b65\u9aa4\u5982\u4e0b\uff1a\n\n1. \u8ba1\u7b97cos A\uff1a\n   - cos A = (b\u00b2 + c\u00b2 - a\u00b2) / (2bc) = (\u221a5) / 2\n   - \u2234 1/2 c\u00b2 = b\u00b2 - a\u00b2\n   - c\u00b2 = a\u00b2 + b\u00b2 - 2ab cos C\n\n2. \u8ba1\u7b97sin\u00b2B - sin\u00b2A\uff1a\n   - sin\u00b2B - sin\u00b2A = \u00b1 sin C\n   - sin\u00b2A cos\u00b2C + \u00b1 sin 2A \u00b7 \u00b1 sin 2C + \u00b1 sin 2C \u00b1 sin 2A + sin\u00b2A cos\u00b2C - sin\u00b2A = \u00b1 sin C\n   - -sin\u00b2A = \u00b1 sin\u00b2C\n   - 1/2 cos\u00b2C + \u00b1 1/2 sin 2C + \u00b1 cos\u00b2 1/2 sin C - 1/2 = \u00b1 sin\u00b2C\n   - cos\u00b2C + sin 2C + sin\u00b2C - 1 = sin\u00b2C\n   - cos\u00b2C + 1 - 2sin\u00b2C + sin\u00b2C - 1 = sin\u00b2C\n   - cos\u00b2C = 2sin\u00b2C\n   - \u2234 (sin\u00b2C) / (cos\u00b2C) = 1/2  \u2234 tan C = \u00b1 (\u221a5) / 2\n\n### 16 (II)\n\u5b66\u751f\u7684\u8ba1\u7b97\u8fc7\u7a0b\u5927\u90e8\u5206\u6b63\u786e\uff0c\u4f46\u5b58\u5728\u4e00\u4e9b\u5c0f\u9519\u8bef\u548c\u4e0d\u6e05\u6670\u4e4b\u5904\uff1a\n\n1. \u5df2\u77e5 sin C = (\u221a2) / 3\uff0ccos C = (\u221a7) / 3\n   - sin B = sin (A + C) = sin A cos C + cos A sin C\n   - = (\u221a5 / 2) \u00b7 (\u221a7 / 3) + (\u221a5 / 2) \u00b7 (\u221a2 / 3)\n   - = (\u221a35 + \u221a10) / 6 \uff08\u5b66\u751f\u7b54\u6848\u6709\u8bef\uff0c\u5e94\u4e3a (\u221a35 + \u221a10) / 6\uff09\n\n2. \u8ba1\u7b97\u9762\u79ef \u0394ABC\uff1a\n   - \u0394ABC = 1/2 bc sin A = 3\n   - bc = 6\u221a2\n\n3. \u8ba1\u7b97 b\u00b2\uff1a\n   - a\u00b2 = b\u00b2 + c\u00b2 - 2bc cos A\n   - \u2234 b = 2\u221a2 \uff08\u6b63\u786e\uff09\n\n\u603b\u4f53\u6765\u8bf4\uff0c\u5b66\u751f\u7684\u89e3\u7b54\u8fc7\u7a0b\u8f83\u4e3a\u6e05\u6670\uff0c\u4f46\u5728sin B\u7684\u8ba1\u7b97\u4e2d\u51fa\u73b0\u4e86\u5c0f\u9519\u8bef\uff0c\u5efa\u8bae\u5b66\u751f\u518d\u68c0\u67e5\u4e00\u904d\u8ba1\u7b97\u8fc7\u7a0b\u3002",
+        "files": {
+          "answer": {
+            "filename": "fee58e639eef42b68791a965912fefad.jpeg",
+            "saved_path": "uploads\\test_user_2\\fee58e639eef42b68791a965912fefad.jpeg",
+            "timestamp": "20250503_220549"
+          }
+        }
+      },
+      {
+        "filename": "fee58e639eef42b68791a965912fefad.jpeg",
+        "upload_time": "2025-05-03 22:07:23",
+        "file_size": 45.27,
+        "file_type": "student_answer",
+        "processing_result": "Uploaded"
+      },
+      {
+        "filename": "fee58e639eef42b68791a965912fefad.jpeg",
+        "upload_time": "2025-05-03 22:07:24",
+        "file_size": 45.27,
+        "file_type": "student_answer",
+        "processing_result": "Uploaded"
+      },
+      {
+        "filename": "fee58e639eef42b68791a965912fefad.jpeg",
+        "upload_time": "2025-05-03 22:07:25",
+        "file_size": 45.27,
+        "file_type": "student_answer",
+        "processing_result": "Uploaded"
+      },
+      {
+        "filename": "fee58e639eef42b68791a965912fefad.jpeg",
+        "upload_time": "2025-05-03 22:07:35",
+        "file_size": 45.27,
+        "file_type": "student_answer",
+        "processing_result": "Uploaded"
+      },
+      {
+        "filename": "fee58e639eef42b68791a965912fefad.jpeg",
+        "upload_time": "2025-05-03 22:07:35",
+        "file_size": 45.27,
+        "file_type": "student_answer",
+        "processing_result": "Uploaded"
+      },
+      {
+        "filename": "fee58e639eef42b68791a965912fefad.jpeg",
+        "upload_time": "2025-05-03 22:07:36",
+        "file_size": 45.27,
+        "file_type": "student_answer",
+        "processing_result": "Uploaded"
+      },
+      {
+        "filename": "fee58e639eef42b68791a965912fefad.jpeg",
+        "upload_time": "2025-05-03 22:20:06",
+        "file_size": 45.27,
+        "file_type": "student_answer",
+        "processing_result": "Uploaded"
+      },
+      {
+        "filename": "\u5fae\u4fe1\u56fe\u7247_20250430182121.jpg",
+        "upload_time": "2025-05-03 22:22:42",
+        "file_size": 173.99,
+        "file_type": "student_answer",
+        "processing_result": "Uploaded"
+      },
+      {
+        "filename": "\u5fae\u4fe1\u56fe\u7247_20250430182121.jpg",
+        "upload_time": "2025-05-03 22:27:25",
+        "file_size": 173.99,
+        "file_type": "student_answer",
+        "processing_result": "Uploaded"
+      },
+      {
+        "timestamp": "2025-05-03 22:27:57",
+        "content": "# \u6279\u6539\u7ed3\u679c\n\n## \u9898\u76ee\u4fe1\u606f\u4e0e\u603b\u5206\n- \u79d1\u76ee\uff1a\u6570\u5b66\n- \u9898\u76ee\u7c7b\u578b\uff1a\u6c42\u89e3\u8868\u8fbe\u5f0f\u7684\u6700\u5c0f\u503c\n- \u603b\u5206\uff1a9/10\n\n## \u9010\u6b65\u8bc4\u5206\n\n### 1. \u7b2c1\u6b65\uff1a\u7406\u89e3\u9898\u76ee\u5e76\u5efa\u7acb\u6a21\u578b - 2/2\n   - \u2713 \u6b63\u786e\u70b9\uff1a\u5b66\u751f\u6b63\u786e\u7406\u89e3\u4e86\u9898\u610f\uff0c\u5e76\u5c06\u95ee\u9898\u8f6c\u5316\u4e3a\u6c42\u89e3\u51e0\u4f55\u56fe\u5f62\u4e2d\u957f\u5ea6\u7684\u6700\u5c0f\u503c\u3002\u516c\u5f0f \u221aa\u00b2+16 \u548c \u221ab\u00b2+16 \u88ab\u6b63\u786e\u8bc6\u522b\u4e3a\u76f4\u89d2\u4e09\u89d2\u5f62\u7684\u659c\u8fb9\u957f\u5ea6\u3002\n   - \u2717 \u9519\u8bef\u70b9\uff1a\u65e0\u3002\n   - \u6263\u5206\u539f\u56e0\uff1a\u65e0\u3002\n\n### 2. \u7b2c2\u6b65\uff1a\u753b\u56fe\u548c\u5206\u6790\u51e0\u4f55\u5173\u7cfb - 2/2\n   - \u2713 \u6b63\u786e\u70b9\uff1a\u5b66\u751f\u6b63\u786e\u5730\u7ed8\u5236\u4e86\u8f85\u52a9\u56fe\u5f62\uff0c\u5c06\u539f\u95ee\u9898\u8f6c\u5316\u4e3a\u6c42\u89e3 xz + yz \u7684\u6700\u5c0f\u503c\uff0c\u5176\u4e2d xz \u548c yz \u5206\u522b\u5bf9\u5e94\u4e8e\u539f\u95ee\u9898\u4e2d\u7684 \u221aa\u00b2+16 \u548c \u221ab\u00b2+16\u3002\u540c\u65f6\uff0c\u51c6\u786e\u5206\u6790\u4e86 xy'z \u662f xyz \u7684\u53cd\u8f6c\uff0c\u56e0\u6b64 yz = y'z \u548c xz = x'z\u3002\n   - \u2717 \u9519\u8bef\u70b9\uff1a\u65e0\u3002\n   - \u6263\u5206\u539f\u56e0\uff1a\u65e0\u3002\n\n### 3. \u7b2c3\u6b65\uff1a\u6c42\u89e3\u6700\u5c0f\u503c - 4/5\n   - \u2713 \u6b63\u786e\u70b9\uff1a\u5b66\u751f\u6b63\u786e\u8fd0\u7528\u4e86\u4e24\u70b9\u4e4b\u95f4\u7ebf\u6bb5\u6700\u77ed\u7684\u539f\u7406\uff0c\u5f97\u51fa\u5f53 C \u70b9\u4e3a xy \u4e2d\u70b9\u7684\u6b63\u4e0b\u65b9\u65f6\uff0cxz + yz \u7684\u6700\u5c0f\u503c\u4e3a 2\u00d7\u221a25 = 10\u3002\n   - \u2717 \u9519\u8bef\u70b9\uff1a\u5728\u6700\u540e\u4e00\u884c\uff0c\u5b66\u751f\u76f4\u63a5\u7ed9\u51fa\u4e86\u7ed3\u679c\u4e3a 10\uff0c\u4f46\u6ca1\u6709\u5199\u51fa\u5b8c\u6574\u7684\u6c42\u89e3\u8fc7\u7a0b\u548c\u89e3\u91ca\u3002\n   - \u6263\u5206\u539f\u56e0\uff1a\u867d\u7136\u7ed3\u679c\u6b63\u786e\uff0c\u4f46\u7f3a\u4e4f\u8be6\u7ec6\u7684\u6c42\u89e3\u6b65\u9aa4\u548c\u89e3\u91ca\uff0c\u53ef\u80fd\u5bfc\u81f4\u7406\u89e3\u4e0d\u5b8c\u6574\u3002\n\n## \u603b\u4f53\u8bc4\u4ef7\n\u5b66\u751f\u901a\u8fc7\u51e0\u4f55\u53d8\u6362\u548c\u4e24\u70b9\u95f4\u7ebf\u6bb5\u6700\u77ed\u539f\u7406\uff0c\u6210\u529f\u6c42\u89e3\u4e86\u8868\u8fbe\u5f0f\u7684\u6700\u5c0f\u503c\u3002\u89e3\u9898\u601d\u8def\u6e05\u6670\uff0c\u6b65\u9aa4\u5408\u7406\uff0c\u6700\u7ec8\u7ed3\u679c\u6b63\u786e\u3002\u4f46\u6c42\u89e3\u8fc7\u7a0b\u4e2d\u7f3a\u4e4f\u90e8\u5206\u7ec6\u8282\u8bf4\u660e\uff0c\u5efa\u8bae\u5728\u89e3\u9898\u65f6\u8be6\u7ec6\u8bb0\u5f55\u6bcf\u4e00\u6b65\u63a8\u5bfc\u8fc7\u7a0b\u3002\n\n## \u8be6\u7ec6\u89e3\u6790\n\u9898\u76ee\u8981\u6c42\u6c42\u89e3 \u221aa\u00b2+16 + \u221ab\u00b2+16 \u7684\u6700\u5c0f\u503c\uff0c\u5176\u4e2d a + b = 6 \u4e14 a > 0, b > 0\u3002\n\n1. \u5c06\u95ee\u9898\u8f6c\u5316\u4e3a\u6c42\u89e3\u51e0\u4f55\u56fe\u5f62\u4e2d\u957f\u5ea6\u7684\u6700\u5c0f\u503c\uff0c\u5373\u6c42 xz + yz \u7684\u6700\u5c0f\u503c\u3002\n2. \u901a\u8fc7\u753b\u56fe\u5206\u6790\uff0c\u5c06\u539f\u95ee\u9898\u8f6c\u5316\u4e3a\u6c42\u89e3 xz + yz \u7684\u6700\u5c0f\u503c\uff0c\u5176\u4e2d xz = \u221aa\u00b2+16\uff0cyz = \u221ab\u00b2+16\u3002\n3. \u5229\u7528\u51e0\u4f55\u53d8\u6362\uff0c\u5c06 xyz \u53cd\u8f6c\u4e3a xy'z\uff0c\u5f97\u51fa yz = y'z \u548c xz = x'z\u3002\n4. \u7531\u4e24\u70b9\u95f4\u7ebf\u6bb5\u6700\u77ed\u539f\u7406\uff0c\u5f53 C \u70b9\u4e3a xy \u4e2d\u70b9\u7684\u6b63\u4e0b\u65b9\u65f6\uff0cxz + yz \u7684\u6700\u5c0f\u503c\u4e3a 2\u00d7\u221a25 = 10\u3002\n\n## \u5b66\u4e60\u5efa\u8bae\n1. \u5728\u89e3\u9898\u8fc7\u7a0b\u4e2d\uff0c\u5c3d\u91cf\u8be6\u7ec6\u8bb0\u5f55\u6bcf\u4e00\u6b65\u7684\u63a8\u5bfc\u8fc7\u7a0b\u548c\u89e3\u91ca\uff0c\u4ee5\u4fbf\u66f4\u597d\u5730\u7406\u89e3\u89e3\u9898\u601d\u8def\u3002\n2. \u52a0\u5f3a\u5bf9\u51e0\u4f55\u53d8\u6362\u548c\u4e24\u70b9\u95f4\u7ebf\u6bb5\u6700\u77ed\u539f\u7406\u7684\u5e94\u7528\uff0c\u591a\u505a\u76f8\u5173\u9898\u76ee\u8fdb\u884c\u7ec3\u4e60\u3002\n3. \u5728\u5f97\u51fa\u7ed3\u679c\u65f6\uff0c\u5e94\u7ed9\u51fa\u5b8c\u6574\u7684\u6c42\u89e3\u6b65\u9aa4\u548c\u89e3\u91ca\uff0c\u907f\u514d\u76f4\u63a5\u7ed9\u51fa\u7b54\u6848\u3002",
+        "files": {
+          "student_answer": {
+            "filename": "\u5fae\u4fe1\u56fe\u7247_20250430182121.jpg",
+            "saved_path": "uploads\\test_user_2\\\u5fae\u4fe1\u56fe\u7247_20250430182121.jpg"
+          }
+        }
       }
     ]
   },
