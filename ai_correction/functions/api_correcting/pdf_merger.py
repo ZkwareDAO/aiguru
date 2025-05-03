@@ -16,6 +16,19 @@ from reportlab.lib.units import inch
 from reportlab.pdfbase.pdfmetrics import registerFontFamily
 from PIL import Image as PILImage
 import tempfile
+import urllib.request
+import shutil
+
+# 添加下载字体功能
+def download_font(font_url, save_path):
+    """下载字体文件到指定路径"""
+    try:
+        with urllib.request.urlopen(font_url) as response, open(save_path, 'wb') as out_file:
+            shutil.copyfileobj(response, out_file)
+        return True
+    except Exception as e:
+        print(f"Error downloading font: {str(e)}")
+        return False
 
 class PDFWithChinese(FPDF):
     def __init__(self):
@@ -34,8 +47,7 @@ class PDFWithChinese(FPDF):
             self.multi_cell(0, 10, encoded_text)
 
 def replace_math_symbols(text):
-    """替换数学符号为普通字符"""
-    # 完全删除此函数或保留为空函数
+    """保留数学符号的原始形式，不进行替换"""
     return text
 
 class PDFMerger:
@@ -43,46 +55,237 @@ class PDFMerger:
         self.upload_dir = Path(upload_dir)
         self.upload_dir.mkdir(exist_ok=True)
         
+        # 确保字体目录存在
+        self.font_dir = Path(__file__).parent / 'fonts'
+        self.font_dir.mkdir(exist_ok=True)
+        
         # 注册中文字体
         self.setup_chinese_font()
 
     def setup_chinese_font(self):
-        """设置中文字体"""
-        # 定义可能的字体路径
-        font_paths = [
-            # Linux 中文字体路径
-            '/usr/share/fonts/truetype/wqy/wqy-microhei.ttc',  # 文泉驿微米黑
-            '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc',  # Noto Sans CJK
-            
-            # macOS 中文字体路径
-            '/Library/Fonts/Arial Unicode.ttf',
-            '/System/Library/Fonts/PingFang.ttc',
-            
-            # Windows 中文字体路径
-            'C:/Windows/Fonts/simsun.ttc',  # 宋体
-            'C:/Windows/Fonts/simhei.ttf',  # 黑体
-            'C:/Windows/Fonts/msyh.ttc',    # 微软雅黑
-            
-            # 退路 - 使用 ReportLab 内置字体
-            None
+        """设置中文字体，适应不同操作系统环境"""
+        # 获取当前操作系统
+        import platform
+        system_name = platform.system().lower()
+        
+        # 定义不同系统的字体路径
+        font_paths = []
+        
+        # Windows字体路径
+        if 'win' in system_name:
+            font_paths.extend([
+                'C:/Windows/Fonts/simsun.ttc',    # 宋体
+                'C:/Windows/Fonts/simhei.ttf',    # 黑体
+                'C:/Windows/Fonts/msyh.ttc',      # 微软雅黑
+                'C:/Windows/Fonts/simkai.ttf',    # 楷体
+                'C:/Windows/Fonts/simfang.ttf',   # 仿宋
+            ])
+        
+        # Linux字体路径
+        elif 'linux' in system_name:
+            font_paths.extend([
+                '/usr/share/fonts/truetype/wqy/wqy-microhei.ttc',   # 文泉驿微米黑
+                '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc',
+                '/usr/share/fonts/truetype/arphic/uming.ttc',        # AR PL UMing
+                '/usr/share/fonts/truetype/arphic/ukai.ttc',         # AR PL UKai
+                '/usr/share/fonts/noto-cjk/NotoSansCJK-Regular.ttc', # 备用路径
+                
+                # Debian/Ubuntu特定路径
+                '/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf',
+                
+                # CentOS/RHEL特定路径
+                '/usr/share/fonts/wqy-zenhei/wqy-zenhei.ttc',
+            ])
+        
+        # macOS字体路径
+        elif 'darwin' in system_name:
+            font_paths.extend([
+                '/Library/Fonts/Arial Unicode.ttf',
+                '/System/Library/Fonts/PingFang.ttc',
+                '/Library/Fonts/STHeiti Light.ttc',
+                '/Library/Fonts/STHeiti Medium.ttc',
+                '/Library/Fonts/Hiragino Sans GB.ttc',
+            ])
+        
+        # 检查是否有内嵌字体可用
+        embedded_fonts = []
+        
+        # 自动扫描字体目录中的所有字体文件
+        for ext in ['.ttc', '.ttf', '.otf']:
+            for font_file in self.font_dir.glob(f'*{ext}'):
+                embedded_fonts.append(str(font_file))
+                
+        # 添加常用内嵌字体名称（如果存在的话）        
+        specific_embedded_fonts = [
+            str(self.font_dir / 'NotoSansSC-Regular.otf'),  # 思源黑体简体中文
+            str(self.font_dir / 'fzht.ttf'),               # 方正黑体
+            str(self.font_dir / 'simsun.ttc'),              # 宋体
+            str(self.font_dir / 'simhei.ttf'),              # 黑体
+            str(self.font_dir / 'msyh.ttc'),                # 微软雅黑
+            str(self.font_dir / 'wqy-microhei.ttc')         # 文泉驿微米黑
         ]
+        
+        # 将找到的嵌入字体添加到列表中（确保没有重复）
+        for font in specific_embedded_fonts:
+            if font not in embedded_fonts and os.path.exists(font):
+                embedded_fonts.append(font)
+                
+        print(f"Found {len(embedded_fonts)} embedded fonts")
+        
+        # 添加内嵌字体到搜索路径
+        font_paths.extend(embedded_fonts)
         
         # 尝试注册第一个可用的字体
         self.chinese_font_name = 'Helvetica'  # 默认退路字体
         
+        font_found = False
+        
+        # 特殊处理：如果发现思源黑体或方正黑体，优先使用它们
+        priority_fonts = []
+        for font_path in font_paths:
+            if not font_path or not os.path.exists(font_path):
+                continue
+                
+            basename = os.path.basename(font_path).lower()
+            if 'noto' in basename or 'source' in basename or 'fzht' in basename:
+                priority_fonts.append(font_path)
+                
+        # 将优先字体移到列表最前面
+        for pf in reversed(priority_fonts):
+            if pf in font_paths:
+                font_paths.remove(pf)
+                font_paths.insert(0, pf)
+        
         for font_path in font_paths:
             if font_path and os.path.exists(font_path):
                 try:
-                    font_name = os.path.basename(font_path).split('.')[0]
-                    pdfmetrics.registerFont(TTFont(font_name, font_path))
-                    self.chinese_font_name = font_name
-                    print(f"Using Chinese font: {font_name}")
-                    break
+                    basename = os.path.basename(font_path).lower()
+                    font_name = os.path.splitext(basename)[0]
+                    
+                    # 特别处理思源黑体
+                    if 'noto' in font_name and ('sc' in font_name or 'cjk' in font_name):
+                        pdfmetrics.registerFont(TTFont('NotoSansSC', font_path))
+                        self.chinese_font_name = 'NotoSansSC'
+                        registerFontFamily('NotoSansSC', normal='NotoSansSC')
+                        print(f"Using Chinese font: NotoSansSC")
+                        font_found = True
+                    
+                    # 特别处理方正黑体
+                    elif 'fzht' in font_name:
+                        pdfmetrics.registerFont(TTFont('FZHei', font_path))
+                        self.chinese_font_name = 'FZHei'
+                        registerFontFamily('FZHei', normal='FZHei')
+                        print(f"Using Chinese font: FZHei (FangZheng HeiTi)")
+                        font_found = True
+                    
+                    # 特别处理微软雅黑
+                    elif 'msyh' in font_name:
+                        pdfmetrics.registerFont(TTFont('Microsoft YaHei', font_path))
+                        self.chinese_font_name = 'Microsoft YaHei'
+                        
+                        # 尝试注册加粗版本（如果存在）
+                        bold_path = 'C:/Windows/Fonts/msyhbd.ttc'
+                        if os.path.exists(bold_path):
+                            pdfmetrics.registerFont(TTFont('Microsoft YaHei Bold', bold_path))
+                            
+                        # 注册字体家族
+                        registerFontFamily('Microsoft YaHei', normal='Microsoft YaHei',
+                                         bold='Microsoft YaHei Bold' if os.path.exists(bold_path) else 'Microsoft YaHei')
+                        
+                        print(f"Using Chinese font: Microsoft YaHei with family support")
+                        font_found = True
+                        
+                    # 特别处理宋体
+                    elif 'simsun' in font_name:
+                        pdfmetrics.registerFont(TTFont('SimSun', font_path))
+                        self.chinese_font_name = 'SimSun'
+                        
+                        # 尝试注册加粗版本（如果存在）
+                        bold_path = 'C:/Windows/Fonts/simhei.ttf'  # 通常使用黑体作为宋体的粗体
+                        if 'win' in system_name and os.path.exists(bold_path):
+                            pdfmetrics.registerFont(TTFont('SimSun Bold', bold_path))
+                            registerFontFamily('SimSun', normal='SimSun', bold='SimSun Bold')
+                        else:
+                            registerFontFamily('SimSun', normal='SimSun', bold='SimSun')
+                        
+                        print(f"Using Chinese font: SimSun with family support")
+                        font_found = True
+                    
+                    # 处理文泉驿字体
+                    elif 'wqy' in font_name:
+                        pdfmetrics.registerFont(TTFont('WenQuanYi', font_path))
+                        self.chinese_font_name = 'WenQuanYi'
+                        registerFontFamily('WenQuanYi', normal='WenQuanYi')
+                        print(f"Using Chinese font: WenQuanYi")
+                        font_found = True
+                    
+                    # 其他通用字体处理
+                    else:
+                        # 为字体名生成一个有效的标识符
+                        safe_name = ''.join(c for c in font_name if c.isalnum())
+                        if not safe_name:
+                            safe_name = f"Font{hash(font_path) % 10000}"
+                            
+                        pdfmetrics.registerFont(TTFont(safe_name, font_path))
+                        self.chinese_font_name = safe_name
+                        registerFontFamily(safe_name, normal=safe_name)
+                        print(f"Using Chinese font: {safe_name} from {basename}")
+                        font_found = True
+                        
+                    if font_found:
+                        break
+                        
                 except Exception as e:
                     print(f"Failed to register font {font_path}: {str(e)}")
-            elif font_path is None:
-                # 没有找到合适的中文字体，使用内置字体
-                print("No Chinese font found, using Helvetica (Chinese characters may show as blocks)")
+        
+        # 使用备用方案 - 尝试下载并注册一个开源中文字体
+        if not font_found:
+            try:
+                # 如果download_fonts模块存在，尝试使用它下载字体
+                import importlib.util
+                download_module_path = Path(__file__).parent / 'download_fonts.py'
+                
+                if download_module_path.exists():
+                    print("Attempting to download fonts using download_fonts.py...")
+                    spec = importlib.util.spec_from_file_location("download_fonts", download_module_path)
+                    download_fonts = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(download_fonts)
+                    
+                    # 执行下载
+                    download_fonts.main()
+                    
+                    # 重新检查是否有可用字体
+                    for ext in ['.ttf', '.otf', '.ttc']:
+                        for font_file in self.font_dir.glob(f'*{ext}'):
+                            try:
+                                font_name = font_file.stem
+                                safe_name = ''.join(c for c in font_name if c.isalnum())
+                                if not safe_name:
+                                    safe_name = f"Font{hash(str(font_file)) % 10000}"
+                                
+                                pdfmetrics.registerFont(TTFont(safe_name, str(font_file)))
+                                self.chinese_font_name = safe_name
+                                registerFontFamily(safe_name, normal=safe_name)
+                                print(f"Using downloaded font: {safe_name}")
+                                font_found = True
+                                break
+                            except Exception as e:
+                                print(f"Failed to register downloaded font {font_file}: {str(e)}")
+                                
+                    if not font_found:
+                        print("No usable fonts found after download attempt.")
+                else:
+                    print("download_fonts.py not found, cannot download fonts automatically")
+                    
+                if not font_found:
+                    print("WARNING: No Chinese font found. PDF output may not display Chinese characters correctly.")
+                    print("Consider installing appropriate Chinese fonts on your system.")
+            except Exception as e:
+                print(f"Failed in font download process: {str(e)}")
+                
+        # 最后的退路方案 - 使用基本ASCII字体
+        if not font_found:
+            print("CRITICAL: Using Helvetica as fallback. Chinese characters will not display correctly.")
 
     def merge_pdfs(self, files_to_include, result_text, title, output_path):
         temp_files = []
@@ -119,11 +322,22 @@ class PDFMerger:
                 fontName=self.chinese_font_name,  # 使用找到的中文字体
                 fontSize=12,
                 spaceAfter=6,      # 减小段落间距
-                leading=16         # 减小行距
+                leading=16,        # 减小行距
+                allowWidows=1,     # 允许段落底部的孤行
+                allowOrphans=1     # 允许段落顶部的孤行
             )
+            
+            # 替换特殊数学符号
+            def process_math_text(text):
+                # 保持原始数学符号
+                return text
             
             # 准备内容
             story = []
+            
+            # 添加标题
+            story.append(Paragraph(title, title_style))
+            story.append(Spacer(1, 10))
             
             # 处理上传的图片文件
             if files_to_include:
@@ -150,20 +364,30 @@ class PDFMerger:
                                 temp_files.append(tmp_file.name)
                             
                             img_obj = Image(tmp_file.name, width=new_width, height=new_height)
+                            
+                            # 添加标识说明图片类型
+                            if file_type == 'question':
+                                story.append(Paragraph("题目:", heading_style))
+                            elif file_type == 'answer':
+                                story.append(Paragraph("学生答案:", heading_style))
+                            elif file_type == 'marking':
+                                story.append(Paragraph("评分标准:", heading_style))
+                            
+                            story.append(Spacer(1, 5))
                             story.append(img_obj)
                             story.append(Spacer(1, 10))  # 减小图片后的空间
                             
                         except Exception as e:
-                            story.append(Paragraph(f"Unable to load image {file_type}: {str(e)}", body_style))
+                            story.append(Paragraph(f"无法加载图片 {file_type}: {str(e)}", body_style))
             
             # 添加一个小的分隔
             story.append(Spacer(1, 10))
             
             # 添加AI响应内容
-            story.append(Paragraph("AI Response:", heading_style))
+            story.append(Paragraph("AI批改结果:", heading_style))
             story.append(Spacer(1, 8))
             
-            # 处理原始文本，按段落分割 - 不再对数学符号进行替换
+            # 处理原始文本，按段落分割
             paragraphs = str(result_text).split('\n')
             for para in paragraphs:
                 if para.strip():
@@ -171,15 +395,30 @@ class PDFMerger:
                     para = para.replace('&', '&amp;')
                     para = para.replace('<', '&lt;')
                     para = para.replace('>', '&gt;')
-                    # 保持原始格式，不进行数学符号替换
-                    story.append(Paragraph(para, body_style))
+                    # 特殊处理数学符号，保持原样
+                    try:
+                        story.append(Paragraph(process_math_text(para), body_style))
+                    except Exception as e:
+                        # 如果段落渲染失败，尝试分割长句子
+                        print(f"Error rendering paragraph: {str(e)}")
+                        sentences = para.split('. ')
+                        for sentence in sentences:
+                            if sentence:
+                                try:
+                                    story.append(Paragraph(process_math_text(sentence + '.'), body_style))
+                                except:
+                                    # 如果单个句子也失败，则简单显示
+                                    print(f"Error rendering sentence, displaying as plain text")
+                                    story.append(Spacer(1, 5))
+                                    story.append(Paragraph("无法正确渲染部分内容", body_style))
             
             # 生成PDF
             doc.build(story)
             return True, str(output_path)
             
         except Exception as e:
-            error_msg = f"Error during PDF generation: {str(e)}"
+            error_msg = f"PDF生成错误: {str(e)}"
+            print(error_msg)  # 添加日志
             return False, error_msg
         
         finally:
