@@ -18,6 +18,7 @@ from PIL import Image as PILImage
 import tempfile
 import urllib.request
 import shutil
+import re
 
 # 添加下载字体功能
 def download_font(font_url, save_path):
@@ -287,17 +288,37 @@ class PDFMerger:
         if not font_found:
             print("CRITICAL: Using Helvetica as fallback. Chinese characters will not display correctly.")
 
+        # 优先查找 NotoSansSC-Regular.otf
+        noto_font_path = self.font_dir / 'NotoSansSC-Regular.otf'
+        if not noto_font_path.exists():
+            # 自动下载
+            noto_url = 'https://github.com/googlefonts/noto-cjk/raw/main/Sans/OTF/SimplifiedChinese/NotoSansSC-Regular.otf'
+            print('Downloading NotoSansSC-Regular.otf...')
+            download_font(noto_url, noto_font_path)
+        if noto_font_path.exists():
+            try:
+                pdfmetrics.registerFont(TTFont('NotoSansSC', str(noto_font_path)))
+                self.chinese_font_name = 'NotoSansSC'
+                registerFontFamily('NotoSansSC', normal='NotoSansSC')
+                print('Using NotoSansSC for PDF output')
+                font_found = True
+            except Exception as e:
+                print(f'Failed to register NotoSansSC: {e}')
+
     def merge_pdfs(self, files_to_include, result_text, title, output_path):
         temp_files = []
         try:
-            # 创建PDF文档，减小页边距
+            # 记录函数调用信息，便于调试
+            print(f"PDF merger called with:\n - files: {files_to_include}\n - output: {output_path}")
+            
+            # 创建PDF文档，减小页边距减少留空
             doc = SimpleDocTemplate(
                 str(output_path),
                 pagesize=A4,
-                rightMargin=36,    # 减小右边距
-                leftMargin=36,     # 减小左边距
-                topMargin=36,      # 减小上边距
-                bottomMargin=36    # 减小下边距
+                rightMargin=15,    # 进一步减小右边距
+                leftMargin=15,     # 进一步减小左边距
+                topMargin=15,      # 进一步减小上边距
+                bottomMargin=15    # 进一步减小下边距
             )
             
             # 创建样式
@@ -306,58 +327,90 @@ class PDFMerger:
                 'CustomTitle',
                 parent=styles['Title'],
                 fontName=self.chinese_font_name,  # 使用找到的中文字体
-                fontSize=16,        # 减小标题字号
-                spaceAfter=10      # 减小标题后的空间
+                fontSize=14,        # 减小标题字号
+                spaceAfter=3       # 进一步减小标题后的空间
             )
             heading_style = ParagraphStyle(
                 'CustomHeading',
                 parent=styles['Heading1'],
                 fontName=self.chinese_font_name,  # 使用找到的中文字体
-                fontSize=14,        # 减小子标题字号
-                spaceAfter=8       # 减小子标题后的空间
+                fontSize=12,        # 减小子标题字号
+                spaceAfter=2       # 进一步减小子标题后的空间
             )
             body_style = ParagraphStyle(
                 'CustomBody',
                 parent=styles['Normal'],
                 fontName=self.chinese_font_name,  # 使用找到的中文字体
-                fontSize=12,
-                spaceAfter=6,      # 减小段落间距
-                leading=16,        # 减小行距
+                fontSize=10,
+                spaceAfter=2,      # 进一步减小段落间距
+                leading=12,        # 减小行距
                 allowWidows=1,     # 允许段落底部的孤行
                 allowOrphans=1     # 允许段落顶部的孤行
             )
-            
-            # 替换特殊数学符号
-            def process_math_text(text):
-                # 保持原始数学符号
-                return text
             
             # 准备内容
             story = []
             
             # 添加标题
             story.append(Paragraph(title, title_style))
-            story.append(Spacer(1, 10))
+            story.append(Spacer(1, 3))  # 进一步减小标题后的空间
             
             # 处理上传的图片文件
             if files_to_include:
-                for file_type, uploaded_file in files_to_include.items():
-                    if uploaded_file and uploaded_file.type.startswith('image/'):
-                        try:
+                # 添加诊断信息
+                print(f"处理 {len(files_to_include)} 个文件")
+                
+                for file_type, file_info in files_to_include.items():
+                    print(f"处理文件类型: {file_type}, 信息: {file_info}")
+                    try:
+                        # 确定文件路径
+                        img_path = None
+                        
+                        # 处理 {'path': '/path/to/file'} 格式
+                        if isinstance(file_info, dict) and 'path' in file_info:
+                            img_path = file_info['path']
+                            print(f"从路径加载图片: {img_path}")
+                        
+                        # 处理 UploadedFile 对象格式
+                        elif hasattr(file_info, 'getvalue'):
+                            # 使用临时文件保存上传的文件内容
+                            with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmp:
+                                tmp.write(file_info.getvalue())
+                                img_path = tmp.name
+                                temp_files.append(img_path)  # 添加到临时文件列表
+                                print(f"从上传文件创建临时文件: {img_path}")
+                        
+                        # 处理直接的文件路径字符串
+                        elif isinstance(file_info, str) and os.path.exists(file_info):
+                            img_path = file_info
+                            print(f"直接使用文件路径: {img_path}")
+                        
+                        # 如果找到有效路径，尝试加载图片
+                        if img_path and os.path.exists(img_path):
+                            print(f"加载图片: {img_path}")
+                            
+                            # 使用临时文件处理图片
                             with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmp_file:
-                                img_data = uploaded_file.getvalue()
-                                img = PILImage.open(io.BytesIO(img_data))
+                                # 尝试打开图片文件
+                                img = PILImage.open(img_path)
                                 
                                 if img.mode != 'RGB':
                                     img = img.convert('RGB')
                                 
-                                # 调整图片大小以适应页面宽度
-                                available_width = A4[0] - 72  # 页面宽度减去边距
+                                # 调整图片大小以适应页面宽度，同时保持图片质量
+                                available_width = A4[0] - 40  # 页面宽度减去边距
                                 img_width, img_height = img.size
                                 aspect = img_height / float(img_width)
                                 
+                                # 计算最佳大小：确保宽度不超过可用宽度，同时控制高度不要太大
                                 new_width = min(available_width, img_width)
                                 new_height = new_width * aspect
+                                
+                                # 确保图片高度不超过页面高度的70%
+                                max_height = A4[1] * 0.7
+                                if new_height > max_height:
+                                    new_height = max_height
+                                    new_width = new_height / aspect
                                 
                                 img = img.resize((int(new_width), int(new_height)), PILImage.Resampling.LANCZOS)
                                 img.save(tmp_file.name, 'PNG')
@@ -365,60 +418,88 @@ class PDFMerger:
                             
                             img_obj = Image(tmp_file.name, width=new_width, height=new_height)
                             
-                            # 添加标识说明图片类型
-                            if file_type == 'question':
+                            # 添加标识说明图片类型，使用更简洁的格式
+                            if file_type == 'question' or file_type.startswith('question_'):
                                 story.append(Paragraph("题目:", heading_style))
-                            elif file_type == 'answer':
+                            elif file_type == 'answer' or file_type.startswith('answer_') or file_type.startswith('student_answer_'):
                                 story.append(Paragraph("学生答案:", heading_style))
-                            elif file_type == 'marking':
+                            elif file_type == 'marking' or file_type.startswith('marking_') or file_type.startswith('marking_scheme_'):
                                 story.append(Paragraph("评分标准:", heading_style))
                             
-                            story.append(Spacer(1, 5))
+                            story.append(Spacer(1, 1))  # 更小的间距
                             story.append(img_obj)
-                            story.append(Spacer(1, 10))  # 减小图片后的空间
+                            story.append(Spacer(1, 3))  # 减小图片后的空间
+                            print(f"成功添加图片: {file_type}")
+                        else:
+                            print(f"找不到有效图片路径: {img_path}")
                             
-                        except Exception as e:
-                            story.append(Paragraph(f"无法加载图片 {file_type}: {str(e)}", body_style))
+                    except Exception as e:
+                        print(f"处理图片 {file_type} 时出错: {str(e)}")
+                        story.append(Paragraph(f"无法加载图片 {file_type}: {str(e)}", body_style))
+            else:
+                print("没有找到要包含的文件")
             
             # 添加一个小的分隔
-            story.append(Spacer(1, 10))
+            story.append(Spacer(1, 3))  # 进一步减小分隔空间
             
             # 添加AI响应内容
             story.append(Paragraph("AI批改结果:", heading_style))
-            story.append(Spacer(1, 8))
+            story.append(Spacer(1, 2))  # 减小标题后空间
+            
+            # 预处理文本，移除多余的空行，避免过多留白
+            cleaned_text = re.sub(r'\n\s*\n+', '\n', str(result_text))
+            cleaned_text = re.sub(r'(\n\s*){3,}', '\n\n', cleaned_text)
             
             # 处理原始文本，按段落分割
-            paragraphs = str(result_text).split('\n')
+            paragraphs = cleaned_text.split('\n')
             for para in paragraphs:
                 if para.strip():
                     # 处理特殊HTML字符
                     para = para.replace('&', '&amp;')
                     para = para.replace('<', '&lt;')
                     para = para.replace('>', '&gt;')
-                    # 特殊处理数学符号，保持原样
-                    try:
-                        story.append(Paragraph(process_math_text(para), body_style))
-                    except Exception as e:
-                        # 如果段落渲染失败，尝试分割长句子
-                        print(f"Error rendering paragraph: {str(e)}")
-                        sentences = para.split('. ')
-                        for sentence in sentences:
-                            if sentence:
-                                try:
-                                    story.append(Paragraph(process_math_text(sentence + '.'), body_style))
-                                except:
-                                    # 如果单个句子也失败，则简单显示
-                                    print(f"Error rendering sentence, displaying as plain text")
-                                    story.append(Spacer(1, 5))
-                                    story.append(Paragraph("无法正确渲染部分内容", body_style))
+                    
+                    # 为不同类型的内容应用不同样式
+                    if para.startswith('## ') or para.startswith('# '):
+                        # 将Markdown标题转换为PDF标题
+                        title_text = para.lstrip('#').strip()
+                        story.append(Paragraph(title_text, heading_style))
+                        story.append(Spacer(1, 1))  # 标题后的空间更小
+                    elif para.startswith('* ') or para.startswith('- '):
+                        # 列表项缩进并使用较小的间距
+                        list_text = para[2:].strip()
+                        story.append(Paragraph('• ' + list_text, body_style))
+                        story.append(Spacer(1, 1))  # 列表项间距更小
+                    else:
+                        # 普通段落
+                        try:
+                            story.append(Paragraph(para, body_style))
+                            # 只有在段落非常短的情况下才添加Spacer，减少无意义的留白
+                            if len(para) < 80:
+                                story.append(Spacer(1, 1))  # 最小段落间距
+                        except Exception as e:
+                            # 如果段落渲染失败，尝试分割长句子
+                            print(f"Error rendering paragraph: {str(e)}")
+                            sentences = para.split('. ')
+                            for sentence in sentences:
+                                if sentence:
+                                    try:
+                                        story.append(Paragraph(sentence + '.', body_style))
+                                    except:
+                                        # 如果单个句子也失败，则简单显示
+                                        print(f"Error rendering sentence, displaying as plain text")
+                                        story.append(Paragraph("无法正确渲染部分内容", body_style))
             
             # 生成PDF
             doc.build(story)
+            print(f"PDF成功生成到: {output_path}")
             return True, str(output_path)
             
         except Exception as e:
             error_msg = f"PDF生成错误: {str(e)}"
             print(error_msg)  # 添加日志
+            import traceback
+            traceback.print_exc()  # 打印完整堆栈跟踪
             return False, error_msg
         
         finally:
@@ -427,7 +508,8 @@ class PDFMerger:
                 try:
                     if os.path.exists(temp_file):
                         os.unlink(temp_file)
-                except Exception:
+                except Exception as e:
+                    print(f"清理临时文件失败: {temp_file}, 错误: {str(e)}")
                     pass
 
 def process_correction_pdf(question_image, student_answer_image, marking_scheme_image, api_result, output_dir):
