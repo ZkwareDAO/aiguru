@@ -1,0 +1,9 @@
+字体下载失败，要显示中文，请手动执行以下操作:
+
+1. 下载以下任一开源中文字体:
+   - 方正黑体: https://www.foundertype.com/ (需注册)
+   - 思源黑体: https://github.com/adobe-fonts/source-han-sans/releases/tag/2.004R
+
+2. 将下载的字体文件(.ttf或.otf)复制到此目录中。
+
+3. 重启应用程序。

@@ -11,7 +11,29 @@ from reportlab.lib.pagesizes import A4
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image
+
+# Try to import TableStyle from different modules to handle different ReportLab versions
+try:
+    from reportlab.platypus.tables import TableStyle
+    print("Successfully imported TableStyle from reportlab.platypus.tables")
+except ImportError:
+    try:
+        from reportlab.lib.tables import TableStyle
+        print("Successfully imported TableStyle from reportlab.lib.tables")
+    except ImportError:
+        # Fallback implementation if TableStyle import fails
+        class TableStyle:
+            def __init__(self, commands=None):
+                self.commands = commands or []
+                print("WARNING: Using fallback TableStyle implementation - PDF generation may fail or look incorrect!")
+                
+            def setStyle(self, otherStyle):
+                print("WARNING: Using fallback TableStyle.setStyle() method - styling will not be applied properly")
+                if hasattr(otherStyle, 'commands'):
+                    self.commands.extend(otherStyle.commands)
+                return self
+
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image, Table
 from reportlab.lib.units import inch
 from reportlab.pdfbase.pdfmetrics import registerFontFamily
 from PIL import Image as PILImage
@@ -337,6 +359,13 @@ class PDFMerger:
                 fontSize=12,        # 减小子标题字号
                 spaceAfter=2       # 进一步减小子标题后的空间
             )
+            subheading_style = ParagraphStyle(
+                'CustomSubheading',
+                parent=styles['Heading2'],
+                fontName=self.chinese_font_name,
+                fontSize=11,
+                spaceAfter=2
+            )
             body_style = ParagraphStyle(
                 'CustomBody',
                 parent=styles['Normal'],
@@ -355,140 +384,220 @@ class PDFMerger:
             story.append(Paragraph(title, title_style))
             story.append(Spacer(1, 3))  # 进一步减小标题后的空间
             
-            # 处理上传的图片文件
-            if files_to_include:
-                # 添加诊断信息
-                print(f"处理 {len(files_to_include)} 个文件")
-                
-                for file_type, file_info in files_to_include.items():
-                    print(f"处理文件类型: {file_type}, 信息: {file_info}")
-                    try:
-                        # 确定文件路径
-                        img_path = None
-                        
-                        # 处理 {'path': '/path/to/file'} 格式
-                        if isinstance(file_info, dict) and 'path' in file_info:
-                            img_path = file_info['path']
-                            print(f"从路径加载图片: {img_path}")
-                        
-                        # 处理 UploadedFile 对象格式
-                        elif hasattr(file_info, 'getvalue'):
-                            # 使用临时文件保存上传的文件内容
-                            with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmp:
-                                tmp.write(file_info.getvalue())
-                                img_path = tmp.name
-                                temp_files.append(img_path)  # 添加到临时文件列表
-                                print(f"从上传文件创建临时文件: {img_path}")
-                        
-                        # 处理直接的文件路径字符串
-                        elif isinstance(file_info, str) and os.path.exists(file_info):
-                            img_path = file_info
-                            print(f"直接使用文件路径: {img_path}")
-                        
-                        # 如果找到有效路径，尝试加载图片
-                        if img_path and os.path.exists(img_path):
-                            print(f"加载图片: {img_path}")
-                            
-                            # 使用临时文件处理图片
-                            with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmp_file:
-                                # 尝试打开图片文件
-                                img = PILImage.open(img_path)
-                                
-                                if img.mode != 'RGB':
-                                    img = img.convert('RGB')
-                                
-                                # 调整图片大小以适应页面宽度，同时保持图片质量
-                                available_width = A4[0] - 40  # 页面宽度减去边距
-                                img_width, img_height = img.size
-                                aspect = img_height / float(img_width)
-                                
-                                # 计算最佳大小：确保宽度不超过可用宽度，同时控制高度不要太大
-                                new_width = min(available_width, img_width)
-                                new_height = new_width * aspect
-                                
-                                # 确保图片高度不超过页面高度的70%
-                                max_height = A4[1] * 0.7
-                                if new_height > max_height:
-                                    new_height = max_height
-                                    new_width = new_height / aspect
-                                
-                                img = img.resize((int(new_width), int(new_height)), PILImage.Resampling.LANCZOS)
-                                img.save(tmp_file.name, 'PNG')
-                                temp_files.append(tmp_file.name)
-                            
-                            img_obj = Image(tmp_file.name, width=new_width, height=new_height)
-                            
-                            # 添加标识说明图片类型，使用更简洁的格式
-                            if file_type == 'question' or file_type.startswith('question_'):
-                                story.append(Paragraph("题目:", heading_style))
-                            elif file_type == 'answer' or file_type.startswith('answer_') or file_type.startswith('student_answer_'):
-                                story.append(Paragraph("学生答案:", heading_style))
-                            elif file_type == 'marking' or file_type.startswith('marking_') or file_type.startswith('marking_scheme_'):
-                                story.append(Paragraph("评分标准:", heading_style))
-                            
-                            story.append(Spacer(1, 1))  # 更小的间距
-                            story.append(img_obj)
-                            story.append(Spacer(1, 3))  # 减小图片后的空间
-                            print(f"成功添加图片: {file_type}")
-                        else:
-                            print(f"找不到有效图片路径: {img_path}")
-                            
-                    except Exception as e:
-                        print(f"处理图片 {file_type} 时出错: {str(e)}")
-                        story.append(Paragraph(f"无法加载图片 {file_type}: {str(e)}", body_style))
-            else:
-                print("没有找到要包含的文件")
-            
-            # 添加一个小的分隔
-            story.append(Spacer(1, 3))  # 进一步减小分隔空间
-            
-            # 添加AI响应内容
-            story.append(Paragraph("AI批改结果:", heading_style))
-            story.append(Spacer(1, 2))  # 减小标题后空间
-            
-            # 预处理文本，移除多余的空行，避免过多留白
+            # 预处理结果文本，分离基本信息和批改内容
             cleaned_text = re.sub(r'\n\s*\n+', '\n', str(result_text))
-            cleaned_text = re.sub(r'(\n\s*){3,}', '\n\n', cleaned_text)
             
-            # 处理原始文本，按段落分割
-            paragraphs = cleaned_text.split('\n')
-            for para in paragraphs:
-                if para.strip():
-                    # 处理特殊HTML字符
-                    para = para.replace('&', '&amp;')
-                    para = para.replace('<', '&lt;')
-                    para = para.replace('>', '&gt;')
+            # 拆分为基本信息和批改内容两部分
+            parts = re.split(r'学生答案批改如下:', cleaned_text, 1)
+            
+            # 先添加基本信息部分
+            if len(parts) > 1:
+                basic_info = parts[0].strip()
+                correction_content = "学生答案批改如下:" + parts[1].strip()
+                
+                # 提取科目和题目类型
+                subject_match = re.search(r'科目：\s*(.*?)(?:\n|$)', basic_info)
+                type_match = re.search(r'题目类型：\s*(.*?)(?:\n|$)', basic_info)
+                score_match = re.search(r'总分：\s*(\d+)/(\d+)', basic_info)
+                
+                # 添加基本信息表格
+                info_data = []
+                if subject_match:
+                    info_data.append(["科目", subject_match.group(1)])
+                if type_match:
+                    info_data.append(["题目类型", type_match.group(1)])
+                if score_match:
+                    info_data.append(["总分", f"{score_match.group(1)}/{score_match.group(2)}"])
+                
+                if info_data:
+                    # 添加"基本信息"标题
+                    story.append(Paragraph("基本信息", heading_style))
+                    story.append(Spacer(1, 2))
                     
-                    # 为不同类型的内容应用不同样式
-                    if para.startswith('## ') or para.startswith('# '):
-                        # 将Markdown标题转换为PDF标题
-                        title_text = para.lstrip('#').strip()
-                        story.append(Paragraph(title_text, heading_style))
-                        story.append(Spacer(1, 1))  # 标题后的空间更小
-                    elif para.startswith('* ') or para.startswith('- '):
-                        # 列表项缩进并使用较小的间距
-                        list_text = para[2:].strip()
-                        story.append(Paragraph('• ' + list_text, body_style))
-                        story.append(Spacer(1, 1))  # 列表项间距更小
-                    else:
-                        # 普通段落
-                        try:
-                            story.append(Paragraph(para, body_style))
-                            # 只有在段落非常短的情况下才添加Spacer，减少无意义的留白
-                            if len(para) < 80:
-                                story.append(Spacer(1, 1))  # 最小段落间距
-                        except Exception as e:
-                            # 如果段落渲染失败，尝试分割长句子
-                            print(f"Error rendering paragraph: {str(e)}")
-                            sentences = para.split('. ')
-                            for sentence in sentences:
-                                if sentence:
-                                    try:
-                                        story.append(Paragraph(sentence + '.', body_style))
-                                    except:
-                                        # 如果单个句子也失败，则简单显示
-                                        print(f"Error rendering sentence, displaying as plain text")
-                                        story.append(Paragraph("无法正确渲染部分内容", body_style))
+                    # 创建表格
+                    table = Table(info_data, colWidths=[100, 300])
+                    table.setStyle(TableStyle([
+                        ('BACKGROUND', (0, 0), (0, -1), '#f0f0f0'),
+                        ('TEXTCOLOR', (0, 0), (0, -1), '#333333'),
+                        ('ALIGN', (0, 0), (0, -1), 'RIGHT'),
+                        ('FONTNAME', (0, 0), (-1, -1), self.chinese_font_name),
+                        ('FONTSIZE', (0, 0), (-1, -1), 10),
+                        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+                        ('TOPPADDING', (0, 0), (-1, -1), 4),
+                        ('GRID', (0, 0), (-1, -1), 0.5, '#dddddd'),
+                    ]))
+                    story.append(table)
+                    story.append(Spacer(1, 5))
+            else:
+                # 如果没有找到分隔标志，使用整个内容
+                basic_info = ""
+                correction_content = cleaned_text
+            
+            # 处理上传的图片文件和对应的批改内容
+            if files_to_include:
+                # 添加标题：学生答案批改
+                story.append(Paragraph("学生答案批改", heading_style))
+                story.append(Spacer(1, 3))
+                
+                # 分析文件关联性并分组
+                file_groups = self._group_related_files(files_to_include)
+                
+                # 解析批改内容，按块提取
+                correction_blocks = self._parse_correction_blocks(correction_content)
+                
+                # 遍历每个相关文件组
+                for group_idx, group in enumerate(file_groups):
+                    # 组内可能有多种类型的文件
+                    group_files = {}
+                    group_title = f"批改组 {group_idx + 1}"
+                    
+                    # 检查组内是否有学生答案标识，作为组标题
+                    for file_key in group:
+                        if "student_answer" in file_key:
+                            # 如果文件名包含数字，提取作为题号
+                            number_match = re.search(r'(\d+)', file_key)
+                            if number_match:
+                                group_title = f"第 {number_match.group(1)} 题"
+                            else:
+                                group_title = "学生答案"
+                            break
+                    
+                    # 添加组标题
+                    story.append(Paragraph(group_title, heading_style))
+                    story.append(Spacer(1, 3))
+                    
+                    # 处理组内的每个文件
+                    for file_key in group:
+                        file_info = files_to_include[file_key]
+                        
+                        # 确定文件类型
+                        if "question" in file_key:
+                            file_type = "question"
+                            type_name = "题目"
+                        elif "student_answer" in file_key:
+                            file_type = "student_answer"
+                            type_name = "学生答案"
+                        elif "marking_scheme" in file_key:
+                            file_type = "marking_scheme"
+                            type_name = "评分标准"
+                        else:
+                            file_type = "unknown"
+                            type_name = "未知类型"
+                        
+                        group_files[file_type] = {
+                            'key': file_key,
+                            'info': file_info,
+                            'type_name': type_name
+                        }
+                    
+                    # 创建多行布局：先全部图片，再AI反馈
+                    image_row_data = []
+                    image_objects = []
+                    
+                    # 按顺序处理文件类型
+                    ordered_types = ["question", "student_answer", "marking_scheme"]
+                    
+                    # 首先添加所有图片
+                    for file_type in ordered_types:
+                        if file_type in group_files:
+                            file_data = group_files[file_type]
+                            try:
+                                # 处理图片并添加到列表
+                                img_obj, tmp_file = self._process_image_file(file_data['info'])
+                                if img_obj:
+                                    temp_files.append(tmp_file)
+                                    
+                                    # 添加图片标题和图片
+                                    image_cell = []
+                                    image_cell.append(Paragraph(file_data['type_name'], subheading_style))
+                                    image_cell.append(img_obj)
+                                    image_row_data.append(image_cell)
+                                    image_objects.append(img_obj)
+                            except Exception as e:
+                                print(f"处理图片 {file_data['key']} 时出错: {str(e)}")
+                                continue
+                    
+                    # 计算每列宽度 - 基于图片数量平均分配
+                    num_images = len(image_row_data)
+                    if num_images > 0:
+                        available_width = A4[0] - 40  # 页面宽度减去边距
+                        col_width = available_width / num_images
+                        
+                        # 创建图片行
+                        image_table = Table([image_row_data], colWidths=[col_width] * num_images)
+                        image_table.setStyle(TableStyle([
+                            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                            ('LEFTPADDING', (0, 0), (-1, -1), 5),
+                            ('RIGHTPADDING', (0, 0), (-1, -1), 5),
+                        ]))
+                        
+                        story.append(image_table)
+                        story.append(Spacer(1, 10))
+                    
+                    # 检查该组是否有对应的批改内容
+                    correction_block = None
+                    
+                    # 如果组内有学生答案文件，查找匹配的批改块
+                    if "student_answer" in group_files:
+                        student_key = group_files["student_answer"]["key"]
+                        number_match = re.search(r'(\d+)', student_key)
+                        
+                        if number_match:
+                            # 查找编号匹配的批改块
+                            question_num = number_match.group(1)
+                            for block in correction_blocks:
+                                if f"第{question_num}题" in block or f"第 {question_num} 题" in block:
+                                    correction_block = block
+                                    break
+                        
+                        # 如果没找到特定编号的批改块，但只有一组图片和一个批改块，则使用该块
+                        if correction_block is None and len(file_groups) == 1 and len(correction_blocks) == 1:
+                            correction_block = correction_blocks[0]
+                    
+                    # 添加批改内容
+                    if correction_block:
+                        # 添加批改结果标题
+                        story.append(Paragraph("批改结果", subheading_style))
+                        story.append(Spacer(1, 3))
+                        
+                        # 处理批改内容的每一行
+                        correction_lines = correction_block.split('\n')
+                        for line in correction_lines:
+                            if line.strip():
+                                # 处理评分行
+                                if re.match(r'\d+\.\s*第\d+步', line):
+                                    story.append(Paragraph(line, heading_style))
+                                # 处理正确点
+                                elif "✓ 正确点" in line:
+                                    p = Paragraph('<font color="green">'+line+'</font>', body_style)
+                                    story.append(p)
+                                # 处理错误点
+                                elif "✗ 错误点" in line:
+                                    p = Paragraph('<font color="red">'+line+'</font>', body_style)
+                                    story.append(p)
+                                # 处理扣分原因
+                                elif "扣分原因" in line:
+                                    p = Paragraph('<i>'+line+'</i>', body_style)
+                                    story.append(p)
+                                # 其他普通行
+                                else:
+                                    story.append(Paragraph(line, body_style))
+                    
+                    # 添加分隔线
+                    story.append(Spacer(1, 15))
+                    story.append(Paragraph("_" * 70, body_style))
+                    story.append(Spacer(1, 15))
+            
+            # 添加总结部分
+            story.append(Paragraph("总结", heading_style))
+            story.append(Spacer(1, 3))
+            
+            # 添加总分信息
+            score_match = re.search(r'总分：\s*(\d+)/(\d+)', basic_info)
+            if score_match:
+                score_text = f"最终得分: {score_match.group(1)}/{score_match.group(2)}"
+                story.append(Paragraph(score_text, heading_style))
             
             # 生成PDF
             doc.build(story)
@@ -511,6 +620,176 @@ class PDFMerger:
                 except Exception as e:
                     print(f"清理临时文件失败: {temp_file}, 错误: {str(e)}")
                     pass
+                    
+    def _process_image_file(self, file_info):
+        """处理图片文件并返回图片对象和临时文件路径"""
+        img_path = None
+        
+        # 处理 {'path': '/path/to/file'} 格式
+        if isinstance(file_info, dict) and 'path' in file_info:
+            img_path = file_info['path']
+            print(f"从路径加载图片: {img_path}")
+        
+        # 处理 UploadedFile 对象格式
+        elif hasattr(file_info, 'getvalue'):
+            # 使用临时文件保存上传的文件内容
+            tmp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
+            tmp_file.write(file_info.getvalue())
+            img_path = tmp_file.name
+            tmp_file.close()
+            print(f"从上传文件创建临时文件: {img_path}")
+        
+        # 处理直接的文件路径字符串
+        elif isinstance(file_info, str) and os.path.exists(file_info):
+            img_path = file_info
+            print(f"直接使用文件路径: {img_path}")
+        
+        # 如果找到有效路径，尝试加载图片
+        if img_path and os.path.exists(img_path):
+            # 使用临时文件处理图片
+            tmp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
+            
+            # 尝试打开图片文件
+            img = PILImage.open(img_path)
+            
+            if img.mode != 'RGB':
+                img = img.convert('RGB')
+            
+            # 调整图片大小以适应页面宽度，同时保持图片质量
+            available_width = A4[0] - 40  # 页面宽度减去边距
+            img_width, img_height = img.size
+            aspect = img_height / float(img_width)
+            
+            # 计算最佳大小：保持合理尺寸，不同图片大小应相近
+            new_width = available_width * 0.3  # 减小宽度，一行可以放多张图片
+            new_height = new_width * aspect
+            
+            # 确保图片高度不超过页面高度的40%
+            max_height = A4[1] * 0.4
+            if new_height > max_height:
+                new_height = max_height
+                new_width = new_height / aspect
+            
+            img = img.resize((int(new_width), int(new_height)), PILImage.Resampling.LANCZOS)
+            img.save(tmp_file.name, 'PNG')
+            
+            img_obj = Image(tmp_file.name, width=new_width, height=new_height)
+            return img_obj, tmp_file.name
+        
+        return None, None
+    
+    def _group_related_files(self, files_to_include):
+        """
+        将相关文件分组
+        规则：
+        1. 具有相同数字编号的文件分在同一组
+        2. 无编号的文件如果是同一题型分在同一组
+        3. 如果只有一组答案，默认所有文件为同一组
+        """
+        if not files_to_include:
+            return []
+            
+        # 如果只有几个文件，通常是同一组
+        if len(files_to_include) <= 3:
+            return [list(files_to_include.keys())]
+            
+        # 按编号分组
+        numbered_groups = {}
+        unnumbered_files = []
+        
+        for file_key in files_to_include.keys():
+            # 查找文件名中的数字
+            number_match = re.search(r'(\d+)', file_key)
+            
+            if number_match:
+                question_number = number_match.group(1)
+                if question_number not in numbered_groups:
+                    numbered_groups[question_number] = []
+                numbered_groups[question_number].append(file_key)
+            else:
+                unnumbered_files.append(file_key)
+        
+        # 构建最终的文件组
+        file_groups = list(numbered_groups.values())
+        
+        # 处理没有编号的文件
+        if unnumbered_files:
+            # 如果还没有任何分组，所有无编号文件作为一组
+            if not file_groups:
+                file_groups.append(unnumbered_files)
+            else:
+                # 根据文件类型分配到已有的组中，或者创建新组
+                for file_key in unnumbered_files:
+                    # 检查是否能分配到已有组
+                    assigned = False
+                    
+                    # 尝试根据文件类型匹配
+                    file_type = None
+                    if "question" in file_key:
+                        file_type = "question"
+                    elif "student_answer" in file_key:
+                        file_type = "student_answer"
+                    elif "marking_scheme" in file_key:
+                        file_type = "marking_scheme"
+                    
+                    if file_type:
+                        # 查找缺少此类型的组
+                        for group in file_groups:
+                            has_this_type = False
+                            for existing_file in group:
+                                if file_type in existing_file:
+                                    has_this_type = True
+                                    break
+                            
+                            if not has_this_type:
+                                group.append(file_key)
+                                assigned = True
+                                break
+                    
+                    # 如果未分配，添加到第一个组
+                    if not assigned and file_groups:
+                        file_groups[0].append(file_key)
+        
+        return file_groups
+    
+    def _parse_correction_blocks(self, correction_content):
+        """
+        解析批改内容，将其分成不同的批改块
+        每个块通常对应一道题的批改
+        """
+        if not correction_content:
+            return []
+            
+        # 去除"学生答案批改如下:"开头
+        content = re.sub(r'^学生答案批改如下:\s*', '', correction_content)
+        
+        # 查找题目标记，通常是"第X题"或"题目X"格式
+        question_markers = re.findall(r'(第\s*\d+\s*题|题目\s*\d+)', content)
+        
+        # 如果没有找到题目标记，返回整个内容作为一个块
+        if not question_markers:
+            return [content]
+            
+        # 用题目标记分割内容
+        blocks = []
+        for i, marker in enumerate(question_markers):
+            # 构建分割的正则表达式
+            if i < len(question_markers) - 1:
+                next_marker = question_markers[i + 1]
+                pattern = f'({re.escape(marker)}.+?)(?={re.escape(next_marker)})'
+            else:
+                pattern = f'({re.escape(marker)}.+)'
+                
+            # 查找匹配的块
+            match = re.search(pattern, content, re.DOTALL)
+            if match:
+                blocks.append(match.group(1).strip())
+        
+        # 如果没有成功分割，返回整个内容
+        if not blocks:
+            blocks = [content]
+            
+        return blocks
 
 def process_correction_pdf(question_image, student_answer_image, marking_scheme_image, api_result, output_dir):
     """
