@@ -64,26 +64,26 @@ correction_prompt_zh = """作为一位专业批改教师，请批改学生的答
 - 总分：[得分]/[满分]
 
 ## 逐步评分
-1. 第1步：[步骤描述] - [该步得分]/[该步满分]
-   - ✓ 正确点：[列出正确之处，包括公式、计算等]
-   - ✗ 错误点：[列出错误之处]
+（请按以下格式对每一步进行评分，不要用自然语言描述学生答案，我们会直接展示学生原始解答图片）
+
+1. 第1步：[步骤描述或解题要点] - [该步得分]/[该步满分]
+   - ✓ 正确点：[列出正确之处，对应原始解答中的内容]
+   - ✗ 错误点：[列出错误之处，对应原始解答中的内容]
    - 扣分原因：[详细解释为何扣分]
 
-2. 第2步：[步骤描述] - [该步得分]/[该步满分]
-   - ✓ 正确点：[列出正确之处]
-   - ✗ 错误点：[列出错误之处]
+2. 第2步：[步骤描述或解题要点] - [该步得分]/[该步满分]
+   - ✓ 正确点：[列出正确之处，对应原始解答中的内容]
+   - ✗ 错误点：[列出错误之处，对应原始解答中的内容]
    - 扣分原因：[详细解释为何扣分]
 
 [继续列出所有步骤...]
 
-## 总体评价
-[总体评价内容，对答题质量的综合评估]
-
 ## 详细解析
 [在这部分提供完整的解题思路和分析，包括每一步的正确做法]
+[解析中需包含标准答案与学生答案的对比]
 
 ## 学习建议
-[针对性学习建议，重点指出需要加强的知识点]
+[根据学生做题情况，针对性提出学习建议]
 
 批改严格程度：【STRICTNESS_LEVEL】
 
@@ -96,6 +96,8 @@ correction_prompt_zh = """作为一位专业批改教师，请批改学生的答
 - 极限：必须写成 "lim x→∞"
 
 如果用户提供了评分标准，请严格按照该标准执行批改，并确保符合标准中的所有要求！
+
+非常重要：不要用自然语言描述学生原始解答，直接指出评分点，因为系统会将学生的原始答题图片展示在每个评分步骤旁边。
 
 请用自然语言格式输出结果，确保所有数学表达式清晰可读！"""
 
@@ -112,26 +114,26 @@ Strictly organize your grading according to the following structure:
 - Total score: [Score]/[Full marks]
 
 ## Step-by-Step Scoring
-1. Step 1: [Step description] - [Step score]/[Step full marks]
-   - ✓ Correct points: [List correct aspects, including formulas, calculations, etc.]
-   - ✗ Error points: [List errors]
+(Please score each step according to the format below. Do not describe the student's answer in natural language as we will display the original student solution images directly)
+
+1. Step 1: [Step description or solution point] - [Step score]/[Step full marks]
+   - ✓ Correct points: [List correct aspects, corresponding to content in the original answer]
+   - ✗ Error points: [List errors, corresponding to content in the original answer]
    - Reason for deduction: [Detailed explanation of why points were deducted]
 
-2. Step 2: [Step description] - [Step score]/[Step full marks]
-   - ✓ Correct points: [List correct aspects]
-   - ✗ Error points: [List errors]
+2. Step 2: [Step description or solution point] - [Step score]/[Step full marks]
+   - ✓ Correct points: [List correct aspects, corresponding to content in the original answer]
+   - ✗ Error points: [List errors, corresponding to content in the original answer]
    - Reason for deduction: [Detailed explanation of why points were deducted]
 
 [Continue listing all steps...]
 
-## Overall Evaluation
-[Overall evaluation content, comprehensive assessment of the answer quality]
-
 ## Detailed Analysis
 [In this section, provide complete problem-solving ideas and analysis, including the correct approach for each step]
+[Include a comparison between the standard answer and the student's answer]
 
 ## Learning Suggestions
-[Targeted learning suggestions, highlighting knowledge points that need strengthening]
+[Provide targeted learning suggestions based on the student's performance]
 
 Grading strictness: 【STRICTNESS_LEVEL】
 
@@ -145,6 +147,8 @@ Note: In your grading response, all mathematical expressions must use standard U
 
 If the user has provided a marking scheme, please strictly follow that standard for grading, and ensure compliance with all requirements in the standard!
 
+Very important: Do not describe the student's original solution in natural language. Simply point out the scoring points, as the system will display the student's original answer images next to each scoring step.
+
 Please output the result in natural language format, ensuring all mathematical expressions are clear and readable!"""
 
 # 中文版带图片的批改提示词
@@ -152,20 +156,20 @@ correction_with_images_prompt_zh = correction_prompt_zh + """
 
 看到上传的图片后，请仔细分析所有内容，包括：
 - 题目要求和条件
-- 学生解答步骤
+- 学生解答步骤（不要尝试用文字概括学生解答，我们会直接展示原始解答图片）
 - 评分标准要求（如有）
 
-尤其要注意学生解答中的数学符号、计算过程和最终结果，确保您的批改准确无误。"""
+重要提示：将学生解答按步骤拆分为多个评分点，每个步骤只评分不复述原始答案。每个评分步骤会自动配上对应的学生答案图片。"""
 
 # English version of correction with images prompt
 correction_with_images_prompt_en = correction_prompt_en + """
 
 After seeing the uploaded images, please carefully analyze all content, including:
 - Problem requirements and conditions
-- Student answer steps
+- Student answer steps (do not attempt to summarize the student's answer in text, we will directly display the original answer images)
 - Marking scheme requirements (if any)
 
-Pay special attention to mathematical symbols, calculation processes, and final results in the student's answer to ensure your grading is accurate."""
+Important note: Break down the student's answer into multiple scoring points by steps. Only score each step without repeating the original answer. Each scoring step will automatically be paired with the corresponding student answer image."""
 
 # Mapping for language selection
 marking_scheme_prompts = {
