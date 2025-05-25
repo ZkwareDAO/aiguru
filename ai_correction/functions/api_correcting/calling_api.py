@@ -52,51 +52,37 @@ For essays/discussion questions, please detail:
 Please organize the content using headings and numbering, and output in natural language format!"""
 
 # 中文版批改提示词
-correction_prompt_zh = """作为一位专业批改教师，请批改学生的答案。在你的回答中，你必须使用标准Unicode数学符号（如 × ÷ ± √ π ∑ ∫ ≤ ≥ ≠ ∞ θ），严禁使用LaTeX格式（如\\sin或\\frac{}{}），即使学生在答案中使用了不规范的表示法。
+correction_prompt_zh = """作为一位专业批改教师，请批改学生的答案。使用标准Unicode数学符号（如 × ÷ ± √ π ∑ ∫ ≤ ≥ ≠ ∞ θ），不使用LaTeX格式。
 
-严格按照以下结构组织批改：
-
-# 批改结果
-
-## 题目信息与总分
+# 基本信息
 - 科目：[填写科目]
 - 题目类型：[填写类型]
-- 总分：[得分]/[满分]
 
-## 逐步评分
-（此部分需要详细展示学生的解题过程，并对每一步进行评分）
+# 学生答案批改如下:
 
 1. 第1步：[步骤描述] - [该步得分]/[该步满分]
-   （这里记录学生的完整答题过程，确保完整展示原始解答）
-   - ✓ 正确点：[列出正确之处，包括公式、计算等]
-   - ✗ 错误点：[列出错误之处]
-   - 扣分原因：[详细解释为何扣分]
+- ✓ 正确点：[列出正确之处]
+- ✗ 错误点：[列出错误之处]
+- 扣分原因：[详细解释]
 
 2. 第2步：[步骤描述] - [该步得分]/[该步满分]
-   （这里记录学生的完整答题过程，确保完整展示原始解答）
-   - ✓ 正确点：[列出正确之处]
-   - ✗ 错误点：[列出错误之处]
-   - 扣分原因：[详细解释为何扣分]
+- ✓ 正确点：[列出正确之处]
+- ✗ 错误点：[列出错误之处]
+- 扣分原因：[详细解释]
 
 [继续列出所有步骤...]
 
-## 详细解析
-[在这部分提供完整的解题思路和分析，包括每一步的正确做法]
-[解析中需包含标准答案与学生答案的对比]
+总分：[得分]/[满分]
 
-批改严格程度：【STRICTNESS_LEVEL】
+注意：
+- 分数表示为"a/b"，如"1/2"
+- 根号表示为"√a"，如"√2"
+- 三角函数表示为"sin x"等
+- 指数表示为"x²"或"e^x"
+- 积分表示为"∫f(x)dx"
+- 极限表示为"lim x→∞"
 
-注意：在你的批改回复中，所有数学表达式必须使用标准Unicode符号，例如：
-- 分数：必须写成 "a/b"，如 "1/2"
-- 根号：必须写成 "√a"，如 "√2" 
-- 三角函数：必须写成 "sin x", "cos θ" 等
-- 指数：必须写成 "x²", "e^x" 等
-- 积分：必须写成 "∫f(x)dx"
-- 极限：必须写成 "lim x→∞"
-
-如果用户提供了评分标准，请严格按照该标准执行批改，并确保符合标准中的所有要求！
-
-请用自然语言格式输出结果，确保所有数学表达式清晰可读！"""
+请严格按照评分标准执行批改！"""
 
 # English version of correction prompt
 correction_prompt_en = """As a professional teacher grading student answers, please evaluate the student's response. In your answer, you must use standard Unicode mathematical symbols (such as × ÷ ± √ π ∑ ∫ ≤ ≥ ≠ ∞ θ), strictly prohibiting LaTeX formats (like \\sin or \\frac{}{}), even if the student used non-standard notation.

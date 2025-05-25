@@ -2313,29 +2313,21 @@ def parse_correction_blocks(correction_content):
 def display_grouped_files_with_feedback(file_groups, correction_blocks, user_files_dict):
     """
     显示分组后的文件和对应的批改内容，确保图片与对应的评分步骤并排显示
-    
-    参数:
-        file_groups: 文件分组列表
-        correction_blocks: 批改内容块列表
-        user_files_dict: 用户文件字典
     """
-    # 全局样式设置
     st.markdown("""
     <style>
     .step-container {
-        display: flex;
-        flex-direction: row;
         margin-bottom: 20px;
         border-bottom: 1px solid #eee;
         padding-bottom: 15px;
     }
     .step-images {
-        flex: 1;
-        padding-right: 15px;
-        max-width: 40%;
+        margin-bottom: 10px;
     }
     .step-content {
-        flex: 1.5;
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 5px;
     }
     .step-header {
         font-weight: bold;
@@ -2344,129 +2336,94 @@ def display_grouped_files_with_feedback(file_groups, correction_blocks, user_fil
         color: #333;
     }
     .correct-point {
-        color: #5cb85c;
+        color: #28a745;
         margin: 5px 0;
-        font-size: 0.9em;
+        padding: 5px;
+        background-color: #f0fff0;
+        border-radius: 3px;
     }
     .error-point {
-        color: #d9534f;
+        color: #dc3545;
         margin: 5px 0;
-        font-size: 0.9em;
+        padding: 5px;
+        background-color: #fff0f0;
+        border-radius: 3px;
     }
     .deduction-reason {
-        color: #777;
-        font-style: italic;
+        color: #6c757d;
         margin: 5px 0;
-        font-size: 0.9em;
+        padding: 5px;
+        background-color: #f8f9fa;
+        border-radius: 3px;
     }
     .image-container {
         margin-bottom: 10px;
         text-align: center;
     }
     .image-title {
-        font-size: 0.85em;
-        font-weight: bold;
+        font-size: 0.9em;
+        color: #666;
         margin-bottom: 5px;
     }
     </style>
     """, unsafe_allow_html=True)
     
-    # 处理每个文件组
     for group_idx, group in enumerate(file_groups):
-        group_files = {}
-        group_title = f"批改组 {group_idx + 1}"
-        
-        # 确定组标题，优先使用学生答案编号
+        # 确定组标题
+        group_title = "第 1 题"
         for file_key in group:
             if "student_answer" in file_key:
                 number_match = re.search(r'(\d+)', file_key)
                 if number_match:
                     group_title = f"第 {number_match.group(1)} 题"
-                else:
-                    group_title = "学生答案"
                 break
         
         st.subheader(group_title)
         
-        # 收集当前组的图片信息
-        images_by_type = {"question": [], "student_answer": [], "marking_scheme": [], "unknown": []}
-        
+        # 收集图片信息
+        images_by_type = {"question": [], "student_answer": [], "marking_scheme": []}
         for file_key in group:
             if file_key in user_files_dict:
                 file_info = user_files_dict[file_key]
-                file_type_label = "未知类型"
-                type_key = "unknown"
-                
-                # 确定文件类型
-                if "question" in file_key:
-                    file_type_label = "题目"
-                    type_key = "question"
-                elif "student_answer" in file_key:
-                    file_type_label = "学生答案"
-                    type_key = "student_answer"
-                elif "marking_scheme" in file_key:
-                    file_type_label = "评分标准"
-                    type_key = "marking_scheme"
-                
-                # 存储第一个遇到的每种类型文件
-                if type_key not in group_files:
-                    group_files[type_key] = {
-                        'key': file_key, 'info': file_info, 'type_name': file_type_label
-                    }
-                
-                # 收集图片路径信息
-                if file_info and isinstance(file_info, dict) and 'saved_path' in file_info:
-                    is_valid, file_path_str = ensure_valid_file_path(file_info['saved_path'])
+                if isinstance(file_info, dict) and 'saved_path' in file_info:
+                    is_valid, file_path = ensure_valid_file_path(file_info['saved_path'])
                     if is_valid:
-                        images_by_type[type_key].append({
-                            'path': file_path_str, 
-                            'type_name': file_type_label,
-                            'file_key': file_key
-                        })
+                        if "question" in file_key:
+                            images_by_type["question"].append(file_path)
+                        elif "student_answer" in file_key:
+                            images_by_type["student_answer"].append(file_path)
+                        elif "marking_scheme" in file_key:
+                            images_by_type["marking_scheme"].append(file_path)
+        
+        # 显示题目和评分标准
+        if images_by_type["question"] or images_by_type["marking_scheme"]:
+            cols = st.columns(2)
+            with cols[0]:
+                if images_by_type["question"]:
+                    st.markdown("##### 题目")
+                    for img_path in images_by_type["question"]:
+                        st.image(img_path, use_column_width=True)
+            with cols[1]:
+                if images_by_type["marking_scheme"]:
+                    st.markdown("##### 评分标准")
+                    for img_path in images_by_type["marking_scheme"]:
+                        st.image(img_path, use_column_width=True)
         
         # 查找匹配的批改块
         correction_block = None
-        if "student_answer" in group_files:
-            student_key = group_files["student_answer"]["key"]
-            number_match = re.search(r'(\d+)', student_key)
-            if number_match:
-                question_num = number_match.group(1)
-                for block in correction_blocks:
-                    if f"第{question_num}题" in block or f"第 {question_num} 题" in block:
-                        correction_block = block
-                        break
+        for file_key in group:
+            if "student_answer" in file_key:
+                number_match = re.search(r'(\d+)', file_key)
+                if number_match:
+                    question_num = number_match.group(1)
+                    for block in correction_blocks:
+                        if f"第{question_num}题" in block or f"第 {question_num} 题" in block:
+                            correction_block = block
+                            break
         
-        # 如果没找到特定匹配块，但只有一组文件和一个批改块，则使用该块
-        if correction_block is None and len(file_groups) == 1 and len(correction_blocks) == 1:
+        if not correction_block and len(file_groups) == 1 and len(correction_blocks) == 1:
             correction_block = correction_blocks[0]
         
-        # 显示题目图片和评分标准图片在顶部
-        if images_by_type["question"] or images_by_type["marking_scheme"]:
-            st.markdown('<div style="display: flex; flex-wrap: wrap; margin-bottom: 20px;">', unsafe_allow_html=True)
-            
-            # 显示题目图片
-            for img_info in images_by_type["question"]:
-                st.markdown(f'<div style="flex: 1; min-width: 200px; max-width: 33%; padding: 10px; text-align: center;">', unsafe_allow_html=True)
-                st.markdown(f'<div style="font-weight: bold; margin-bottom: 5px;">题目</div>', unsafe_allow_html=True)
-                try:
-                    st.image(img_info['path'], use_column_width=True)
-                except Exception as e:
-                    st.info(f"无法显示图片预览: {str(e)}")
-                st.markdown('</div>', unsafe_allow_html=True)
-            
-            # 显示评分标准图片
-            for img_info in images_by_type["marking_scheme"]:
-                st.markdown(f'<div style="flex: 1; min-width: 200px; max-width: 33%; padding: 10px; text-align: center;">', unsafe_allow_html=True)
-                st.markdown(f'<div style="font-weight: bold; margin-bottom: 5px;">评分标准</div>', unsafe_allow_html=True)
-                try:
-                    st.image(img_info['path'], use_column_width=True)
-                except Exception as e:
-                    st.info(f"无法显示图片预览: {str(e)}")
-                st.markdown('</div>', unsafe_allow_html=True)
-                
-            st.markdown('</div>', unsafe_allow_html=True)
-        
-        # 处理批改内容，提取步骤并与图片一起显示
         if correction_block:
             # 提取步骤
             steps = []
@@ -2474,82 +2431,50 @@ def display_grouped_files_with_feedback(file_groups, correction_blocks, user_fil
             step_pattern = re.compile(r'(\d+)\.\s*第\d+步[:：](.*?)[-—]\s*(\d+)/(\d+)')
             
             for line in correction_block.split('\n'):
-                # 检查是否是新步骤开始
                 step_match = step_pattern.search(line)
                 if step_match:
                     if current_step:
                         steps.append(current_step)
-                    
-                    step_num = step_match.group(1)
-                    step_desc = step_match.group(2).strip()
-                    step_score = step_match.group(3)
-                    step_full = step_match.group(4)
-                    
                     current_step = {
-                        'num': step_num,
-                        'desc': step_desc,
-                        'score': step_score,
-                        'full': step_full,
+                        'num': step_match.group(1),
+                        'desc': step_match.group(2).strip(),
+                        'score': step_match.group(3),
+                        'full': step_match.group(4),
                         'content': line,
                         'details': []
                     }
                 elif current_step:
                     current_step['details'].append(line)
-                    current_step['content'] += '\n' + line
             
-            # 添加最后一个步骤
             if current_step:
                 steps.append(current_step)
             
-            # 如果没有找到步骤，将整个内容视为一个步骤
+            # 如果没有找到步骤，将整个内容作为一个步骤
             if not steps:
                 steps = [{
                     'num': '1',
                     'desc': '整体评分',
-                    'score': '',
-                    'full': '',
                     'content': correction_block,
                     'details': correction_block.split('\n')
                 }]
             
-            # 显示每个步骤与对应的学生答案图片
-            for i, step in enumerate(steps):
-                st.markdown(f'<div class="step-container">', unsafe_allow_html=True)
+            # 显示每个步骤
+            for step in steps:
+                st.markdown('<div class="step-container">', unsafe_allow_html=True)
                 
-                # 左侧显示对应的学生答案图片
-                st.markdown(f'<div class="step-images">', unsafe_allow_html=True)
-                
-                # 选择显示与当前步骤相关的学生答案图片
-                # 如果学生答案图片有数字标识，尝试匹配步骤编号
-                matching_images = []
-                for img_info in images_by_type["student_answer"]:
-                    num_match = re.search(r'(\d+)', img_info['file_key'])
-                    # 如果图片文件名中的数字与步骤编号匹配，或者这是第一步且无法匹配时显示所有图片
-                    if (num_match and step['num'] == num_match.group(1)) or (step['num'] == '1' and not matching_images):
-                        matching_images.append(img_info)
-                
-                # 如果没有找到匹配的图片，显示该组的所有学生答案图片
-                if not matching_images:
-                    matching_images = images_by_type["student_answer"]
-                
-                # 显示匹配的图片
-                for img_info in matching_images:
-                    st.markdown(f'<div class="image-container">', unsafe_allow_html=True)
-                    st.markdown(f'<div class="image-title">学生答案 - 步骤 {step["num"]}</div>', unsafe_allow_html=True)
-                    try:
-                        st.image(img_info['path'], width=300)
-                    except Exception as e:
-                        st.info(f"无法显示图片预览: {str(e)}")
+                # 显示对应的学生答案图片
+                if images_by_type["student_answer"]:
+                    st.markdown('<div class="step-images">', unsafe_allow_html=True)
+                    for img_path in images_by_type["student_answer"]:
+                        st.image(img_path, use_column_width=True)
                     st.markdown('</div>', unsafe_allow_html=True)
                 
-                st.markdown('</div>', unsafe_allow_html=True)
-                
-                # 右侧显示步骤评分内容
-                st.markdown(f'<div class="step-content">', unsafe_allow_html=True)
+                # 显示步骤评分内容
+                st.markdown('<div class="step-content">', unsafe_allow_html=True)
                 
                 # 步骤标题
                 step_title = f"{step['num']}. 第{step['num']}步: {step['desc']}"
-                if step['score'] and step['full']:
+                if 'score' in step and 'full' in step:
                     step_title += f" - {step['score']}/{step['full']}"
                 st.markdown(f'<div class="step-header">{step_title}</div>', unsafe_allow_html=True)
                 
@@ -2566,28 +2491,6 @@ def display_grouped_files_with_feedback(file_groups, correction_blocks, user_fil
                 
                 st.markdown('</div>', unsafe_allow_html=True)
                 st.markdown('</div>', unsafe_allow_html=True)
-            
-            # 显示详细解析
-            if '详细解析' in correction_block or 'Detailed Analysis' in correction_block:
-                analysis_section = None
-                analysis_marker = '详细解析' if '详细解析' in correction_block else 'Detailed Analysis'
-                
-                # 提取详细解析部分
-                sections = re.split(r'## [^#]+', correction_block)
-                for section in sections:
-                    if analysis_marker in section[:50]:
-                        analysis_section = section
-                        break
-                
-                if analysis_section:
-                    st.markdown('<div style="margin-top: 30px;">', unsafe_allow_html=True)
-                    st.subheader("详细解析" if analysis_marker == '详细解析' else "Detailed Analysis")
-                    st.markdown(analysis_section.replace(analysis_marker, '').strip(), unsafe_allow_html=False)
-                    st.markdown('</div>', unsafe_allow_html=True)
-        
-        # 如果不是最后一组，添加分隔线
-        if group_idx < len(file_groups) - 1:
-            st.markdown('<hr style="margin: 30px 0; border-top: 1px dashed #ddd;">', unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
