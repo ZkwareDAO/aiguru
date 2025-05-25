@@ -2323,76 +2323,50 @@ def display_grouped_files_with_feedback(file_groups, correction_blocks, user_fil
     st.markdown("""
     <style>
     .step-container {
-        margin-bottom: 25px;
+        display: flex;
+        flex-direction: row;
+        margin-bottom: 20px;
         border-bottom: 1px solid #eee;
         padding-bottom: 15px;
     }
     .step-images {
-        margin-bottom: 15px;
-        text-align: center;
+        flex: 1;
+        padding-right: 15px;
+        max-width: 40%;
     }
     .step-content {
-        background-color: #f9f9f9;
-        padding: 15px;
-        border-radius: 8px;
-        border-left: 4px solid #5b9bd5;
+        flex: 1.5;
     }
     .step-header {
         font-weight: bold;
         font-size: 1.1em;
         margin-bottom: 10px;
         color: #333;
-        border-bottom: 1px solid #ddd;
-        padding-bottom: 5px;
     }
     .correct-point {
         color: #5cb85c;
         margin: 5px 0;
         font-size: 0.9em;
-        padding-left: 15px;
     }
     .error-point {
         color: #d9534f;
         margin: 5px 0;
         font-size: 0.9em;
-        padding-left: 15px;
     }
     .deduction-reason {
         color: #777;
         font-style: italic;
         margin: 5px 0;
         font-size: 0.9em;
-        padding-left: 15px;
     }
     .image-container {
-        display: inline-block;
-        margin: 0 10px 10px 0;
-        vertical-align: top;
-        max-width: 300px;
+        margin-bottom: 10px;
+        text-align: center;
     }
     .image-title {
         font-size: 0.85em;
         font-weight: bold;
         margin-bottom: 5px;
-        text-align: center;
-    }
-    .images-wrapper {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
-        margin-bottom: 15px;
-    }
-    .question-images {
-        background-color: #f5f5f5;
-        padding: 15px;
-        border-radius: 8px;
-        margin-bottom: 20px;
-    }
-    .question-title {
-        font-weight: bold;
-        font-size: 1.05em;
-        margin-bottom: 10px;
-        text-align: center;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -2468,126 +2442,81 @@ def display_grouped_files_with_feedback(file_groups, correction_blocks, user_fil
         
         # 显示题目图片和评分标准图片在顶部
         if images_by_type["question"] or images_by_type["marking_scheme"]:
-            st.markdown('<div class="question-images">', unsafe_allow_html=True)
-            st.markdown('<div class="question-title">题目及评分标准</div>', unsafe_allow_html=True)
-            st.markdown('<div class="images-wrapper">', unsafe_allow_html=True)
+            st.markdown('<div style="display: flex; flex-wrap: wrap; margin-bottom: 20px;">', unsafe_allow_html=True)
             
             # 显示题目图片
             for img_info in images_by_type["question"]:
-                st.markdown(f'<div class="image-container">', unsafe_allow_html=True)
-                st.markdown(f'<div class="image-title">题目</div>', unsafe_allow_html=True)
+                st.markdown(f'<div style="flex: 1; min-width: 200px; max-width: 33%; padding: 10px; text-align: center;">', unsafe_allow_html=True)
+                st.markdown(f'<div style="font-weight: bold; margin-bottom: 5px;">题目</div>', unsafe_allow_html=True)
                 try:
-                    st.image(img_info['path'], width=280)
+                    st.image(img_info['path'], use_column_width=True)
                 except Exception as e:
                     st.info(f"无法显示图片预览: {str(e)}")
                 st.markdown('</div>', unsafe_allow_html=True)
             
             # 显示评分标准图片
             for img_info in images_by_type["marking_scheme"]:
-                st.markdown(f'<div class="image-container">', unsafe_allow_html=True)
-                st.markdown(f'<div class="image-title">评分标准</div>', unsafe_allow_html=True)
+                st.markdown(f'<div style="flex: 1; min-width: 200px; max-width: 33%; padding: 10px; text-align: center;">', unsafe_allow_html=True)
+                st.markdown(f'<div style="font-weight: bold; margin-bottom: 5px;">评分标准</div>', unsafe_allow_html=True)
                 try:
-                    st.image(img_info['path'], width=280)
+                    st.image(img_info['path'], use_column_width=True)
                 except Exception as e:
                     st.info(f"无法显示图片预览: {str(e)}")
                 st.markdown('</div>', unsafe_allow_html=True)
                 
             st.markdown('</div>', unsafe_allow_html=True)
-            st.markdown('</div>', unsafe_allow_html=True)
         
         # 处理批改内容，提取步骤并与图片一起显示
         if correction_block:
-            # 提取批改结果中的元数据部分 (题目信息与总分)
-            metadata_section = ""
-            main_content = correction_block
-            
-            metadata_match = re.search(r'(.*?题目信息与总分[\s\S]+?(?=##|$))', correction_block)
-            if metadata_match:
-                metadata_section = metadata_match.group(1).strip()
-                main_content = correction_block[len(metadata_section):].strip()
-            
-            if metadata_section:
-                st.markdown('<div style="background-color: #f0f7ff; padding: 15px; border-radius: 8px; margin-bottom: 20px;">', unsafe_allow_html=True)
-                lines = metadata_section.split('\n')
-                for line in lines:
-                    if '总分' in line:
-                        match = re.search(r'总分：(\d+)/(\d+)', line)
-                        if match:
-                            score, total = match.group(1), match.group(2)
-                            st.markdown(f'<div style="font-size: 1.2em; font-weight: bold; margin: 10px 0;">总分：<span style="color: #5cb85c;">{score}</span>/{total}</div>', unsafe_allow_html=True)
-                    elif '科目' in line or '题目类型' in line:
-                        label, value = line.split('：', 1) if '：' in line else line.split(':', 1) if ':' in line else (line, "")
-                        st.markdown(f'<div><b>{label}：</b>{value.strip()}</div>', unsafe_allow_html=True)
-                st.markdown('</div>', unsafe_allow_html=True)
-            
             # 提取步骤
             steps = []
-            step_matches = re.finditer(r'(\d+)\.\s*第\d+步[:：](.*?)[-—]\s*(\d+)/(\d+)', main_content)
-            step_positions = []
+            current_step = None
+            step_pattern = re.compile(r'(\d+)\.\s*第\d+步[:：](.*?)[-—]\s*(\d+)/(\d+)')
             
-            for match in step_matches:
-                step_positions.append((match.start(), match.group()))
+            for line in correction_block.split('\n'):
+                # 检查是否是新步骤开始
+                step_match = step_pattern.search(line)
+                if step_match:
+                    if current_step:
+                        steps.append(current_step)
+                    
+                    step_num = step_match.group(1)
+                    step_desc = step_match.group(2).strip()
+                    step_score = step_match.group(3)
+                    step_full = step_match.group(4)
+                    
+                    current_step = {
+                        'num': step_num,
+                        'desc': step_desc,
+                        'score': step_score,
+                        'full': step_full,
+                        'content': line,
+                        'details': []
+                    }
+                elif current_step:
+                    current_step['details'].append(line)
+                    current_step['content'] += '\n' + line
             
-            if step_positions:
-                for i in range(len(step_positions)):
-                    start_pos = step_positions[i][0]
-                    step_header = step_positions[i][1]
-                    
-                    # 确定步骤内容结束位置
-                    if i < len(step_positions) - 1:
-                        end_pos = step_positions[i+1][0]
-                        step_content = main_content[start_pos:end_pos]
-                    else:
-                        # 最后一个步骤到下一个章节开始（## 开头）或到末尾
-                        next_section = re.search(r'##', main_content[start_pos:])
-                        if next_section:
-                            end_pos = start_pos + next_section.start()
-                            step_content = main_content[start_pos:end_pos]
-                        else:
-                            step_content = main_content[start_pos:]
-                    
-                    # 解析步骤信息
-                    step_match = re.search(r'(\d+)\.\s*第\d+步[:：](.*?)[-—]\s*(\d+)/(\d+)', step_content)
-                    if step_match:
-                        step_num = step_match.group(1)
-                        step_desc = step_match.group(2).strip()
-                        step_score = step_match.group(3)
-                        step_full = step_match.group(4)
-                        
-                        # 提取正确点、错误点和扣分原因
-                        correct_points = re.findall(r'[✓✔]\s*正确点[:：](.*?)(?=\n[✓✔✗✘]|$)', step_content, re.DOTALL)
-                        error_points = re.findall(r'[✗✘]\s*错误点[:：](.*?)(?=\n[✓✔✗✘]|$)', step_content, re.DOTALL)
-                        deduction_reasons = re.findall(r'扣分原因[:：](.*?)(?=\n[✓✔✗✘]|$)', step_content, re.DOTALL)
-                        
-                        steps.append({
-                            'num': step_num,
-                            'desc': step_desc,
-                            'score': step_score,
-                            'full': step_full,
-                            'correct_points': [pt.strip() for pt in correct_points],
-                            'error_points': [pt.strip() for pt in error_points],
-                            'deduction_reasons': [r.strip() for r in deduction_reasons],
-                            'content': step_content
-                        })
+            # 添加最后一个步骤
+            if current_step:
+                steps.append(current_step)
             
             # 如果没有找到步骤，将整个内容视为一个步骤
-            if not steps and main_content:
+            if not steps:
                 steps = [{
                     'num': '1',
                     'desc': '整体评分',
                     'score': '',
                     'full': '',
-                    'correct_points': [],
-                    'error_points': [],
-                    'deduction_reasons': [],
-                    'content': main_content
+                    'content': correction_block,
+                    'details': correction_block.split('\n')
                 }]
             
             # 显示每个步骤与对应的学生答案图片
-            for step in steps:
+            for i, step in enumerate(steps):
                 st.markdown(f'<div class="step-container">', unsafe_allow_html=True)
                 
-                # 上方显示对应的学生答案图片
+                # 左侧显示对应的学生答案图片
                 st.markdown(f'<div class="step-images">', unsafe_allow_html=True)
                 
                 # 选择显示与当前步骤相关的学生答案图片
@@ -2603,23 +2532,19 @@ def display_grouped_files_with_feedback(file_groups, correction_blocks, user_fil
                 if not matching_images:
                     matching_images = images_by_type["student_answer"]
                 
-                if matching_images:
-                    st.markdown('<div class="images-wrapper">', unsafe_allow_html=True)
-                    # 显示匹配的图片
-                    for img_info in matching_images:
-                        st.markdown(f'<div class="image-container">', unsafe_allow_html=True)
-                        step_title = f"学生答案 - 步骤 {step['num']}"
-                        st.markdown(f'<div class="image-title">{step_title}</div>', unsafe_allow_html=True)
-                        try:
-                            st.image(img_info['path'], width=280)
-                        except Exception as e:
-                            st.info(f"无法显示图片预览: {str(e)}")
-                        st.markdown('</div>', unsafe_allow_html=True)
+                # 显示匹配的图片
+                for img_info in matching_images:
+                    st.markdown(f'<div class="image-container">', unsafe_allow_html=True)
+                    st.markdown(f'<div class="image-title">学生答案 - 步骤 {step["num"]}</div>', unsafe_allow_html=True)
+                    try:
+                        st.image(img_info['path'], width=300)
+                    except Exception as e:
+                        st.info(f"无法显示图片预览: {str(e)}")
                     st.markdown('</div>', unsafe_allow_html=True)
                 
                 st.markdown('</div>', unsafe_allow_html=True)
                 
-                # 显示步骤评分内容
+                # 右侧显示步骤评分内容
                 st.markdown(f'<div class="step-content">', unsafe_allow_html=True)
                 
                 # 步骤标题
@@ -2629,35 +2554,36 @@ def display_grouped_files_with_feedback(file_groups, correction_blocks, user_fil
                 st.markdown(f'<div class="step-header">{step_title}</div>', unsafe_allow_html=True)
                 
                 # 步骤详情
-                for point in step['correct_points']:
-                    st.markdown(f'<div class="correct-point">✓ 正确点：{point}</div>', unsafe_allow_html=True)
-                
-                for point in step['error_points']:
-                    st.markdown(f'<div class="error-point">✗ 错误点：{point}</div>', unsafe_allow_html=True)
-                    
-                for reason in step['deduction_reasons']:
-                    st.markdown(f'<div class="deduction-reason">扣分原因：{reason}</div>', unsafe_allow_html=True)
+                for detail in step['details']:
+                    if "✓ 正确点" in detail:
+                        st.markdown(f'<div class="correct-point">{detail}</div>', unsafe_allow_html=True)
+                    elif "✗ 错误点" in detail:
+                        st.markdown(f'<div class="error-point">{detail}</div>', unsafe_allow_html=True)
+                    elif "扣分原因" in detail:
+                        st.markdown(f'<div class="deduction-reason">{detail}</div>', unsafe_allow_html=True)
+                    elif detail.strip():
+                        st.markdown(f'<div>{detail}</div>', unsafe_allow_html=True)
                 
                 st.markdown('</div>', unsafe_allow_html=True)
                 st.markdown('</div>', unsafe_allow_html=True)
             
-            # 提取详细解析和学习建议部分
-            detailed_analysis = re.search(r'##\s*详细解析([\s\S]+?)(?=##|$)', correction_block)
-            learning_suggestions = re.search(r'##\s*学习建议([\s\S]+?)(?=##|$)', correction_block)
-            
-            if detailed_analysis:
-                st.markdown('<div style="margin-top: 30px; background-color: #f9f9f9; padding: 20px; border-radius: 8px;">', unsafe_allow_html=True)
-                st.subheader("详细解析")
-                analysis_content = detailed_analysis.group(1).strip()
-                st.markdown(analysis_content)
-                st.markdown('</div>', unsafe_allow_html=True)
+            # 显示详细解析
+            if '详细解析' in correction_block or 'Detailed Analysis' in correction_block:
+                analysis_section = None
+                analysis_marker = '详细解析' if '详细解析' in correction_block else 'Detailed Analysis'
                 
-            if learning_suggestions:
-                st.markdown('<div style="margin-top: 20px; background-color: #f0f7fa; padding: 20px; border-radius: 8px;">', unsafe_allow_html=True)
-                st.subheader("学习建议")
-                suggestions_content = learning_suggestions.group(1).strip()
-                st.markdown(suggestions_content)
-                st.markdown('</div>', unsafe_allow_html=True)
+                # 提取详细解析部分
+                sections = re.split(r'## [^#]+', correction_block)
+                for section in sections:
+                    if analysis_marker in section[:50]:
+                        analysis_section = section
+                        break
+                
+                if analysis_section:
+                    st.markdown('<div style="margin-top: 30px;">', unsafe_allow_html=True)
+                    st.subheader("详细解析" if analysis_marker == '详细解析' else "Detailed Analysis")
+                    st.markdown(analysis_section.replace(analysis_marker, '').strip(), unsafe_allow_html=False)
+                    st.markdown('</div>', unsafe_allow_html=True)
         
         # 如果不是最后一组，添加分隔线
         if group_idx < len(file_groups) - 1:
