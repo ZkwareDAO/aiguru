@@ -1,265 +1,404 @@
 {
-  "migrated": true,
-  "test_user_2": {
-    "password": "password2",
+  "test_user_1": {
+    "password": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+    "email": "test_user_1@example.com",
+    "created_at": "2025-06-19 12:07:51",
     "records": [
       {
-        "filename": "\u5fae\u4fe1\u56fe\u7247_20250430182121.jpg",
-        "upload_time": "2025-05-17 19:50:51",
-        "file_size": 173.99,
-        "file_type": "student_answer_1",
-        "processing_result": "Uploaded"
-      },
-      {
-        "filename": "fee58e639eef42b68791a965912fefad.jpeg",
-        "upload_time": "2025-05-17 19:50:51",
-        "file_size": 45.27,
-        "file_type": "student_answer_2",
-        "processing_result": "Uploaded"
-      },
-      {
-        "filename": "fee58e639eef42b68791a965912fefad.jpeg",
-        "upload_time": "2025-05-17 19:50:51",
-        "file_size": 45.27,
-        "file_type": "student_answer_3",
-        "processing_result": "Uploaded"
-      },
-      {
-        "filename": "\u5fae\u4fe1\u56fe\u7247_20250430182121.jpg",
-        "upload_time": "2025-05-17 20:45:20",
-        "file_size": 173.99,
-        "file_type": "student_answer_1",
-        "processing_result": "Uploaded"
-      },
-      {
-        "filename": "\u5fae\u4fe1\u56fe\u7247_20250430182121.jpg",
-        "upload_time": "2025-05-17 21:58:02",
-        "file_size": 173.99,
-        "file_type": "student_answer_1",
-        "processing_result": "Uploaded"
-      },
-      {
-        "filename": "fee58e639eef42b68791a965912fefad.jpeg",
-        "upload_time": "2025-05-17 21:58:02",
-        "file_size": 45.27,
-        "file_type": "student_answer_2",
-        "processing_result": "Uploaded"
-      },
-      {
-        "filename": "fee58e639eef42b68791a965912fefad.jpeg",
-        "upload_time": "2025-05-17 23:04:43",
-        "file_size": 45.27,
-        "file_type": "student_answer_1",
-        "processing_result": "Uploaded"
-      },
-      {
-        "filename": "\u5fae\u4fe1\u56fe\u7247_20250430182121.jpg",
-        "upload_time": "2025-05-17 23:33:28",
-        "file_size": 173.99,
-        "file_type": "student_answer_1",
-        "processing_result": "Uploaded"
-      },
-      {
-        "filename": "fee58e639eef42b68791a965912fefad.jpeg",
-        "upload_time": "2025-05-17 23:33:28",
-        "file_size": 45.27,
-        "file_type": "student_answer_2",
-        "processing_result": "Uploaded"
-      },
-      {
-        "filename": "\u5fae\u4fe1\u56fe\u7247_20250430182121.jpg",
-        "upload_time": "2025-05-17 23:33:28",
-        "file_size": 173.99,
-        "file_type": "student_answer_3",
-        "processing_result": "Uploaded"
-      },
-      {
-        "filename": "fee58e639eef42b68791a965912fefad.jpeg",
-        "upload_time": "2025-05-17 23:33:28",
-        "file_size": 45.27,
-        "file_type": "student_answer_4",
-        "processing_result": "Uploaded"
-      },
-      {
-        "filename": "fee58e639eef42b68791a965912fefad.jpeg",
-        "upload_time": "2025-05-18 00:06:02",
-        "file_size": 45.27,
-        "file_type": "student_answer_1",
-        "processing_result": "Uploaded"
-      },
-      {
-        "filename": "\u5fae\u4fe1\u56fe\u7247_20250430182121.jpg",
-        "upload_time": "2025-05-18 00:06:02",
-        "file_size": 173.99,
-        "file_type": "student_answer_2",
-        "processing_result": "Uploaded"
-      },
-      {
-        "filename": "\u5fae\u4fe1\u56fe\u7247_20250430182121.jpg",
-        "upload_time": "2025-05-18 00:22:29",
-        "file_size": 173.99,
-        "file_type": "student_answer_1",
-        "processing_result": "Uploaded"
-      },
-      {
-        "filename": "fee58e639eef42b68791a965912fefad.jpeg",
-        "upload_time": "2025-05-18 18:41:53",
-        "file_size": 45.27,
-        "file_type": "student_answer_1",
-        "processing_result": "Uploaded"
-      },
-      {
-        "filename": "\u5fae\u4fe1\u56fe\u7247_20250430182121.jpg",
-        "upload_time": "2025-05-18 18:41:53",
-        "file_size": 173.99,
-        "file_type": "student_answer_2",
-        "processing_result": "Uploaded"
-      },
-      {
-        "filename": "fee58e639eef42b68791a965912fefad.jpeg",
-        "upload_time": "2025-05-18 19:06:18",
-        "file_size": 45.27,
-        "file_type": "student_answer_1",
-        "processing_result": "Uploaded"
-      },
-      {
-        "filename": "\u5fae\u4fe1\u56fe\u7247_20250430182121.jpg",
-        "upload_time": "2025-05-18 19:06:18",
-        "file_size": 173.99,
-        "file_type": "student_answer_2",
-        "processing_result": "Uploaded"
-      },
-      {
-        "filename": "\u5fae\u4fe1\u56fe\u7247_20250430182121.jpg",
-        "upload_time": "2025-05-25 19:08:49",
-        "file_size": 173.99,
-        "file_type": "student_answer_1",
-        "processing_result": "Uploaded"
-      },
-      {
-        "filename": "fee58e639eef42b68791a965912fefad.jpeg",
-        "upload_time": "2025-05-25 19:08:49",
-        "file_size": 45.27,
-        "file_type": "student_answer_2",
-        "processing_result": "Uploaded"
-      },
-      {
-        "filename": "fee58e639eef42b68791a965912fefad.jpeg",
-        "upload_time": "2025-05-25 19:08:49",
-        "file_size": 45.27,
-        "file_type": "student_answer_3",
-        "processing_result": "Uploaded"
-      },
-      {
-        "filename": "\u5fae\u4fe1\u56fe\u7247_20250430182121.jpg",
-        "upload_time": "2025-05-25 19:28:09",
-        "file_size": 173.99,
-        "file_type": "student_answer_1",
-        "processing_result": "Uploaded"
-      },
-      {
-        "filename": "ac3b89c4dbad4a58b11a5565adfcc031.jpeg",
-        "upload_time": "2025-05-25 19:28:09",
-        "file_size": 13.49,
-        "file_type": "student_answer_2",
-        "processing_result": "Uploaded"
-      },
-      {
-        "filename": "fee58e639eef42b68791a965912fefad.jpeg",
-        "upload_time": "2025-05-25 19:28:09",
-        "file_size": 45.27,
-        "file_type": "student_answer_3",
-        "processing_result": "Uploaded"
-      },
-      {
-        "timestamp": "2025-05-25 19:28:46",
-        "content": "# \u57fa\u672c\u4fe1\u606f\n- \u79d1\u76ee\uff1a\u6570\u5b66\n- \u9898\u76ee\u7c7b\u578b\uff1a\u89e3\u7b54\u9898\n\n# \u5b66\u751f\u7b54\u6848\u6279\u6539\u5982\u4e0b:\n\n### \u7b2c\u4e00\u5f20\u56fe\u7247\u9898\u76ee\u6279\u6539\n#### \u95ee\u9898\u63cf\u8ff0\n\u5df2\u77e5 a + b = 6, a > 0, b > 0\uff0c\u6c42 \u221a(a\u00b2 + 16) + \u221a(b\u00b2 + 16) \u7684\u6700\u5c0f\u503c\u3002\n\n#### \u5b66\u751f\u89e3\u7b54\u6b65\u9aa4\u53ca\u6279\u6539\n\n1. **\u7b2c1\u6b65\uff1a\u51e0\u4f55\u6a21\u578b\u5efa\u7acb** - 1/2\n   - \u2713 \u6b63\u786e\u70b9\uff1a\u5b66\u751f\u901a\u8fc7\u51e0\u4f55\u56fe\u5f62\u8f85\u52a9\u5206\u6790\uff0c\u6784\u5efa\u4e86 XZY \u548c XYZ \u7684\u5173\u7cfb\u6a21\u578b\u3002\n   - \u2717 \u9519\u8bef\u70b9\uff1a\u672a\u8be6\u7ec6\u8bf4\u660e\u4e3a\u4ec0\u4e48 XZY \u548c XYZ \u662f\u5173\u4e8e\u67d0\u70b9\u5bf9\u79f0\u7684\u3002\n   - \u6263\u5206\u539f\u56e0\uff1a\u6b65\u9aa4\u4e0d\u591f\u8be6\u7ec6\uff0c\u7f3a\u5c11\u5bf9\u51e0\u4f55\u5173\u7cfb\u7684\u4e25\u8c28\u8bf4\u660e\u3002\n\n2. **\u7b2c2\u6b65\uff1a\u6c42\u89e3 XZ + YZ \u7684\u6700\u5c0f\u503c** - 1/2\n   - \u2713 \u6b63\u786e\u70b9\uff1a\u8ba4\u8bc6\u5230 XZ + YZ \u7684\u6700\u5c0f\u503c\u53ef\u901a\u8fc7\u4e24\u70b9\u4e4b\u95f4\u7684\u7ebf\u6bb5\u6700\u77ed\u539f\u7406\u6765\u6c42\u89e3\u3002\n   - \u2717 \u9519\u8bef\u70b9\uff1a\u6ca1\u6709\u660e\u786e\u6307\u51fa XZY \u548c XYZ \u7684\u5bf9\u79f0\u70b9\u7684\u5177\u4f53\u4f4d\u7f6e\u548c\u5982\u4f55\u5229\u7528\u5bf9\u79f0\u6027\u7b80\u5316\u95ee\u9898\u3002\n   - \u6263\u5206\u539f\u56e0\uff1a\u51e0\u4f55\u63a8\u7406\u8fc7\u7a0b\u4e0d\u5b8c\u6574\uff0c\u7f3a\u5c11\u5173\u952e\u6b65\u9aa4\u7684\u8bf4\u660e\u3002\n\n3. **\u7b2c3\u6b65\uff1a\u8ba1\u7b97\u6700\u5c0f\u503c** - 1/2\n   - \u2713 \u6b63\u786e\u70b9\uff1a\u6700\u7ec8\u8ba1\u7b97\u5f97\u51fa \u221a(a\u00b2 + 16) + \u221a(b\u00b2 + 16) \u7684\u6700\u5c0f\u503c\u4e3a 10\u3002\n   - \u2717 \u9519\u8bef\u70b9\uff1a\u5728\u8ba1\u7b97\u8fc7\u7a0b\u4e2d\uff0c\u672a\u8be6\u7ec6\u5c55\u793a a = b = 3 \u65f6\u7684\u5177\u4f53\u8ba1\u7b97\u8fc7\u7a0b\u3002\n   - \u6263\u5206\u539f\u56e0\uff1a\u7f3a\u5c11\u5173\u952e\u8ba1\u7b97\u6b65\u9aa4\uff0c\u5bfc\u81f4\u89e3\u9898\u8fc7\u7a0b\u4e0d\u8fde\u8d2f\u3002\n\n#### \u603b\u5206\uff1a2/6\n\n### \u7b2c\u4e8c\u5f20\u56fe\u7247\u9898\u76ee\u6279\u6539\n#### \u95ee\u9898\u63cf\u8ff0\n\u5728 \u25b3ABC \u4e2d\uff0c\u5185\u89d2 A, B, C \u6240\u5bf9\u7684\u8fb9\u5206\u522b\u4e3a a, b, c\uff0c\u5df2\u77e5 A = \u03c0/4, b\u00b2 - a\u00b2 = c\u00b2/2\u3002\u6c42 tan C \u7684\u503c\uff1b\u82e5 \u25b3ABC \u7684\u9762\u79ef\u4e3a 7\uff0c\u6c42 b \u7684\u503c\u3002\n\n#### \u5b66\u751f\u89e3\u7b54\u6b65\u9aa4\u53ca\u6279\u6539\n\n1. **\u7b2c1\u6b65\uff1a\u5229\u7528\u4f59\u5f26\u5b9a\u7406\u548c\u4e09\u89d2\u6052\u7b49\u53d8\u6362\u6c42 tan C** - 2/4\n   - \u2713 \u6b63\u786e\u70b9\uff1a\u5229\u7528\u4f59\u5f26\u5b9a\u7406\u548c\u4e09\u89d2\u6052\u7b49\u53d8\u6362\u6b63\u786e\u63a8\u5bfc\u51fa tan C = \u221a3\u3002\n   - \u2717 \u9519\u8bef\u70b9\uff1a\u5728\u63a8\u5bfc\u8fc7\u7a0b\u4e2d\uff0c\u90e8\u5206\u7b49\u5f0f\u8fc7\u4e8e\u7d27\u51d1\uff0c\u7f3a\u4e4f\u5fc5\u8981\u7684\u4e2d\u95f4\u6b65\u9aa4\u8bf4\u660e\u3002\n   - \u6263\u5206\u539f\u56e0\uff1a\u63a8\u5bfc\u8fc7\u7a0b\u4e0d\u591f\u6e05\u6670\uff0c\u7f3a\u5c11\u5173\u952e\u6b65\u9aa4\u7684\u8be6\u7ec6\u8bf4\u660e\u3002\n\n2. **\u7b2c2\u6b65\uff1a\u5229\u7528\u4e09\u89d2\u5f62\u9762\u79ef\u516c\u5f0f\u6c42 b** - 2/4\n   - \u2713 \u6b63\u786e\u70b9\uff1a\u5229\u7528\u9762\u79ef\u516c\u5f0f S = 1/2 \u00d7 bc \u00d7 sin A \u6b63\u786e\u6c42\u5f97 b = 2\u221a2\u3002\n   - \u2717 \u9519\u8bef\u70b9\uff1a\u5728\u6c42\u89e3\u8fc7\u7a0b\u4e2d\uff0c\u7f3a\u5c11\u5bf9 a\u00b2 = b\u00b2 + c\u00b2 - 2bc \u00d7 cos A \u7684\u8be6\u7ec6\u63a8\u5bfc\u8fc7\u7a0b\u3002\n   - \u6263\u5206\u539f\u56e0\uff1a\u7f3a\u5c11\u5173\u952e\u8ba1\u7b97\u6b65\u9aa4\uff0c\u5bfc\u81f4\u89e3\u9898\u8fc7\u7a0b\u4e0d\u5b8c\u6574\u3002\n\n#### \u603b\u5206\uff1a4/8\n\n### \u603b\u7ed3\n\u5b66\u751f\u5728\u89e3\u9898\u8fc7\u7a0b\u4e2d\u5c55\u793a\u4e86\u4e00\u5b9a\u7684\u51e0\u4f55\u548c\u4ee3\u6570\u63a8\u7406\u80fd\u529b\uff0c\u4f46\u5728\u6b65\u9aa4\u7684\u8be6\u7ec6\u8bf4\u660e\u548c\u5173\u952e\u8ba1\u7b97\u8fc7\u7a0b\u4e0a\u5b58\u5728\u4e0d\u8db3\u3002\u5efa\u8bae\u5728\u89e3\u9898\u8fc7\u7a0b\u4e2d\uff0c\u589e\u52a0\u5bf9\u5173\u952e\u6b65\u9aa4\u7684\u8be6\u7ec6\u8bf4\u660e\uff0c\u786e\u4fdd\u89e3\u9898\u8fc7\u7a0b\u7684\u8fde\u8d2f\u6027\u548c\u5b8c\u6574\u6027\u3002",
-        "files": {
-          "student_answer_1": {
-            "filename": "\u5fae\u4fe1\u56fe\u7247_20250430182121.jpg",
-            "saved_path": "uploads\\test_user_2\\\u5fae\u4fe1\u56fe\u7247_20250430182121.jpg"
-          },
-          "student_answer_2": {
-            "filename": "ac3b89c4dbad4a58b11a5565adfcc031.jpeg",
-            "saved_path": "uploads\\test_user_2\\ac3b89c4dbad4a58b11a5565adfcc031.jpeg"
-          },
-          "student_answer_3": {
-            "filename": "fee58e639eef42b68791a965912fefad.jpeg",
-            "saved_path": "uploads\\test_user_2\\fee58e639eef42b68791a965912fefad.jpeg"
+        "timestamp": "2025-06-20 12:20:48",
+        "content": "# 第1题批改结果\n\n## 1. 学生答题过程纯净版\n步骤1：x² - 5x + 6 = 0\n步骤2：(x - 2)(x - 3) = 0\n步骤3：所以 x = 2 或 x = 3\n步骤4：验证：\n当 x = 2: 2² - 5×2 + 6 = 4 - 10 + 6 = 0 ✓\n当 x = 3: 3² - 5×3 + 6 = 9 - 15 + 6 = 0 ✓\n最终答案：x = 2 或 x = 3\n\n## 2. 步骤对错分析\n### 步骤1分析\n- 学生做法：x² - 5x + 6 = 0\n- 判断结果：✓正确\n- 错误原因：无\n- 正确做法：无需修改\n\n### 步骤2分析\n- 学生做法：(x - 2)(x - 3) = 0\n- 判断结果：✓正确\n- 错误原因：无\n- 正确做法：该方程可以通过因式分解为 (x - 2)(x - 3) = 0，这一步骤是正确的\n\n### 步骤3分析\n- 学生做法：所以 x = 2 或 x = 3\n- 判断结果：✓正确\n- 错误原因：无\n- 正确做法：从 (x - 2)(x - 3) = 0 可以得出 x = 2 或 x = 3，这是求解二次方程的标准步骤\n\n### 步骤4分析\n- 学生做法：验证：\n当 x = 2: 2² - 5×2 + 6 = 4 - 10 + 6 = 0 ✓\n当 x = 3: 3² - 5×3 + 6 = 9 - 15 + 6 = 0 ✓\n- 判断结果：✓正确\n- 错误原因：无\n- 正确做法：验证过程是正确的，验证了两个解都满足原方程\n\n## 3. 得分详情\n- 步骤1得分：1/1 分\n- 步骤2得分：1/1 分\n- 步骤3得分：1/1 分\n- 步骤4得分：1/1 分\n- **总分：4/4 分**\n\n## 4. 题目信息\n- 科目：数学\n- 题目类型：解方程\n- 难度等级：中等\n- 主要考查知识点：二次方程的因式分解求解、验证方程解的正确性\n\n## 5. 改进建议\n学生在这道题中的解答过程是完全正确的，使用了合适的解题方法，并且进行了有效的验证。建议在以后的解题过程中，继续保持严谨的求解和验证步骤，以确保解题的准确性。此外，可以尝试更多类型的二次方程解法，以拓展解题思路和方法。",
+        "files": [
+          {
+            "original_name": "tmp8_ug0fnv.txt",
+            "saved_path": "uploads\\test\\upload_0_20250620_121932.txt",
+            "size": 269
           }
-        },
+        ],
         "settings": {
-          "strictness_level": "\u5bbd\u677e",
-          "language": "zh"
+          "correction_type": "auto",
+          "strictness_level": "中等",
+          "language": "zh",
+          "custom_scheme": null
+        },
+        "processing_info": {
+          "files_processed": 1,
+          "result_type": "auto_detected_single_group",
+          "method_used": "auto"
         }
       },
       {
-        "filename": "\u5fae\u4fe1\u56fe\u7247_20250430182121.jpg",
-        "upload_time": "2025-05-25 19:34:43",
-        "file_size": 173.99,
-        "file_type": "student_answer_1",
-        "processing_result": "Uploaded"
-      },
-      {
-        "filename": "fee58e639eef42b68791a965912fefad.jpeg",
-        "upload_time": "2025-05-25 19:34:43",
-        "file_size": 45.27,
-        "file_type": "student_answer_2",
-        "processing_result": "Uploaded"
-      },
-      {
-        "timestamp": "2025-05-25 19:35:35",
-        "content": "# \u57fa\u672c\u4fe1\u606f\n- \u79d1\u76ee\uff1a\u6570\u5b66\n- \u9898\u76ee\u7c7b\u578b\uff1a\u89e3\u7b54\u9898\n\n# \u5b66\u751f\u7b54\u6848\u6279\u6539\u5982\u4e0b:\n\n### \u7b2c\u4e00\u9898\n\n\u5df2\u77e5 a + b = 6, a > 0, b > 0\uff0c\u6c42 \u221a(a\u00b2 + 16) + \u221a(b\u00b2 + 16) \u7684\u6700\u5c0f\u503c\u3002\n\n1. **\u7b2c1\u6b65\uff1a\u51e0\u4f55\u56fe\u5f62\u5206\u6790 - 1/2**\n   - \u2713 \u6b63\u786e\u70b9\uff1a\u5b66\u751f\u6b63\u786e\u5730\u753b\u51fa\u4e86\u51e0\u4f55\u56fe\u5f62\uff0c\u5e76\u6807\u6ce8\u4e86\u76f8\u5173\u70b9\u548c\u7ebf\u6bb5\u3002\n   - \u2717 \u9519\u8bef\u70b9\uff1a\u51e0\u4f55\u56fe\u5f62\u7684\u89e3\u91ca\u4e0d\u591f\u8be6\u7ec6\uff0c\u6ca1\u6709\u660e\u786e\u6307\u51fa\u5173\u952e\u7684\u51e0\u4f55\u5173\u7cfb\u3002\n   - \u6263\u5206\u539f\u56e0\uff1a\u5bf9\u56fe\u5f62\u7684\u63cf\u8ff0\u548c\u89e3\u91ca\u4e0d\u591f\u6e05\u6670\uff0c\u5f71\u54cd\u7406\u89e3\u3002\n\n2. **\u7b2c2\u6b65\uff1a\u6c42 XZ + YZ \u7684\u6700\u5c0f\u503c - 1/2**\n   - \u2713 \u6b63\u786e\u70b9\uff1a\u5b66\u751f\u6b63\u786e\u5730\u5c06\u95ee\u9898\u8f6c\u5316\u4e3a\u6c42 XZ + YZ \u7684\u6700\u5c0f\u503c\uff0c\u5e76\u6307\u51fa XZ = X'Z\u3002\n   - \u2717 \u9519\u8bef\u70b9\uff1aXZ + YZ \u7684\u6700\u5c0f\u503c\u6c42\u89e3\u8fc7\u7a0b\u4e0d\u8be6\u7ec6\uff0c\u7f3a\u5c11\u5fc5\u8981\u7684\u63a8\u5bfc\u548c\u89e3\u91ca\u3002\n   - \u6263\u5206\u539f\u56e0\uff1a\u6c42\u89e3\u8fc7\u7a0b\u4e0d\u591f\u8be6\u7ec6\uff0c\u7f3a\u4e4f\u903b\u8f91\u8fde\u8d2f\u6027\u3002\n\n3. **\u7b2c3\u6b65\uff1a\u5229\u7528\u5bf9\u79f0\u6027\u6c42\u89e3 - 1/2**\n   - \u2713 \u6b63\u786e\u70b9\uff1a\u5b66\u751f\u5229\u7528\u5bf9\u79f0\u6027\uff0c\u63d0\u51fa X'YZ \u662f XYZ \u7684\u53cd\u8f6c\uff0c\u5e76\u5f97\u51fa XZ + YZ \u7684\u6700\u5c0f\u503c\u4e3a\u7ebf\u6bb5 XY \u6216 YX'\u3002\n   - \u2717 \u9519\u8bef\u70b9\uff1a\u5bf9\u79f0\u6027\u7684\u89e3\u91ca\u4e0d\u591f\u6e05\u6670\uff0c\u6ca1\u6709\u8be6\u7ec6\u8bf4\u660e\u4e3a\u4ec0\u4e48 C \u70b9\u53ea\u80fd\u540c\u65f6\u5728 XY \u548c YZ \u4e0a\u3002\n   - \u6263\u5206\u539f\u56e0\uff1a\u5bf9\u79f0\u6027\u89e3\u91ca\u4e0d\u5145\u5206\uff0c\u5f71\u54cd\u89e3\u9898\u601d\u8def\u7684\u7406\u89e3\u3002\n\n4. **\u7b2c4\u6b65\uff1a\u6c42\u89e3 XZ + YZ \u7684\u6700\u5c0f\u503c - 1/2**\n   - \u2713 \u6b63\u786e\u70b9\uff1a\u5b66\u751f\u6b63\u786e\u5730\u5f97\u51fa XZ + YZ \u7684\u6700\u5c0f\u503c\u4e3a 2\u221a25 = 10\u3002\n   - \u2717 \u9519\u8bef\u70b9\uff1a\u6700\u7ec8\u7ed3\u679c\u7684\u6c42\u89e3\u8fc7\u7a0b\u4e0d\u591f\u8be6\u7ec6\uff0c\u7f3a\u5c11\u5fc5\u8981\u7684\u8ba1\u7b97\u6b65\u9aa4\u3002\n   - \u6263\u5206\u539f\u56e0\uff1a\u6c42\u89e3\u8fc7\u7a0b\u4e0d\u8be6\u7ec6\uff0c\u7f3a\u5c11\u5fc5\u8981\u7684\u6570\u5b66\u63a8\u5bfc\u3002\n\n\u603b\u5206\uff1a4/8\n\n### \u7b2c\u4e8c\u9898\n\n16. (1) \u5df2\u77e5 cos A = (b\u00b2 + c\u00b2 - a\u00b2) / (2bc) = \u221a3 / 2\n\n1. **\u7b2c1\u6b65\uff1a\u5229\u7528\u4f59\u5f26\u5b9a\u7406 - 1/2**\n   - \u2713 \u6b63\u786e\u70b9\uff1a\u5b66\u751f\u6b63\u786e\u5730\u5229\u7528\u4f59\u5f26\u5b9a\u7406\uff0c\u5f97\u51fa cos A \u7684\u8868\u8fbe\u5f0f\u3002\n   - \u2717 \u9519\u8bef\u70b9\uff1a\u6ca1\u6709\u8be6\u7ec6\u8bf4\u660e\u4f59\u5f26\u5b9a\u7406\u7684\u5e94\u7528\u8fc7\u7a0b\u3002\n   - \u6263\u5206\u539f\u56e0\uff1a\u7f3a\u5c11\u5bf9\u4f59\u5f26\u5b9a\u7406\u7684\u8be6\u7ec6\u89e3\u91ca\u3002\n\n2. **\u7b2c2\u6b65\uff1a\u6c42 sin B - sin A \u7684\u503c - 1/2**\n   - \u2713 \u6b63\u786e\u70b9\uff1a\u5b66\u751f\u6b63\u786e\u5730\u5229\u7528\u6b63\u5f26\u5b9a\u7406\u548c\u5df2\u77e5\u6761\u4ef6\uff0c\u6c42\u51fa sin B - sin A \u7684\u503c\u3002\n   - \u2717 \u9519\u8bef\u70b9\uff1a\u6c42\u89e3\u8fc7\u7a0b\u4e0d\u591f\u8be6\u7ec6\uff0c\u7f3a\u5c11\u5fc5\u8981\u7684\u63a8\u5bfc\u6b65\u9aa4\u3002\n   - \u6263\u5206\u539f\u56e0\uff1a\u6c42\u89e3\u8fc7\u7a0b\u4e0d\u8be6\u7ec6\uff0c\u5f71\u54cd\u7406\u89e3\u3002\n\n3. **\u7b2c3\u6b65\uff1a\u6c42 sin\u00b2A cos C + 1/2 sin 2C + 1/2 sin 2A + 1/2 sin 2C - 1/2 = 1/2 sin C**\n   - \u2713 \u6b63\u786e\u70b9\uff1a\u5b66\u751f\u6b63\u786e\u5730\u5229\u7528\u4e09\u89d2\u6052\u7b49\u53d8\u6362\uff0c\u6c42\u51fa sin\u00b2A cos C + 1/2 sin 2C + 1/2 sin 2A + 1/2 sin 2C - 1/2 \u7684\u503c\u3002\n   - \u2717 \u9519\u8bef\u70b9\uff1a\u6c42\u89e3\u8fc7\u7a0b\u4e0d\u8be6\u7ec6\uff0c\u7f3a\u5c11\u5fc5\u8981\u7684\u63a8\u5bfc\u6b65\u9aa4\u3002\n   - \u6263\u5206\u539f\u56e0\uff1a\u6c42\u89e3\u8fc7\u7a0b\u4e0d\u8be6\u7ec6\uff0c\u5f71\u54cd\u7406\u89e3\u3002\n\n4. **\u7b2c4\u6b65\uff1a\u6c42 sin C \u7684\u503c - 1/2**\n   - \u2713 \u6b63\u786e\u70b9\uff1a\u5b66\u751f\u6b63\u786e\u5730\u6c42\u51fa sin C = 4/5\u3002\n   - \u2717 \u9519\u8bef\u70b9\uff1a\u6c42\u89e3\u8fc7\u7a0b\u4e0d\u591f\u8be6\u7ec6\uff0c\u7f3a\u5c11\u5fc5\u8981\u7684\u63a8\u5bfc\u6b65\u9aa4\u3002\n   - \u6263\u5206\u539f\u56e0\uff1a\u6c42\u89e3\u8fc7\u7a0b\u4e0d\u8be6\u7ec6\uff0c\u5f71\u54cd\u7406\u89e3\u3002\n\n\u603b\u5206\uff1a4/8\n\n\u6ce8\u610f\uff1a\u5b66\u751f\u5728\u89e3\u7b54\u8fc7\u7a0b\u4e2d\uff0c\u90e8\u5206\u6b65\u9aa4\u7684\u63a8\u5bfc\u548c\u89e3\u91ca\u4e0d\u591f\u8be6\u7ec6\uff0c\u5bfc\u81f4\u7406\u89e3\u4e0a\u7684\u56f0\u96be\u3002\u5efa\u8bae\u5728\u89e3\u9898\u8fc7\u7a0b\u4e2d\uff0c\u52a0\u5f3a\u63a8\u5bfc\u8fc7\u7a0b\u7684\u8be6\u7ec6\u6027\u548c\u903b\u8f91\u8fde\u8d2f\u6027\uff0c\u4ee5\u63d0\u9ad8\u89e3\u9898\u7684\u51c6\u786e\u6027\u548c\u5b8c\u6574\u6027\u3002",
-        "files": {
-          "student_answer_1": {
-            "filename": "\u5fae\u4fe1\u56fe\u7247_20250430182121.jpg",
-            "saved_path": "uploads\\test_user_2\\\u5fae\u4fe1\u56fe\u7247_20250430182121.jpg"
-          },
-          "student_answer_2": {
-            "filename": "fee58e639eef42b68791a965912fefad.jpeg",
-            "saved_path": "uploads\\test_user_2\\fee58e639eef42b68791a965912fefad.jpeg"
+        "timestamp": "2025-06-20 12:21:10",
+        "content": "# 第1题批改结果\n\n## 1. 学生答题过程纯净版\n步骤1：3 + 4 × 2 = 7 × 2\n步骤2：7 × 2 = 14\n最终答案：14\n\n## 2. 步骤对错分析\n### 步骤1分析\n- 学生做法：计算 3 + 4 × 2 时，先计算加法得到 7，然后将结果与 2 相乘。\n- 判断结果：✗错误\n- 错误原因：学生未遵循数学中的运算顺序规则（先乘除后加减）。正确的做法应该是先执行乘法运算，再进行加法运算。\n- 正确做法：应先计算 4 × 2 得到 8，再将 3 与 8 相加，即 3 + 8 = 11。\n\n### 步骤2分析\n- 学生做法：7 × 2 = 14\n- 判断结果：✓正确\n- 错误原因：无\n- 正确做法：这个步骤本身是正确的，但前提是第一步必须正确执行，即 3 + 8 = 11。\n\n## 3. 得分详情\n- 步骤1得分：0/2 分\n- 步骤2得分：1/2 分\n- **总分：1/4 分**\n\n## 4. 题目信息\n- 科目：数学\n- 题目类型：计算题\n- 难度等级：基础\n- 主要考查知识点：基本算术运算、运算顺序\n\n## 5. 改进建议\n学生在解答过程中未能正确理解并应用数学中的运算顺序规则。建议加强对四则运算顺序的学习和练习，尤其是先乘除后加减的原则。可以通过多做一些相关的练习题来提高对运算顺序的掌握，确保在计算过程中不会出现类似的错误。同时，可以通过具体实例解释运算顺序的重要性，帮助学生理解为什么要遵循这一规则。",
+        "files": [
+          {
+            "original_name": "tmpb3bylozg.txt",
+            "saved_path": "uploads\\test_user_1\\upload_0_20250620_122048.txt",
+            "size": 112
           }
-        },
+        ],
         "settings": {
-          "strictness_level": "\u4e2d\u7b49",
-          "language": "zh"
+          "correction_type": "auto",
+          "strictness_level": "中等",
+          "language": "zh",
+          "custom_scheme": null
+        },
+        "processing_info": {
+          "files_processed": 1,
+          "result_type": "auto_detected_single_group",
+          "method_used": "auto"
         }
       },
       {
-        "filename": "fee58e639eef42b68791a965912fefad.jpeg",
-        "upload_time": "2025-05-25 19:38:56",
-        "file_size": 45.27,
-        "file_type": "student_answer_1",
-        "processing_result": "Uploaded"
+        "timestamp": "2025-06-20 12:21:40",
+        "content": "# 第1题批改结果\n\n## 1. 学生答题过程纯净版\n步骤1：3 + 4 × 2 = 7 × 2\n步骤2：7 × 2 = 14\n最终答案：14\n\n## 2. 步骤对错分析\n### 步骤1分析\n- 学生做法：3 + 4 × 2 = 7 × 2\n- 判断结果：✗错误\n- 错误原因：学生在计算时未遵循数学运算的优先级规则，即先乘除后加减。正确的计算顺序应先计算乘法 4 × 2，再进行加法运算。\n- 正确做法：首先计算乘法 4 × 2 = 8，然后进行加法运算 3 + 8 = 11。\n\n### 步骤2分析\n- 学生做法：7 × 2 = 14\n- 判断结果：✓正确\n- 错误原因：无。\n- 正确做法：虽然这一步计算本身正确，但由于前一步骤的错误，导致了最终答案不正确。\n\n## 3. 得分详情\n- 步骤1得分：0/2 分\n- 步骤2得分：1/2 分\n- **总分：1/4 分**\n\n## 4. 题目信息\n- 科目：数学\n- 题目类型：四则运算\n- 难度等级：基础\n- 主要考查知识点：运算顺序\n\n## 5. 改进建议\n学生在计算过程中忽视了数学运算的优先级规则，需要加强对四则运算顺序（先乘除后加减）的理解和应用。建议多做相关练习，巩固运算规则。在解题时，可以先标记出需要先计算的部分，以避免计算顺序错误。此外，培养良好的检查习惯，对每一步的计算结果进行复查，有助于减少错误。",
+        "files": [
+          {
+            "original_name": "tmpd55ex6yf.txt",
+            "saved_path": "uploads\\test_user_1\\upload_0_20250620_122110.txt",
+            "size": 112
+          }
+        ],
+        "settings": {
+          "correction_type": "single_group",
+          "strictness_level": "中等",
+          "language": "zh",
+          "custom_scheme": null
+        },
+        "processing_info": {
+          "files_processed": 1,
+          "result_type": "single_group_correction",
+          "method_used": "single_group"
+        }
       },
       {
-        "timestamp": "2025-05-25 19:39:36",
-        "content": "# \u57fa\u672c\u4fe1\u606f\n- \u79d1\u76ee\uff1a\u6570\u5b66\n- \u9898\u76ee\u7c7b\u578b\uff1a\u4e09\u89d2\u6052\u7b49\u53d8\u5f62\u4e0e\u89e3\u4e09\u89d2\u5f62\n\n# \u5b66\u751f\u7b54\u6848\u6279\u6539\u5982\u4e0b:\n\n### 1. \u7b2c1\u6b65\uff1a\u5e94\u7528\u4f59\u5f26\u5b9a\u7406 - 2/2\n- \u2713 \u6b63\u786e\u70b9\uff1a\u5b66\u751f\u6b63\u786e\u5e94\u7528\u4e86\u4f59\u5f26\u5b9a\u7406\u516c\u5f0f cos A = (b\u00b2 + c\u00b2 - a\u00b2) / (2bc)\uff0c\u5e76\u8ba1\u7b97\u5f97\u51fa cos A = \u221a3/2\u3002\n- \u2717 \u9519\u8bef\u70b9\uff1a\u65e0\u3002\n- \u6263\u5206\u539f\u56e0\uff1a\u65e0\u3002\n\n### 2. \u7b2c2\u6b65\uff1a\u53d8\u5f62\u4e0e\u63a8\u5bfc - 1/2\n- \u2713 \u6b63\u786e\u70b9\uff1a\u5b66\u751f\u901a\u8fc7\u4ee3\u5165\u5316\u7b80\uff0c\u5f97\u5230 c\u00b2 = a\u00b2 + b\u00b2 - 2ab cos C \u7684\u5f62\u5f0f\u3002\n- \u2717 \u9519\u8bef\u70b9\uff1a\u5728\u63a8\u5bfc sin\u00b2B - sin\u00b2A = \u00b1sin C \u65f6\uff0c\u5b66\u751f\u7684\u8ba1\u7b97\u8fc7\u7a0b\u8f83\u4e3a\u7e41\u7410\u4e14\u4e0d\u5b8c\u5168\u6b63\u786e\uff0c\u5c24\u5176\u662f\u6700\u540e\u5f97\u51fa -sin\u00b2A = \u00b1sin C \u7684\u7ed3\u8bba\uff0c\u903b\u8f91\u4e0d\u591f\u6e05\u6670\u3002\n- \u6263\u5206\u539f\u56e0\uff1a\u63a8\u5bfc\u8fc7\u7a0b\u4e0d\u591f\u4e25\u8c28\uff0c\u7f3a\u4e4f\u6e05\u6670\u7684\u903b\u8f91\u6b65\u9aa4\uff0c\u5bfc\u81f4\u6700\u7ec8\u7ed3\u8bba\u4e0d\u591f\u51c6\u786e\u3002\n\n### 3. \u7b2c3\u6b65\uff1a\u4e09\u89d2\u6052\u7b49\u53d8\u6362 - 1/2\n- \u2713 \u6b63\u786e\u70b9\uff1a\u5b66\u751f\u5c1d\u8bd5\u4f7f\u7528\u4e09\u89d2\u6052\u7b49\u53d8\u6362\u8fdb\u884c\u63a8\u5bfc\uff0c\u5982 sin\u00b2A cos\u00b2C + 1/2 sin 2A \u00b1sin 2C \u00b1sin 2A \u00b1sin C \u7684\u5f62\u5f0f\u3002\n- \u2717 \u9519\u8bef\u70b9\uff1a\u5728\u63a8\u5bfc\u8fc7\u7a0b\u4e2d\uff0c\u5b66\u751f\u672a\u80fd\u6b63\u786e\u5e94\u7528\u4e09\u89d2\u6052\u7b49\u53d8\u6362\uff0c\u5bfc\u81f4\u7ed3\u8bba sin\u00b2C = 2 sin\u00b2C \u4e0d\u6210\u7acb\u3002\n- \u6263\u5206\u539f\u56e0\uff1a\u63a8\u5bfc\u8fc7\u7a0b\u4e2d\u51fa\u73b0\u9519\u8bef\uff0c\u672a\u80fd\u6b63\u786e\u4f7f\u7528\u4e09\u89d2\u6052\u7b49\u5f0f\u3002\n\n### 4. \u7b2c4\u6b65\uff1a\u6c42\u89e3 tan C - 1/2\n- \u2713 \u6b63\u786e\u70b9\uff1a\u5b66\u751f\u6700\u7ec8\u5f97\u51fa tan C = \u221a3 \u7684\u7ed3\u8bba\uff0c\u4f46\u63a8\u5bfc\u8fc7\u7a0b\u4e0d\u5b8c\u5168\u6b63\u786e\u3002\n- \u2717 \u9519\u8bef\u70b9\uff1a\u5b66\u751f\u5728\u6c42\u89e3 sin C \u548c cos C \u65f6\uff0c\u672a\u80fd\u6b63\u786e\u5e94\u7528\u4e09\u89d2\u51fd\u6570\u7684\u57fa\u672c\u6027\u8d28\u3002\n- \u6263\u5206\u539f\u56e0\uff1a\u4e09\u89d2\u51fd\u6570\u7684\u5e94\u7528\u4e0d\u591f\u51c6\u786e\uff0c\u5bfc\u81f4\u63a8\u5bfc\u8fc7\u7a0b\u4e0d\u4e25\u8c28\u3002\n\n### 5. \u7b2c5\u6b65\uff1a\u8ba1\u7b97 sin B \u548c\u9762\u79ef - 2/2\n- \u2713 \u6b63\u786e\u70b9\uff1a\u5b66\u751f\u6b63\u786e\u5e94\u7528\u4e86\u4e09\u89d2\u5f62\u9762\u79ef\u516c\u5f0f S = 1/2 bc sin A\uff0c\u5e76\u6c42\u89e3\u51fa bc = 6\u221a2\uff0c\u8fdb\u800c\u5f97\u51fa b = 2\u221a2\u3002\n- \u2717 \u9519\u8bef\u70b9\uff1a\u65e0\u3002\n- \u6263\u5206\u539f\u56e0\uff1a\u65e0\u3002\n\n### \u603b\u5206\uff1a7/10\n\n### \u6ce8\u610f\uff1a\n\u5b66\u751f\u5728\u63a8\u5bfc\u8fc7\u7a0b\u4e2d\u5b58\u5728\u4e00\u4e9b\u903b\u8f91\u4e0d\u6e05\u6670\u548c\u8ba1\u7b97\u9519\u8bef\uff0c\u5efa\u8bae\u52a0\u5f3a\u5bf9\u4e09\u89d2\u6052\u7b49\u53d8\u6362\u7684\u7406\u89e3\u548c\u5e94\u7528\uff0c\u786e\u4fdd\u6bcf\u4e00\u6b65\u63a8\u5bfc\u7684\u6b63\u786e\u6027\u548c\u4e25\u8c28\u6027\u3002\u540c\u65f6\uff0c\u5728\u6c42\u89e3\u8fc7\u7a0b\u4e2d\uff0c\u8981\u6ce8\u91cd\u4e09\u89d2\u51fd\u6570\u7684\u57fa\u672c\u6027\u8d28\u548c\u5e94\u7528\uff0c\u4ee5\u907f\u514d\u51fa\u73b0\u9519\u8bef\u3002",
+        "timestamp": "2025-06-20 12:22:48",
+        "content": "# 基本信息\n- 科目：数学\n- 题目类型：基本运算题\n\n# 学生答案批改如下:\n\n1. 第1步：理解计算顺序 - 0/2\n- ✓ 正确点：无\n- ✗ 错误点：学生没有正确理解乘法先于加法的计算顺序，而是按照从左到右的顺序进行了计算。\n- 扣分原因：根据题目要求，乘法应该优先于加法进行计算。正确的顺序应该是先计算4 × 2，再将结果与3相加。学生直接计算3 + 4得到7，再乘以2，导致最终结果错误。\n\n2. 第2步：计算结果 - 0/2\n- ✓ 正确点：无\n- ✗ 错误点：由于运算顺序错误，导致最终计算结果为14，而不是正确的结果11。\n- 扣分原因：依据正确的计算顺序，4 × 2 = 8，然后3 + 8 = 11。学生因为运算顺序错误，最终结果也必然错误。\n\n3. 第3步：表达清晰 - 0/1\n- ✓ 正确点：无\n- ✗ 错误点：学生的答案表达不够清晰，没有明确显示每一步的计算过程，仅给出最终的错误结果。\n- 扣分原因：清晰的表达应该包括每一步的计算过程和最终结果。学生直接给出从7到14的计算步骤，但没有解释清楚每一步的具体运算，导致难以理解其计算逻辑。\n\n总分：0/5\n\n### 批改总结：\n学生在解答这道题时，未能正确理解乘法先于加法的运算顺序，导致计算结果错误。此外，答案的表达也不够清晰，缺少详细的步骤说明。建议学生重新学习四则运算的优先级规则，并在解答数学题时，注重每一步的计算过程和表达的清晰度，确保逻辑连贯且易于理解。正确答案应为：3 + 4 × 2 = 3 + 8 = 11。",
+        "files": [
+          {
+            "original_name": "tmpohpfvslt.txt",
+            "saved_path": "uploads\\test_user_1\\upload_0_20250620_122140.txt",
+            "size": 115
+          }
+        ],
+        "settings": {
+          "correction_type": "without_scheme",
+          "strictness_level": "中等",
+          "language": "zh",
+          "custom_scheme": null
+        },
+        "processing_info": {
+          "files_processed": 1,
+          "result_type": "correction_without_scheme",
+          "method_used": "without_scheme"
+        }
+      },
+      {
+        "timestamp": "2025-06-20 12:34:51",
+        "content": "# 学生答案批改如下:\n\n### 1. 第1步：正确理解题意并画出图形 - 2/2\n- ✓ 正确点：\n  - 学生正确画出了三角形XYZ，并标注了a、b及相关长度。\n  - 图形直观，能够清晰地表达题意。\n- ✗ 错误点：无。\n- 扣分原因：无。\n\n### 2. 第2步：利用几何变换（对称性）建立关系 - 3/3\n- ✓ 正确点：\n  - 学生正确地利用了对称性，识别出三角形XYZ关于某轴对称的性质。\n  - 正确表示了对称点X′、Y′的位置，并证明了XZ + YZ的最小值等同于XZ + ZY′。\n- ✗ 错误点：无。\n- 扣分原因：无。\n\n### 3. 第3步：求解最值并给出合理解释 - 3/3\n- ✓ 正确点：\n  - 正确利用了两点间线段最短的原理，证明了XZ + ZY′的最小值为线段XY′。\n  - 计算出了XY′的长度为√(a² + 16) + √(b² + 16)。\n  - 通过几何直观，得出XZ + YZ的最小值为2√25。\n- ✗ 错误点：无。\n- 扣分原因：无。\n\n### 4. 第4步：最终答案正确 - 2/2\n- ✓ 正确点：\n  - 计算出√(a² + 16) + √(b² + 16)的最小值为10。\n  - 最终答案正确无误。\n- ✗ 错误点：无。\n- 扣分原因：无。\n\n### 总分：10/10\n\n**总结**：\n学生在解答过程中，对题意理解透彻，图形绘制准确，能够熟练运用几何变换和对称性来解决问题，并正确利用两点间线段最短的原理求解最值。计算过程准确无误，最终答案完全正确。整体表现优秀，符合题目要求和评分标准。",
         "files": {
-          "student_answer_1": {
-            "filename": "fee58e639eef42b68791a965912fefad.jpeg",
-            "saved_path": "uploads\\test_user_2\\fee58e639eef42b68791a965912fefad.jpeg"
+          "file_1": {
+            "filename": "微信图片_20250430182121.jpg",
+            "saved_path": "uploads\\test_user_1\\enhanced_0_20250620_123319.jpg"
           }
         },
         "settings": {
-          "strictness_level": "\u4e2d\u7b49",
-          "language": "zh"
+          "correction_type": "auto",
+          "strictness_level": "中等",
+          "language": "zh",
+          "processing_method": "enhanced_api",
+          "custom_scheme": null
+        }
+      },
+      {
+        "timestamp": "2025-06-20 13:00:02",
+        "content": "# 基本信息\n- 科目：数学\n- 题目类型：解答题（三角恒等变换与解三角形）\n\n# 学生答案批改如下:\n\n### 1. 第1步：公式应用与变形 - 3/4\n- ✓ 正确点：\n  - 正确应用余弦定理cos A = (b² + c² - a²) / (2bc)。\n  - 正确变形得到c²与a、b的关系c² = a² + b² - 2ab cos C。\n  - 正确应用和差化积公式sin B - sin A = ±sin C。\n- ✗ 错误点：\n  - 在整理sin²A、cos²C、sin²C的关系时出现错误。\n- 扣分原因：\n  - 整理过程中，sin²A与sin²C的关系没有正确处理，导致后续推导错误。\n\n### 2. 第2步：三角函数值的计算 - 1/3\n- ✓ 正确点：\n  - 正确计算sin C和cos C。\n- ✗ 错误点：\n  - 计算tan C时出现错误，应为tan C = √3 / 3，学生计算结果为tan C = √2 / 2。\n  - sin B的计算结果不正确，应为(3√2 + √6) / 6，学生结果为其他值。\n- 扣分原因：\n  - tan C和sin B的计算错误，导致后续三角形计算不准确。\n\n### 3. 第3步：解三角形 - 0/3\n- ✓ 正确点：\n  - 利用三角形面积公式ΔABC = 1/2 bc sin A进行计算。\n- ✗ 错误点：\n  - bc的值计算错误，应为6√2，学生结果为其他值。\n  - b的值计算错误，应为2√2，学生结果为其他值。\n  - 三角形面积计算时，sin A的值未正确使用。\n- 扣分原因：\n  - 由于步骤2中的计算错误，导致bc和b的计算不正确，最终三角形面积计算也不正确。\n\n总分：4/10\n\n### 批改总结\n学生在公式应用与变形方面表现较好，但在三角函数值的计算和解三角形过程中存在多处计算错误，导致最终结果不准确。建议重点复习三角函数的基本性质和计算方法，加强计算准确性的训练。",
+        "files": {
+          "file_1": {
+            "filename": "fee58e639eef42b68791a965912fefad.jpeg",
+            "saved_path": "uploads\\test_user_1\\enhanced_0_20250620_125816.jpeg"
+          }
+        },
+        "settings": {
+          "correction_type": "auto",
+          "strictness_level": "中等",
+          "language": "zh",
+          "processing_method": "enhanced_api",
+          "custom_scheme": null
+        }
+      },
+      {
+        "timestamp": "2025-06-20 22:08:16",
+        "content": "# 基本信息\n- 科目：数学\n- 题目类型：三角形性质与解三角形问题\n\n# 学生答案批改如下:\n\n### 1. 第1步：计算cos A及a²的表达式 - 2/3\n- **✓ 正确点**：\n    - 学生正确使用了余弦定理计算cos A的值，并计算出cos A = ±√6/3，得1分。\n    - 尝试推导了a²的表达式，但有部分错误。\n- **✗ 错误点**：\n    - 在求解1/2c² = b² - a²时有错误，应为1/2c² = b² + c² - a² - 2bc × cos A。学生没有正确地使用余弦定理进行推导。\n- **扣分原因**：\n    - 由于计算a²表达式时出现代数错误，扣1分。\n\n### 2. 第2步：证明sin²B - sin²A = ±sin²C - 2/3\n- **✓ 正确点**：\n    - 学生试图使用三角恒等变换进行证明，有正确的思路。\n- **✗ 错误点**：\n    - 推导过程中sin²A × cos²C + 1/2sin 2A × ±sin 2C的展开和简化有误，导致最终结果不正确。\n    - 证明过程不完整，逻辑不严密。\n- **扣分原因**：\n    - 三角恒等变换错误或简化过程出现错误，扣2分。\n\n### 3. 第3步：计算sin C, cos C, sin B, 并求解b的值 - 3/4\n- **✓ 正确点**：\n    - 学生计算出sin C = √6/3和cos C = √3/3，得1分。\n    - 正确计算了sin B = sin(A + C)并得到正确结果，得1分。\n    - 通过三角形面积公式推导出bc = 6√2，得1分。\n- **✗ 错误点**：\n    - 最终推导出b = 2√2时，没有详细展示计算过程，但结果正确。\n- **扣分原因**：\n    - 虽然最终结果正确，但缺少详细的推导过程，扣1分。\n\n### 总分：7/10\n\n### 批改总结：\n学生在计算cos A和a²表达式时出现了一些代数错误，在证明sin²B - sin²A = ±sin²C的过程中也存在简化错误，影响了整体得分。但在计算sin C、cos C、sin B和求解b的值方面表现较好，逻辑清晰，结果正确。建议学生在后续学习中加强代数运算和三角恒等变换的练习，注重推导过程的严谨性和完整性。",
+        "files": {
+          "file_1": {
+            "filename": "fee58e639eef42b68791a965912fefad.jpeg",
+            "saved_path": "uploads\\test_user_1\\enhanced_0_20250620_220632.jpeg"
+          }
+        },
+        "settings": {
+          "correction_type": "auto",
+          "strictness_level": "中等",
+          "language": "zh",
+          "processing_method": "enhanced_api",
+          "custom_scheme": null
+        }
+      },
+      {
+        "timestamp": "2025-06-20 23:38:05",
+        "content": "# 学生答案批改如下:\n\n### 第(Ⅰ)部分\n\n1. **第1步：使用余弦定理求cos A** - 0/2\n   - ✓ 正确点：无\n   - ✗ 错误点：学生直接给出了cos A = √3/2的结果，并未展示余弦定理的推导过程。\n   - 扣分原因：未正确应用余弦定理公式cos A = (b² + c² - a²) / (2bc)，导致无法验证其正确性。\n\n2. **第2步：应用正弦公式与cos C的关系推导sin²A和sin²C的关系** - 0/2\n   - ✓ 正确点：无\n   - ✗ 错误点：学生在进行sin²A和sin²C的关系推导时，公式使用混乱，且没有明确展示出sin²A = 1 - cos²A的推导过程。\n   - 扣分原因：化简过程中三角函数关系混淆，导致推导过程不清晰，且结果无法验证。\n\n3. **第3步：化简得到tan C的值** - 0/2\n   - ✓ 正确点：无\n   - ✗ 错误点：学生得出tan C = √3的结果，但化简过程存在错误，导致最终结果不正确。\n   - 扣分原因：最终化简结果错误，未正确得到tan C = √3/3。\n\n### 第(Ⅱ)部分\n\n1. **步骤1：利用sin C和cos C的值推导sin B** - 0/1\n   - ✓ 正确点：无\n   - ✗ 错误点：学生在计算sin B时，使用了sin(A + C) = sin A cos C + cos A sin C，但代入值时出现错误。\n   - 扣分原因：sin B求解公式应用错误，导致结果不正确。\n\n2. **步骤2：计算三角形面积SΔABC** - 0/1\n   - ✓ 正确点：无\n   - ✗ 错误点：学生直接给出了bc = 6√2的结果，并未展示面积公式的推导过程。\n   - 扣分原因：面积公式应用错误或计算错误，未正确展示推导过程。\n\n3. **步骤3：求解边长b** - 0/2\n   - ✓ 正确点：无\n   - ✗ 错误点：学生最终得到b = 2√2的结果，但求解过程存在错误，未正确利用余弦定理求解。\n   - 扣分原因：边长b求解过程或结果错误，未正确展示求解步骤。\n\n### 总分：0/10\n\n### 批改总结\n\n学生在解答过程中存在多处计算和推导错误，未正确应用余弦定理和正弦定理进行推导，导致最终结果不正确。建议学生在解答此类题目时，务必仔细检查每一步的计算和推导过程，确保公式的正确应用和化简过程的严谨性。同时，加强三角恒等变换的练习，熟练掌握三角函数之间的关系，以提高解题的准确性和效率。",
+        "files": {
+          "file_1": {
+            "filename": "fee58e639eef42b68791a965912fefad.jpeg",
+            "saved_path": "uploads\\test_user_1\\enhanced_0_20250620_233558.jpeg"
+          }
+        },
+        "settings": {
+          "correction_type": "auto",
+          "strictness_level": "中等",
+          "language": "zh",
+          "processing_method": "enhanced_api",
+          "custom_scheme": null
+        }
+      },
+      {
+        "timestamp": "2025-06-20 23:48:12",
+        "content": "# 学生答案批改如下:\n\n### 1. 第1步：利用余弦定理求解cos A - 2/2\n- ✓ 正确点：学生正确列出了余弦定理公式: cos A = (b² + c² - a²) / (2bc)，并计算出cos A = √2 / 2。 (2分)\n- ✗ 错误点：无。\n- 扣分原因：无。\n\n### 2. 第2步：通过三角恒等变换得到sin²A和sin C的关系 - 1/2\n- ✓ 正确点：学生列出sin²A + cos²A = 1，并尝试推导sin²A与sin C的关系。 (1分)\n- ✗ 错误点：在推导过程中，sin²A = 1/2的计算是正确的，但后续步骤中出现了一些混淆，如sin C的关系式没有清晰地表达出来。\n- 扣分原因：三角恒等变换过程不完整，未能清晰地得到sin²A与sin C的关系式。\n\n### 3. 第3步：求解tan C的值 - 1.5/2\n- ✓ 正确点：学生通过计算得到sin C = √2 / 3 和 cos C = 2√2 / 3，并进一步计算出tan C = √2 / 4。 (1分)\n- ✗ 错误点：在计算tan C时，学生得到tan C = √2 / 4，但实际上应为tan C = sin C / cos C = (√2 / 3) / (2√2 / 3) = 1/2。\n- 扣分原因：计算tan C时出现了错误，导致结果不准确。\n\n### 4. 第4步：利用正弦定理和面积公式求解三角形面积及边长b - 1.5/2\n- ✓ 正确点：学生正确应用正弦定理和面积公式，计算出面积为3，且b = 2√2。 (1分)\n- ✗ 错误点：计算边长b时，虽然结果正确，但过程略显混乱，未详细展示每一步的推导。\n- 扣分原因：计算过程不够清晰，缺乏详细步骤的展示。\n\n### 5. 第5步：最终答案及结论 - 1.5/2\n- ✓ 正确点：学生给出了b = 2√2的正确结果，并计算出了三角形面积为3。 (1分)\n- ✗ 错误点：虽然结果正确，但结论部分略显简略，没有明确总结整个解题过程。\n- 扣分原因：结论部分不够详细，缺乏对整个解题过程的总结。\n\n### 总分：7.5/10\n\n**改进建议：**\n- 在三角恒等变换过程中，需更加清晰地展示每一步的推导，确保逻辑连贯。\n- 计算tan C时，应注意计算的准确性，避免简单的计算错误。\n- 在得出最终答案后，应详细总结整个解题过程，确保每一步都清晰明了。",
+        "files": {
+          "file_1": {
+            "filename": "fee58e639eef42b68791a965912fefad.jpeg",
+            "saved_path": "uploads\\test_user_1\\enhanced_0_20250620_234634.jpeg"
+          }
+        },
+        "settings": {
+          "correction_type": "auto",
+          "strictness_level": "中等",
+          "language": "zh",
+          "processing_method": "enhanced_api",
+          "custom_scheme": null
+        }
+      },
+      {
+        "timestamp": "2025-06-20 23:50:55",
+        "content": "# 学生答案批改如下:\n\n1. **第1步：余弦定理应用** - 4/5\n   - ✓ **正确点**：\n     - 学生正确应用了余弦定理公式：cos A = (b² + c² - a²) / (2bc) 并推导出 c² = a² + b² - 2ab cos C。\n   - ✗ **错误点**：\n     - 学生在化简1/2 c² = b² - a²时，没有给出完整的推导过程，直接跳到了下一步，容易导致逻辑不清晰。\n   - **扣分原因**：化简步骤不完整，导致逻辑连贯性不足，扣1分。\n\n2. **第2步：三角恒等变换** - 3/5\n   - ✓ **正确点**：\n     - 学生正确展开了sin²A cos²C + ½ sin 2A sin 2C + ½ sin 2C的表达式，并化简至-sin²A = ½ sin²C。\n   - ✗ **错误点**：\n     - 在化简过程中，学生直接从cos²C + sin²C - 1 = sin²C跳到了cos²C + 1 - 2sin²C + sin²C - 1 = sin²C，中间步骤缺失，逻辑不严谨。\n     - 在推导tan C = √3时，直接给出结果，没有详细计算过程。\n   - **扣分原因**：化简过程不完整，逻辑推理不严谨，扣2分。\n\n3. **第3步：解三角形面积** - 4/5\n   - ✓ **正确点**：\n     - 学生正确计算了sin C = √3/2和cos C = 1/2，并使用面积公式S = ½ bc sin A计算出面积为3。\n     - 正确推导出b = 2√2。\n   - ✗ **错误点**：\n     - 在计算sin B时，虽然步骤正确，但没有最终简化结果，直接给出3√2/6，不够规范。\n   - **扣分原因**：计算结果未简化，扣1分。\n\n4. **第4步：逻辑推理与结论** - 5/5\n   - ✓ **正确点**：\n     - 学生在各步推导中逻辑严谨，无明显错误。\n     - 结合题意，正确完成最终结论，推导出b = 2√2。\n   - ✗ **错误点**：无。\n\n**总分：16/20**\n\n### 总结\n学生在余弦定理应用和解三角形面积部分表现较好，但在三角恒等变换中化简过程不完整，逻辑推理不够严谨。建议学生在解题过程中注重每一步的推导和化简，保持逻辑的连贯性和完整性。",
+        "files": {
+          "file_1": {
+            "filename": "fee58e639eef42b68791a965912fefad.jpeg",
+            "saved_path": "uploads\\test_user_1\\enhanced_0_20250620_234901.jpeg"
+          }
+        },
+        "settings": {
+          "correction_type": "auto",
+          "strictness_level": "中等",
+          "language": "zh",
+          "processing_method": "enhanced_api",
+          "custom_scheme": null
+        }
+      },
+      {
+        "timestamp": "2025-06-21 00:03:00",
+        "content": "# 学生答案批改如下:\n\n### 1. 第1步：余弦定理应用及计算 cos A - 3/3\n- ✓ 正确点：学生正确应用了余弦定理公式，并计算出了 cos A 的值为 √3/2。\n- ✗ 错误点：无。\n- 扣分原因：无。\n\n### 2. 第2步：边长计算 c² = a² + b² - 2ab × cos C - 3/3\n- ✓ 正确点：学生列出了正确的边长计算公式 c² = a² + b² - 2ab × cos C。\n- ✗ 错误点：学生没有给出具体的计算步骤或结果。\n- 扣分原因：缺少具体的计算步骤和结果，无法验证计算是否正确。\n\n### 3. 第3步：三角函数恒等变换 sin²A + cos²A = 1 及其应用 - 2/4\n- ✓ 正确点：学生正确应用了三角函数恒等变换 sin²A + cos²A = 1，并通过推导得到了 sin C 和 tan C。\n- ✗ 错误点：在推导 sin²A + cos²A = 1 的过程中，学生有些步骤不够清晰，且未说明 sin C 和 tan C 的具体计算过程。\n- 扣分原因：推导过程不够详细，导致部分步骤难以理解。\n\n### 4. 第4步：面积计算及边长 b 的求解 - 3/5\n- ✓ 正确点：学生正确应用了面积公式 ½ × bc × sin A，并计算出了 bc 的值为 6√2。\n- ✗ 错误点：在求解 b 时，学生直接给出 b = 2√2，但缺少了具体的求解过程。\n- 扣分原因：求解 b 的过程不完整，未展示如何从 bc = 6√2 推导出 b = 2√2。\n\n### 总分：11/15\n\n### 具体批改意见：\n- **第2步**：建议学生在进行边长计算时，给出具体的数值代入过程，以确保计算结果的准确性。\n- **第3步**：推导 sin²A + cos²A = 1 的过程中，应详细列出每一步的计算，以增强答案的逻辑性和可读性。\n- **第4步**：求解 b 时，应补充具体的求解过程，如通过 a² = b² + c² - 2bc × cos A 计算出 b 的值。\n\n希望学生在今后的解题过程中，注意步骤的完整性和计算的准确性，以提升整体解题水平。",
+        "files": {
+          "file_1": {
+            "filename": "fee58e639eef42b68791a965912fefad.jpeg",
+            "saved_path": "uploads\\test_user_1\\enhanced_0_20250621_000125.jpeg"
+          }
+        },
+        "settings": {
+          "correction_type": "auto",
+          "strictness_level": "中等",
+          "language": "zh",
+          "processing_method": "enhanced_api",
+          "custom_scheme": null
+        }
+      },
+      {
+        "timestamp": "2025-06-21 00:15:37",
+        "content": "### 基本信息\n- 科目：化学\n- 题目类型：专题试卷题目 - 地球化学\n\n### 学生答案批改如下:\n\n#### 题目1（5分）\n- 第1步：描述地球结构的分层 - [该步得分]/2\n  - ✓ 正确点：[列出正确之处]\n  - ✗ 错误点：[列出错误之处]\n  - 扣分原因：[详细解释]\n- 第2步：解释各层的组成和特性 - [该步得分]/3\n  - ✓ 正确点：[列出正确之处]\n  - ✗ 错误点：[列出错误之处]\n  - 扣分原因：[详细解释]\n\n#### 题目2（6分）\n- 第1步：说明地壳中元素的分布 - [该步得分]/3\n  - ✓ 正确点：[列出正确之处]\n  - ✗ 错误点：[列出错误之处]\n  - 扣分原因：[详细解释]\n- 第2步：分析这些元素在地球化学循环中的作用 - [该步得分]/3\n  - ✓ 正确点：[列出正确之处]\n  - ✗ 错误点：[列出错误之处]\n  - 扣分原因：[详细解释]\n\n#### 题目3（7分）\n- 第1步：描述岩石循环的过程 - [该步得分]/3\n  - ✓ 正确点：[列出正确之处]\n  - ✗ 错误点：[列出错误之处]\n  - 扣分原因：[详细解释]\n- 第2步：提供岩石循环的实例 - [该步得分]/4\n  - ✓ 正确点：[列出正确之处]\n  - ✗ 错误点：[列出错误之处]\n  - 扣分原因：[详细解释]\n\n#### 题目4（8分）\n- 第1步：计算给定矿物的摩尔质量和密度 - [该步得分]/4\n  - ✓ 正确点：[列出正确之处]\n  - ✗ 错误点：[列出错误之处]\n  - 扣分原因：[详细解释]\n- 第2步：解释计算结果对矿物学研究的意义 - [该步得分]/4\n  - ✓ 正确点：[列出正确之处]\n  - ✗ 错误点：[列出错误之处]\n  - 扣分原因：[详细解释]\n\n#### 题目5（10分）\n- 第1步：描述火山活动的化学过程 - [该步得分]/5\n  - ✓ 正确点：[列出正确之处]\n  - ✗ 错误点：[列出错误之处]\n  - 扣分原因：[详细解释]\n- 第2步：分析火山气体对环境的影响 - [该步得分]/5\n  - ✓ 正确点：[列出正确之处]\n  - ✗ 错误点：[列出错误之处]\n  - 扣分原因：[详细解释]\n\n#### 题目6（10分）\n- 第1步：阐述水循环在地球化学中的重要性 - [该步得分]/4\n  - ✓ 正确点：[列出正确之处]\n  - ✗ 错误点：[列出错误之处]\n  - 扣分原因：[详细解释]\n- 第2步：分析人类活动对水循环的影响 - [该步得分]/6\n  - ✓ 正确点：[列出正确之处]\n  - ✗ 错误点：[列出错误之处]\n  - 扣分原因：[详细解释]\n\n#### 题目7（4分）\n- 第1步：描述二氧化碳在大气中的循环 - [该步得分]/2\n  - ✓ 正确点：[列出正确之处]\n  - ✗ 错误点：[列出错误之处]\n  - 扣分原因：[详细解释]\n- 第2步：分析二氧化碳对全球气候变化的影响 - [该步得分]/2\n  - ✓ 正确点：[列出正确之处]\n  - ✗ 错误点：[列出错误之处]\n  - 扣分原因：[详细解释]\n\n#### 题目8（10分）\n- 第1步：设计一个实验来监测土壤中的重金属含量 - [该步得分]/5\n  - ✓ 正确点：[列出正确之处]\n  - ✗ 错误点：[列出错误之处]\n  - 扣分原因：[详细解释]\n- 第2步：讨论实验结果对环境评估的影响 - [该步得分]/5\n  - ✓ 正确点：[列出正确之处]\n  - ✗ 错误点：[列出错误之处]\n  - 扣分原因：[详细解释]\n\n### 总分\n总分：[得分]/50\n\n请根据学生具体答案填写上述表格中的得分、正确点、错误点及扣分原因。",
+        "files": {
+          "file_1": {
+            "filename": "Topic1_SQ.pdf",
+            "saved_path": "uploads\\test_user_1\\enhanced_0_20250621_001300.pdf"
+          }
+        },
+        "settings": {
+          "correction_type": "auto",
+          "strictness_level": "中等",
+          "language": "zh",
+          "processing_method": "enhanced_api",
+          "custom_scheme": null
+        }
+      },
+      {
+        "timestamp": "2025-06-21 00:28:36",
+        "content": "# 基本信息\n- 科目：化学\n- 题目类型：选择题\n\n# 学生答案批改如下:\n\n### 题目1\n1. 第1步：选择与地球大气层结构相关的选项 - [该步得分]/1\n- ✓ 正确点：如果学生选择了描述地球大气层结构的选项。\n- ✗ 错误点：如果学生选择了与地球大气层结构无关的选项。\n- 扣分原因：选择错误选项，不符合题目要求描述地球大气层结构。\n\n### 题目2\n2. 第2步：选择描述地球水循环过程的选项 - [该步得分]/1\n- ✓ 正确点：如果学生选择了描述地球水循环过程的正确选项。\n- ✗ 错误点：如果学生选择了与地球水循环过程不符的选项。\n- 扣分原因：选择错误选项，未正确描述地球水循环过程。\n\n### 题目3\n3. 第3步：选择与地球板块构造相关的选项 - [该步得分]/1\n- ✓ 正确点：如果学生选择了与地球板块构造相关的正确选项。\n- ✗ 错误点：如果学生选择了与地球板块构造无关的选项。\n- 扣分原因：选择错误选项，不符合题目要求描述地球板块构造。\n\n### 题目4\n4. 第4步：选择描述地球能源来源的选项 - [该步得分]/1\n- ✓ 正确点：如果学生选择了描述地球能源来源的正确选项。\n- ✗ 错误点：如果学生选择了与地球能源来源不符的选项。\n- 扣分原因：选择错误选项，未正确描述地球能源来源。\n\n总分：[得分]/4\n\n注意：根据学生的具体选择，上述各步骤得分需要具体填写。在实际批改时，需要根据学生的选择填写相应的得分和批注。",
+        "files": {
+          "file_1": {
+            "filename": "Topic1_MC.pdf",
+            "saved_path": "uploads\\test_user_1\\enhanced_0_20250621_002706.pdf"
+          }
+        },
+        "settings": {
+          "correction_type": "auto",
+          "strictness_level": "中等",
+          "language": "zh",
+          "processing_method": "enhanced_api",
+          "custom_scheme": null
+        }
+      },
+      {
+        "timestamp": "2025-06-21 00:45:27",
+        "content": "### 基本信息\n- 科目：化学\n- 题目类型：结构化问题\n\n# 学生答案批改如下:\n\n#### 题 1\n1. 第1步：理解地球化学循环的基本概念 - [该步得分]/2\n- ✓ 正确点：如果学生正确描述了地球化学循环的基本概念，如物质的循环和能量流动，则该点正确。\n- ✗ 错误点：如果学生对概念的理解有误或描述不准确。\n- 扣分原因：对地球化学循环的基本概念理解有误，扣1分。\n\n2. 第2步：正确描述水循环过程 - [该步得分]/3\n- ✓ 正确点：如果学生准确描述了水循环的过程，包括蒸发、凝结、降水、径流等。\n- ✗ 错误点：如果学生对水循环过程的描述不全面或有错误。\n- 扣分原因：描述水循环过程不全面或有误，扣分依据错误的严重程度。\n\n总分：[得分]/5\n\n#### 题 2\n1. 第1步：解释岩石循环及其对环境的影响 - [该步得分]/2\n- ✓ 正确点：如果学生正确解释了岩石循环的过程及其对环境的影响。\n- ✗ 错误点：如果学生对岩石循环的解释有误或对环境影响的描述不准确。\n- 扣分原因：解释岩石循环及其对环境的影响有误，扣1分。\n\n2. 第2步：举例说明 - [该步得分]/3\n- ✓ 正确点：如果学生能够正确举例说明岩石循环对环境的具体影响。\n- ✗ 错误点：如果学生举的例子不当或无法说明其对环境的影响。\n- 扣分原因：举例不当或无法说明其对环境的影响，扣分依据错误的严重程度。\n\n总分：[得分]/5\n\n#### 题 3\n1. 第1步：计算大气中二氧化碳浓度 - [该步得分]/2\n- ✓ 正确点：如果学生计算正确。\n- ✗ 错误点：如果学生计算有误。\n- 扣分原因：计算错误，扣2分。\n\n2. 第2步：分析二氧化碳增加的原因 - [该步得分]/3\n- ✓ 正确点：如果学生能全面分析二氧化碳增加的原因，如工业排放、森林砍伐等。\n- ✗ 错误点：如果学生分析不全面或有误。\n- 扣分原因：分析二氧化碳增加的原因不够全面，扣1分。\n\n总分：[得分]/5\n\n#### 题 4\n1. 第1步：理解矿物形成过程 - [该步得分]/2\n- ✓ 正确点：如果学生正确理解矿物的形成过程。\n- ✗ 错误点：如果学生对矿物形成过程的理解有误。\n- 扣分原因：对矿物形成过程理解有误，扣1分。\n\n2. 第2步：描述矿物对环境的影响 - [该步得分]/3\n- ✓ 正确点：如果学生准确描述了矿物对环境的影响。\n- ✗ 错误点：如果学生描述矿物对环境的影响不准确或不全面。\n- 扣分原因：描述矿物对环境的影响不准确或不全面，扣分依据错误的严重程度。\n\n总分：[得分]/5\n\n#### 题 5\n1. 第1步：解释土壤形成过程 - [该步得分]/2\n- ✓ 正确点：如果学生正确解释了土壤的形成过程。\n- ✗ 错误点：如果学生对土壤形成过程的解释有逻辑错误。\n- 扣分原因：描述土壤形成过程逻辑错误，扣1分。\n\n2. 第2步：分析土壤质量对植物生长的重要性 - [该步得分]/3\n- ✓ 正确点：如果学生能正确分析土壤质量对植物生长的重要性。\n- ✗ 错误点：如果学生分析不全面或有误。\n- 扣分原因：分析土壤质量对植物生长的重要性不全面或有误，扣分依据错误的严重程度。\n\n总分：[得分]/5\n\n#### 题 6\n1. 第1步：计算地壳中元素的丰度 - [该步得分]/2\n- ✓ 正确点：如果学生能够正确计算地壳中元素的丰度。\n- ✗ 错误点：如果学生计算的数据不准确。\n- 扣分原因：计算地壳中元素丰度数据不准确，扣2分。\n\n2. 第2步：分析元素丰度与地质活动的关系 - [该步得分]/3\n- ✓ 正确点：如果学生能正确分析元素丰度与地质活动的关系。\n- ✗ 错误点：如果学生分析不全面或有误。\n- 扣分原因：分析元素丰度与地质活动的关系不全面或有误，扣分依据错误的严重程度。\n\n总分：[得分]/5\n\n#### 题 7\n1. 第1步：描述气候变化对地球化学的影响 - [该步得分]/2\n- ✓ 正确点：如果学生能正确描述气候变化对地球化学的影响。\n- ✗ 错误点：如果学生描述有误。\n- 扣分原因：描述气候变化对地球化学的影响有误，扣1分。\n\n2. 第2步：提出减少气候变化的措施 - [该步得分]/3\n- ✓ 正确点：如果学生能提出切实可行的减少气候变化的措施。\n- ✗ 错误点：如果学生提出的措施不切实际。\n- 扣分原因：提出减少气候变化的措施不切实际，扣1分。\n\n总分：[得分]/5\n\n#### 题 8\n1. 第1步：总结地球化学循环及其对人类生活的影响 - [该步得分]/2\n- ✓ 正确点：如果学生能全面总结地球化学循环及其对人类生活的影响。\n- ✗ 错误点：如果学生总结不全面或有误。\n- 扣分原因：总结地球化学循环及其对人类生活的影响不全面，扣2分。\n\n2. 第2步：提出具体建议 - [该步得分]/3\n- ✓ 正确点：如果学生能提出具体且合理的建议。\n- ✗ 错误点：如果学生提出的建议不具体或不合理。\n- 扣分原因：提出的具体建议不合理，扣分依据错误的严重程度。\n\n总分：[得分]/5\n\n### 总分\n总分：[得分]/40\n\n### 批改总结\n请根据以上批改标准和评分点，仔细检查学生的每一步答案，并给出相应的得分和评语。确保遵守评分标准和常见错误的扣分点，帮助学生更好地理解地球化学的相关知识和应用能力。",
+        "files": {
+          "file_1": {
+            "filename": "Topic1_SQ.pdf",
+            "saved_path": "uploads\\test_user_1\\enhanced_0_20250621_004232.pdf"
+          }
+        },
+        "settings": {
+          "correction_type": "auto",
+          "strictness_level": "中等",
+          "language": "zh",
+          "processing_method": "enhanced_api",
+          "custom_scheme": null
+        }
+      },
+      {
+        "timestamp": "2025-06-21 00:47:46",
+        "content": "# 基本信息\n- 科目：化学\n- 题目类型：结构化问题，主题为“地球化学”\n\n# 学生答案批改如下:\n\n## 问题 1: 4 分\n- 第1步：[步骤描述] - [该步得分]/[该步满分]\n  - ✓ 正确点：[列出正确之处]\n  - ✗ 错误点：[列出错误之处]\n  - 扣分原因：[详细解释]\n\n## 问题 2: 6 分\n- 第2步：[步骤描述] - [该步得分]/[该步满分]\n  - ✓ 正确点：[列出正确之处]\n  - ✗ 错误点：[列出错误之处]\n  - 扣分原因：[详细解释]\n\n## 问题 3: 5 分\n- 第3步：[步骤描述] - [该步得分]/[该步满分]\n  - ✓ 正确点：[列出正确之处]\n  - ✗ 错误点：[列出错误之处]\n  - 扣分原因：[详细解释]\n\n## 问题 4: 5 分\n- 第4步：[步骤描述] - [该步得分]/[该步满分]\n  - ✓ 正确点：[列出正确之处]\n  - ✗ 错误点：[列出错误之处]\n  - 扣分原因：[详细解释]\n\n## 问题 5: 5 分\n- 第5步：[步骤描述] - [该步得分]/[该步满分]\n  - ✓ 正确点：[列出正确之处]\n  - ✗ 错误点：[列出错误之处]\n  - 扣分原因：[详细解释]\n\n## 问题 6: 3 分\n- 第6步：[步骤描述] - [该步得分]/[该步满分]\n  - ✓ 正确点：[列出正确之处]\n  - ✗ 错误点：[列出错误之处]\n  - 扣分原因：[详细解释]\n\n## 问题 7: 4 分\n- 第7步：[步骤描述] - [该步得分]/[该步满分]\n  - ✓ 正确点：[列出正确之处]\n  - ✗ 错误点：[列出错误之处]\n  - 扣分原因：[详细解释]\n\n## 问题 8: 2 分\n- 第8步：[步骤描述] - [该步得分]/[该步满分]\n  - ✓ 正确点：[列出正确之处]\n  - ✗ 错误点：[列出错误之处]\n  - 扣分原因：[详细解释]\n\n总分：[得分]/[满分]\n\n请注意，由于没有具体的答案内容，这里只是按照评分标准和结构给出的模板。请根据实际学生答案填充具体的步骤描述、得分、正确点和错误点等信息。",
+        "files": {
+          "file_1": {
+            "filename": "Topic1_SQ.pdf",
+            "saved_path": "uploads\\test_user_1\\enhanced_0_20250621_004608.pdf"
+          }
+        },
+        "settings": {
+          "correction_type": "auto",
+          "strictness_level": "中等",
+          "language": "zh",
+          "processing_method": "enhanced_api",
+          "custom_scheme": null
+        }
+      },
+      {
+        "timestamp": "2025-06-21 01:08:21",
+        "content": "# 学生答案批改如下:\n\n### 1. 第1步：描述地球不同层的组成 - 3/5\n- ✓ 正确点：学生正确指出了地球的内核、外核、地幔和地壳。\n- ✗ 错误点：学生未能详细解释这些层的物理状态。\n- 扣分原因：根据评分标准，解释物理状态部分占2分，学生未完成这部分内容。\n\n### 2. 第2步：计算地球表面特定物质的质量 - 4/5\n- ✓ 正确点：学生正确使用了公式，并且代入数据计算步骤正确。\n- ✗ 错误点：计算结果有轻微误差。\n- 扣分原因：计算错误扣1分。学生应确保计算过程的准确性。\n\n### 3. 第3步：解释化学反应在环境中的作用 - 5/5\n- ✓ 正确点：学生准确描述了化学反应，并详细说明了其对环境的影响，还提供了具体的实例。\n- ✗ 错误点：无。\n- 扣分原因：无。\n\n### 4. 第4步：分析化学元素在地球不同层的分布 - 4/5\n- ✓ 正确点：学生正确列出了相关化学元素，并解释了分布原因。\n- ✗ 错误点：学生提供的证据支持不够充分。\n- 扣分原因：未提供足够的证据支持扣1分。\n\n### 5. 第5步：测量和计算特定化学物质的浓度 - 3/5\n- ✓ 正确点：学生选择了正确的测量方法，并计算了浓度。\n- ✗ 错误点：解释结果部分不够详细。\n- 扣分原因：解释结果不充分扣2分。\n\n### 6. 第6步：讨论化学过程对地球生态系统的影响 - 5/5\n- ✓ 正确点：学生详细描述了化学过程，分析了对生态系统的影响，并提出了有效的解决方案。\n- ✗ 错误点：无。\n- 扣分原因：无。\n\n总分：24/30\n\n### 总结：\n学生在描述地球结构、解释化学反应及其环境影响、以及讨论化学过程对生态系统的影响方面表现出色，但在解释物理状态、提供证据支持以及详细解释结果方面有所欠缺。建议学生在后续学习中加强对这些方面的理解和练习，以提高整体成绩。",
+        "files": {
+          "file_1": {
+            "filename": "Topic1_SQ.pdf",
+            "saved_path": "uploads\\test_user_1\\enhanced_0_20250621_010657.pdf"
+          }
+        },
+        "settings": {
+          "correction_type": "auto",
+          "strictness_level": "中等",
+          "language": "zh",
+          "processing_method": "enhanced_api",
+          "custom_scheme": null
+        }
+      },
+      {
+        "timestamp": "2025-06-21 01:18:18",
+        "content": "# 基本信息\n- 科目：化学\n- 题目类型：结构化问题\n\n# 学生答案批改如下:\n\n## 问题1: (5分)\n**步骤描述**：描述地球化学的基本原理并提供一个相关实例。\n- **该步得分**：3/5\n- ✓ **正确点**：\n  - 学生正确描述了地球化学的基本原理，涉及元素在地球各圈层间的循环和分布。\n- ✗ **错误点**：\n  - 提供的实例不够具体，未能清晰展示地球化学原理的应用。\n- **扣分原因**：实例不够具体，未能充分展示地球化学原理的应用，扣2分。\n\n## 问题2: (8分)\n**步骤描述**：计算指定化学反应的平衡常数并解释计算过程及结果的意义。\n- **该步得分**：6/8\n- ✓ **正确点**：\n  - 学生正确计算了指定化学反应的平衡常数，计算过程正确。\n  - 对计算过程的解释较为清晰。\n- ✗ **错误点**：\n  - 未充分解释计算结果的意义。\n- **扣分原因**：结果的意义解释不够充分，扣2分。\n\n## 问题3: (10分)\n**步骤描述**：写出反应方程式，计算反应物和生成物的质量比，分析反应在环境中的影响。\n- **该步得分**：7/10\n- ✓ **正确点**：\n  - 反应方程式书写正确并配平。\n  - 计算了反应物和生成物的质量比，计算过程正确。\n- ✗ **错误点**：\n  - 对反应在环境中的影响分析不够深入。\n- **扣分原因**：环境影响分析不够深入，扣3分。\n\n## 问题4: (7分)\n**步骤描述**：解释酸碱中和反应的原理并计算pH值。\n- **该步得分**：5/7\n- ✓ **正确点**：\n  - 酸碱中和反应的原理解释正确。\n  - pH值计算过程基本正确。\n- ✗ **错误点**：\n  - pH值计算结果有小数点错误。\n- **扣分原因**：pH值计算结果有误，扣2分。\n\n## 问题5: (6分)\n**步骤描述**：描述元素周期表中元素的排列原则并分析周期性性质的变化趋势。\n- **该步得分**：4/6\n- ✓ **正确点**：\n  - 元素周期表中元素的排列原则描述正确。\n- ✗ **错误点**：\n  - 周期性性质的变化趋势分析不够全面。\n- **扣分原因**：周期性性质的变化趋势分析不够全面，扣2分。\n\n## 问题6: (7分)\n**步骤描述**：解释水循环的化学过程并分析人类活动对水循环的影响。\n- **该步得分**：6/7\n- ✓ **正确点**：\n  - 水循环的化学过程解释正确。\n  - 人类活动对水循环的影响分析较为全面。\n- ✗ **错误点**：\n  - 对人类活动影响的个别细节分析不够深入。\n- **扣分原因**：人类活动影响的个别细节分析不够深入，扣1分。\n\n## 问题7: (4分)\n**步骤描述**：解释温室效应的化学机制并提出减少温室气体的方法。\n- **该步得分**：3/4\n- ✓ **正确点**：\n  - 温室效应的化学机制解释基本正确。\n- ✗ **错误点**：\n  - 减少温室气体的方法不够具体。\n- **扣分原因**：减少温室气体的方法不够具体，扣1分。\n\n## 问题8: (3分)\n**步骤描述**：简要描述化学在环境保护中的作用。\n- **该步得分**：2/3\n- ✓ **正确点**：\n  - 对化学在环境保护中的作用有基本认识。\n- ✗ **错误点**：\n  - 描述不够全面，缺少具体实例。\n- **扣分原因**：描述不够全面，缺少具体实例，扣1分。\n\n### 总分：\n**得分**：36/50\n\n### 总结：\n学生在大部分问题中展示了一定的理解和应用化学知识的能力，但在某些细节和深入分析方面有待提高。建议加强实例的具体性、计算结果的准确性以及对环境影响的深入分析。",
+        "files": {
+          "file_1": {
+            "filename": "Topic1_SQ.pdf",
+            "saved_path": "uploads\\test_user_1\\enhanced_0_20250621_011610.pdf"
+          }
+        },
+        "settings": {
+          "correction_type": "auto",
+          "strictness_level": "中等",
+          "language": "zh",
+          "processing_method": "enhanced_api",
+          "custom_scheme": null
+        }
+      },
+      {
+        "timestamp": "2025-06-21 10:50:18",
+        "content": "# 学生答案批改如下:\n\n请提供学生的具体答案内容，以便根据评分标准进行详细批改。当前信息中没有提供学生的具体答案，无法完成批改工作。\n\n请上传或输入学生的答案，例如对于题目1，学生是如何描述地球化学循环的类型，解释了哪些元素的作用，以及提供了哪些实例。这样我才能准确地进行批改并给出详细的反馈和评分。",
+        "files": {
+          "file_1": {
+            "filename": "Topic1_SQ.pdf",
+            "saved_path": "uploads\\test_user_1\\enhanced_0_20250621_104919.pdf"
+          }
+        },
+        "settings": {
+          "correction_type": "auto",
+          "strictness_level": "中等",
+          "language": "zh",
+          "processing_method": "enhanced_api",
+          "custom_scheme": null
+        }
+      },
+      {
+        "timestamp": "2025-06-21 10:59:59",
+        "content": "# 基本信息\n- 科目：化学\n- 题目类型：选择题\n\n# 学生答案批改如下:\n\n1. 第1题：考查地球的结构和组成 - [该步得分]/1\n- ✓ 正确点：如果学生正确选择了描述地球结构和组成的选项。\n- ✗ 错误点：如果学生选择了混淆地球内部结构层次（如地壳、地幔、地核）的选项。\n- 扣分原因：对地球内部层次理解不准确或混淆。\n\n2. 第2题：考查大气层的结构和功能 - [该步得分]/1\n- ✓ 正确点：如果学生正确选择了描述大气层结构和功能的选项。\n- ✗ 错误点：如果学生选择了不理解不同大气层作用（如对流层、平流层、电离层）的选项。\n- 扣分原因：对大气层各层次的功能理解有误。\n\n3. 第3题：考查水循环及其对地球环境的影响 - [该步得分]/1\n- ✓ 正确点：如果学生正确选择了描述水循环过程及其对地球环境影响的选项。\n- ✗ 错误点：如果学生选择了对水循环各个环节（如蒸发、降水、径流）理解有误的选项。\n- 扣分原因：对水循环过程及其环境影响理解不准确。\n\n4. 第4题：考查板块构造理论及其地质影响 - [该步得分]/1\n- ✓ 正确点：如果学生正确选择了描述板块构造理论及其地质影响的选项。\n- ✗ 错误点：如果学生选择了对板块构造运动和地震、火山活动关系理解有误的选项。\n- 扣分原因：对板块构造理论及其地质现象的关系理解不准确。\n\n总分：[得分]/4\n\n注意：\n- 请根据学生的具体选择填写每个步骤的得分。\n- 上述批改是基于评分标准和常见错误进行的分析，具体得分应根据学生的实际选择来确定。",
+        "files": {
+          "file_1": {
+            "filename": "Topic1_MC.pdf",
+            "saved_path": "uploads\\test_user_1\\enhanced_0_20250621_105848.pdf"
+          }
+        },
+        "settings": {
+          "correction_type": "auto",
+          "strictness_level": "中等",
+          "language": "zh",
+          "processing_method": "enhanced_api",
+          "custom_scheme": null
+        }
+      },
+      {
+        "timestamp": "2025-06-21 11:05:50",
+        "content": "# 学生答案批改如下:\n\n由于提供的学生答案内容非常有限，仅包含\"1 2 3 4\"，缺乏具体的答案选项和题目内容，我将基于评分标准和常见结构进行假设性批改。假设学生在每题选择了对应的数字作为选项。\n\n### 基本信息\n- 科目：化学\n- 题目类型：多项选择题（MCQs）\n\n### 学生答案批改如下:\n\n1. 第1步：选择选项1 - [该步得分]/1\n- ✓ 正确点：如果选项1是与地球大气层相关的正确选项，则此选择正确。\n- ✗ 错误点：如果选项1不是正确选项，则选择错误。\n- 扣分原因：如果学生未选择与地球大气层相关的正确选项，将扣1分。\n\n2. 第2步：选择选项2 - [该步得分]/1\n- ✓ 正确点：如果选项2是与地球水循环相关的正确选项，则此选择正确。\n- ✗ 错误点：如果选项2不是正确选项，则选择错误。\n- 扣分原因：如果学生混淆了水循环与其它地球系统过程，未选择正确选项，将扣1分。\n\n3. 第3步：选择选项3 - [该步得分]/1\n- ✓ 正确点：如果选项3是与地球板块构造相关的正确选项，则此选择正确。\n- ✗ 错误点：如果选项3不是正确选项，则选择错误。\n- 扣分原因：如果学生对板块构造理论理解不准确，未选择正确选项，将扣1分。\n\n4. 第4步：选择选项4 - [该步得分]/1\n- ✓ 正确点：如果选项4是与地球气候变化相关的正确选项，则此选择正确。\n- ✗ 错误点：如果选项4不是正确选项，则选择错误。\n- 扣分原因：如果学生对气候变化的成因和影响理解不清晰，未选择正确选项，将扣1分。\n\n总分：[得分]/4\n\n### 总结\n- 如果学生在每题都选择了正确的选项，则总分为4/4。\n- 如果有任何一题选择错误，则根据评分标准扣除相应的分数，最终得分将低于4分。\n\n由于缺乏具体的学生答案和题目选项，无法给出精确的得分。请提供完整的学生答案和题目内容，以便进行准确的批改。",
+        "files": {
+          "file_1": {
+            "filename": "Topic1_MC.pdf",
+            "saved_path": "uploads\\test_user_1\\enhanced_0_20250621_110431.pdf"
+          }
+        },
+        "settings": {
+          "correction_type": "auto",
+          "strictness_level": "中等",
+          "language": "zh",
+          "processing_method": "enhanced_api",
+          "custom_scheme": null
         }
       }
-    ],
-    "ui_language": "zh",
-    "output_language": "en",
-    "default_settings": {
-      "receive_email": false,
-      "theme_index": 1
-    }
+    ]
   },
-  "test_user_1": {
-    "password": "password1",
-    "email": "test_user_1@example.com",
-    "created_at": "2025-05-03 21:47:44",
-    "records": [],
-    "ui_language": "en",
-    "output_language": "en"
+  "test_user_2": {
+    "password": "6cf615d5bcaac778352a8f1f3360d23f02f34ec182e259897fd6ce485d7870d4",
+    "email": "test_user_2@example.com",
+    "created_at": "2025-06-19 12:07:51",
+    "records": []
+  },
+  "test": {
+    "password": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+    "email": "",
+    "created_at": "2025-06-21 10:54:17",
+    "records": [
+      {
+        "timestamp": "2025-06-21 10:00:00",
+        "content": "# 第1题批改结果\n\n## 1. 学生答题过程纯净版\n步骤1：x² - 5x + 6 = 0\n步骤2：(x - 2)(x - 3) = 0\n步骤3：所以 x = 2 或 x = 3\n步骤4：验证：\n当 x = 2: 2² - 5×2 + 6 = 4 - 10 + 6 = 0 ✓\n当 x = 3: 3² - 5×3 + 6 = 9 - 15 + 6 = 0 ✓\n最终答案：x = 2 或 x = 3\n\n## 2. 步骤对错分析\n### 步骤1分析\n- 学生做法：x² - 5x + 6 = 0\n- 判断结果：✓正确\n- 错误原因：无\n- 正确做法：无需修改\n\n### 步骤2分析\n- 学生做法：(x - 2)(x - 3) = 0\n- 判断结果：✓正确\n- 错误原因：无\n- 正确做法：该方程可以通过因式分解为 (x - 2)(x - 3) = 0，这一步骤是正确的\n\n### 步骤3分析\n- 学生做法：所以 x = 2 或 x = 3\n- 判断结果：✓正确\n- 错误原因：无\n- 正确做法：从 (x - 2)(x - 3) = 0 可以得出 x = 2 或 x = 3，这是求解二次方程的标准步骤\n\n### 步骤4分析\n- 学生做法：验证：\n当 x = 2: 2² - 5×2 + 6 = 4 - 10 + 6 = 0 ✓\n当 x = 3: 3² - 5×3 + 6 = 9 - 15 + 6 = 0 ✓\n- 判断结果：✓正确\n- 错误原因：无\n- 正确做法：验证过程是正确的，验证了两个解都满足原方程\n\n## 3. 得分详情\n- 步骤1得分：1/1 分\n- 步骤2得分：1/1 分\n- 步骤3得分：1/1 分\n- 步骤4得分：1/1 分\n- **总分：4/4 分**\n\n## 4. 题目信息\n- 科目：数学\n- 题目类型：解方程\n- 难度等级：中等\n- 主要考查知识点：二次方程的因式分解求解、验证方程解的正确性\n\n## 5. 改进建议\n学生在这道题中的解答过程是完全正确的，使用了合适的解题方法，并且进行了有效的验证。建议在以后的解题过程中，继续保持严谨的求解和验证步骤，以确保解题的准确性。此外，可以尝试更多类型的二次方程解法，以拓展解题思路和方法。",
+        "files": [
+          {
+            "original_name": "tmp8_ug0fnv.txt",
+            "saved_path": "uploads\\test\\upload_0_20250620_121932.txt",
+            "size": 269
+          }
+        ],
+        "settings": {
+          "correction_type": "auto",
+          "strictness_level": "中等",
+          "language": "zh",
+          "custom_scheme": null
+        },
+        "processing_info": {
+          "files_processed": 1,
+          "result_type": "auto_detected_single_group",
+          "method_used": "auto"
+        }
+      }
+    ]
   }
 }
