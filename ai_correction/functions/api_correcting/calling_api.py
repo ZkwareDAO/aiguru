@@ -3,175 +3,10 @@ import requests
 from openai import OpenAI
 import re
 from pathlib import Path
-
-# 中文版评分标准提示词
-marking_scheme_prompt_zh = """作为一位专业教师，请为上传的题目创建一份详细的评分标准。使用清晰的自然语言描述，确保所有数学符号使用标准Unicode字符（如 × ÷ ± √ π ∑ ∫ ≤ ≥ ≠ ∞ θ），严禁使用LaTeX格式如\\sin或\\frac{}{}。
-
-您的评分标准应包含：
-1. 题目科目和类型
-2. 总分值及各步骤分值明细
-3. 每个步骤的关键评分点
-4. 常见错误及对应扣分点
-5. 核心知识点分析
-
-对于数学题目，请确保：
-- 分数表示为"a/b"而非分式
-- 指数表示为"a^b"或使用如"a²"的上标形式
-- 方程式使用标准符号表示，如"2x² + 3x = 5"
-- 三角函数表示为"sin x"、"cos θ"等，不使用LaTeX
-
-对于作文/论述题，请详细说明：
-- 内容要点及对应分值
-- 结构组织评分标准
-- 语言表达评分要点
-- 创新思维评分要点
-
-请使用标题和编号组织内容，以自然语言格式输出！"""
-
-# English version of marking scheme prompt
-marking_scheme_prompt_en = """As a professional teacher, please create a detailed marking scheme for the uploaded problem. Use clear natural language descriptions, ensuring all mathematical symbols use standard Unicode characters (such as × ÷ ± √ π ∑ ∫ ≤ ≥ ≠ ∞ θ), strictly prohibiting LaTeX formats like \\sin or \\frac{}{}.
-
-Your marking scheme should include:
-1. Subject and type of the problem
-2. Total score and detailed breakdown of points for each step
-3. Key scoring points for each step
-4. Common errors and corresponding point deductions
-5. Analysis of core knowledge points
-
-For mathematics problems, ensure:
-- Fractions are presented as "a/b" rather than using fraction notation
-- Exponents are written as "a^b" or using superscript forms like "a²"
-- Equations use standard symbols, such as "2x² + 3x = 5"
-- Trigonometric functions are written as "sin x", "cos θ", etc., without using LaTeX
-
-For essays/discussion questions, please detail:
-- Content points and corresponding scores
-- Structural organization scoring criteria
-- Language expression scoring points
-- Creative thinking scoring points
-
-Please organize the content using headings and numbering, and output in natural language format!"""
-
-# 中文版批改提示词
-correction_prompt_zh = """作为一位专业批改教师，请批改学生的答案。使用标准Unicode数学符号（如 × ÷ ± √ π ∑ ∫ ≤ ≥ ≠ ∞ θ），不使用LaTeX格式。
-
-# 基本信息
-- 科目：[填写科目]
-- 题目类型：[填写类型]
-
-# 学生答案批改如下:
-
-1. 第1步：[步骤描述] - [该步得分]/[该步满分]
-- ✓ 正确点：[列出正确之处]
-- ✗ 错误点：[列出错误之处]
-- 扣分原因：[详细解释]
-
-2. 第2步：[步骤描述] - [该步得分]/[该步满分]
-- ✓ 正确点：[列出正确之处]
-- ✗ 错误点：[列出错误之处]
-- 扣分原因：[详细解释]
-
-[继续列出所有步骤...]
-
-总分：[得分]/[满分]
-
-注意：
-- 分数表示为"a/b"，如"1/2"
-- 根号表示为"√a"，如"√2"
-- 三角函数表示为"sin x"等
-- 指数表示为"x²"或"e^x"
-- 积分表示为"∫f(x)dx"
-- 极限表示为"lim x→∞"
-
-请严格按照评分标准执行批改！"""
-
-# English version of correction prompt
-correction_prompt_en = """As a professional teacher grading student answers, please evaluate the student's response. In your answer, you must use standard Unicode mathematical symbols (such as × ÷ ± √ π ∑ ∫ ≤ ≥ ≠ ∞ θ), strictly prohibiting LaTeX formats (like \\sin or \\frac{}{}), even if the student used non-standard notation.
-
-Strictly organize your grading according to the following structure:
-
-# Grading Result
-
-## Problem Information and Total Score
-- Subject: [Fill in subject]
-- Problem type: [Fill in type]
-- Total score: [Score]/[Full marks]
-
-## Step-by-Step Scoring
-(This section must show the student's full solution process with scoring for each step)
-
-1. Step 1: [Step description] - [Step score]/[Step full marks]
-   (Record the student's complete answer process here, ensure you show the original solution in full)
-   - ✓ Correct points: [List correct aspects, including formulas, calculations, etc.]
-   - ✗ Error points: [List errors]
-   - Reason for deduction: [Detailed explanation of why points were deducted]
-
-2. Step 2: [Step description] - [Step score]/[Step full marks]
-   (Record the student's complete answer process here, ensure you show the original solution in full)
-   - ✓ Correct points: [List correct aspects]
-   - ✗ Error points: [List errors]
-   - Reason for deduction: [Detailed explanation of why points were deducted]
-
-[Continue listing all steps...]
-
-## Detailed Analysis
-[In this section, provide complete problem-solving ideas and analysis, including the correct approach for each step]
-[Include a comparison between the standard answer and the student's answer]
-
-Grading strictness: 【STRICTNESS_LEVEL】
-
-Note: In your grading response, all mathematical expressions must use standard Unicode symbols, for example:
-- Fractions: must be written as "a/b", such as "1/2"
-- Square roots: must be written as "√a", such as "√2"
-- Trigonometric functions: must be written as "sin x", "cos θ", etc.
-- Exponents: must be written as "x²", "e^x", etc.
-- Integrals: must be written as "∫f(x)dx"
-- Limits: must be written as "lim x→∞"
-
-If the user has provided a marking scheme, please strictly follow that standard for grading, and ensure compliance with all requirements in the standard!
-
-Please output the result in natural language format, ensuring all mathematical expressions are clear and readable!"""
-
-# 中文版带图片的批改提示词
-correction_with_images_prompt_zh = correction_prompt_zh + """
-
-看到上传的图片后，请仔细分析所有内容，包括：
-- 题目要求和条件
-- 学生解答步骤
-- 评分标准要求（如有）
-
-尤其要注意学生解答中的数学符号、计算过程和最终结果，确保您的批改准确无误。"""
-
-# English version of correction with images prompt
-correction_with_images_prompt_en = correction_prompt_en + """
-
-After seeing the uploaded images, please carefully analyze all content, including:
-- Problem requirements and conditions
-- Student answer steps
-- Marking scheme requirements (if any)
-
-Pay special attention to mathematical symbols, calculation processes, and final results in the student's answer to ensure your grading is accurate."""
-
-# Mapping for language selection
-marking_scheme_prompts = {
-    "zh": marking_scheme_prompt_zh,
-    "en": marking_scheme_prompt_en
-}
-
-correction_prompts = {
-    "zh": correction_prompt_zh,
-    "en": correction_prompt_en
-}
-
-correction_with_images_prompts = {
-    "zh": correction_with_images_prompt_zh,
-    "en": correction_with_images_prompt_en
-}
-
-# Set default prompts
-marking_scheme_prompt = marking_scheme_prompt_zh
-correction_prompt = correction_prompt_zh
-correction_with_images_prompt = correction_with_images_prompt_zh
+import fitz  # PyMuPDF
+import json
+import os
+import prompts
 
 def img_to_base64(image_path):
     """
@@ -309,7 +144,7 @@ def process_file_content(file_path):
     
     返回:
     - (content_type, content): 内容类型和内容
-      - content_type: 'text' 或 'image' 或 'error'
+      - content_type: 'text' , 'image', 'pdf'或 'error'
       - content: 文件内容或错误信息
     """
     file_type = get_file_type(file_path)
@@ -321,9 +156,8 @@ def process_file_content(file_path):
             return 'image', file_path
         
         elif file_type == 'pdf':
-            # PDF文件提取文本
-            content = read_pdf_file(file_path)
-            return 'text', f"[PDF文档: {file_name}]\n{content}"
+            
+            return 'pdf', file_path
         
         elif file_type == 'word':
             # Word文档提取文本
@@ -377,16 +211,45 @@ def force_natural_language(text):
     
     return text
 
-def call_api(input_text, *input_files, strictness_level="中等", language="zh"):
+def pdf_pages_to_base64_images(pdf_path, zoom=3.0):
+    """
+    将 PDF 每页转换为 Base64 编码的图像数据列表
+    
+    参数:
+        pdf_path (str): PDF 文件路径
+        zoom (float): 缩放因子 (提高分辨率)
+    
+    返回:
+        list: 包含每页 Base64 编码图像数据的列表
+    """
+    base64_images = []
+    doc = fitz.open(pdf_path)
+    
+    for page_num in range(len(doc)):
+        page = doc.load_page(page_num)
+        # 创建变换矩阵（缩放提高分辨率）
+        matrix = fitz.Matrix(zoom, zoom)
+        pix = page.get_pixmap(matrix=matrix)
+        # 转换为 PNG 图像数据
+        img_data = pix.tobytes("png")
+        # 编码为 Base64
+        base64_str = base64.b64encode(img_data).decode("utf-8")
+        base64_images.append(base64_str)
+    
+    doc.close()
+    return base64_images
+
+def call_tongyiqianwen_api(input_text, *input_contents,system_message="", language="zh"):
+    ##########
+    #input("Callingtyqw:\n"+input_text+str(input_contents))
     """
     调用API进行多类型文件处理，支持批改严格程度和语言设置
     增强版：支持图像、PDF、Word文档、文本文件等多种类型
     
     参数:
     input_text: 字符串，提示文本
-    input_files: 一系列文件路径（支持图像、PDF、Word、文本等多种格式）
-    strictness_level: 批改严格程度，可选值："宽松"、"中等"、"严格"
-    language: 输出语言，可选值："zh"(中文)、"en"(英文)
+    input_contents: 一系列文件路径（支持图像、PDF、Word、文本等多种格式）/str
+    
     
     返回:
     字符串，API响应内容
@@ -396,178 +259,68 @@ def call_api(input_text, *input_files, strictness_level="中等", language="zh")
         api_key="sk-exhlpcmlvywtnrzancrdqbohmsbfbmxkkodjhqxufkbhctay"
     )
     
-    # 根据严格程度调整提示词
-    strictness_descriptions = {
-        "zh": {
-            "宽松": "请温和地批改，对小错误给予适当宽容，主要关注学生的理解程度。评分应相对宽松，着重肯定学生的正确点，提供积极鼓励。",
-            "中等": "请公正地批改，关注主要概念和步骤，对关键错误扣分，但对小瑕疵给予一定宽容。保持客观评价态度，既指出问题也肯定优点。",
-            "严格": "请严格批改，严格按照标准评分，对任何错误都要指出并合理扣分。评分标准高，要求精确的解题过程和结果，详细分析每个错误。"
-        },
-        "en": {
-            "宽松": "Please grade gently, showing appropriate tolerance for minor errors, focusing mainly on the student's level of understanding. Scoring should be relatively lenient, emphasizing the student's correct points and providing positive encouragement.",
-            "中等": "Please grade fairly, focusing on main concepts and steps, deducting points for key errors but showing some tolerance for minor flaws. Maintain an objective evaluation attitude, both pointing out problems and affirming strengths.",
-            "严格": "Please grade strictly, strictly following the standard scoring, pointing out and reasonably deducting points for any errors. The scoring standard is high, requiring precise solution processes and results, with detailed analysis of each error."
-        }
-    }
+    content = [{"type": "text", "text": input_text}]
     
-    # Get the appropriate strictness description based on language
-    strictness_desc = strictness_descriptions.get(language, strictness_descriptions["zh"])
-    strictness_text = strictness_desc.get(strictness_level, strictness_desc["中等"])
-    
-    # 替换提示词中的严格程度标记
-    enhanced_prompt = input_text.replace("【STRICTNESS_LEVEL】", strictness_text)
-    
-    # 修改数学符号使用强调部分 - 根据语言选择
-    math_notation_emphasis = {
-        "zh": """
-【极其重要】你必须严格遵守以下要求：
-1. 绝对禁止输出任何 LaTeX 语法（如 \\sqrt、\\frac、\\sum、$...$、\\( ... \\) 等），即使学生答案中有这些内容，也不能原样输出。
-2. 所有数学表达式必须直接用标准 Unicode 数学符号。例如：
-   - 根号：√2，不要写成 \\sqrt{2} 或 $\\sqrt{2}$
-   - 分数：1/2，不要写成 \\frac{1}{2}
-   - 上标：x²，不要写成 x^2 或 x^{2}
-   - 三角函数：sin x，不要写成 \\sin x
-   - 积分：∫f(x)dx，不要写成 \\int f(x)dx
-   - 求和：Σx_i，不要写成 \\sum x_i
-   - 希腊字母：π、θ，不要写成 \\pi、\\theta
-3. 如果你输出了任何 LaTeX 语法，将被判为错误输出。
-4. 只允许输出标准 Unicode 数学符号和自然语言，不能有任何 LaTeX 代码或美元符号包裹的公式。
-
-请严格按照上述要求输出，否则视为不合格！
-""",
-        "en": """
-[CRITICALLY IMPORTANT] You must strictly follow these rules:
-1. Absolutely DO NOT output any LaTeX syntax (such as \\sqrt, \\frac, \\sum, $...$, \\( ... \\), etc.), even if the student's answer contains them. Do NOT output them as-is.
-2. All mathematical expressions MUST use standard Unicode math symbols directly. For example:
-   - Square root: √2, NOT \\sqrt{2} or $\\sqrt{2}$
-   - Fraction: 1/2, NOT \\frac{1}{2}
-   - Superscript: x², NOT x^2 or x^{2}
-   - Trigonometric: sin x, NOT \\sin x
-   - Integral: ∫f(x)dx, NOT \\int f(x)dx
-   - Summation: Σx_i, NOT \\sum x_i
-   - Greek letters: π, θ, NOT \\pi, \\theta
-3. If you output any LaTeX syntax, it will be considered an incorrect output.
-4. Only standard Unicode math symbols and natural language are allowed. No LaTeX code or formulas wrapped in dollar signs.
-
-STRICTLY follow these requirements, or your output will be considered invalid!
-"""
-    }
-    
-    # 系统消息 - 根据语言选择
-    system_messages = {
-        "zh": """你是一位资深教育专家，擅长批改学生答案。
-在回复中，你必须使用标准Unicode数学符号，而非LaTeX格式。
-即使学生在答案中使用了不标准的表示法，你在批改中也必须使用标准Unicode符号。
-例如：使用 "√2/2" 而非 "\\sqrt{2}/2"，使用 "sin θ" 而非 "\\sin\\theta"。
-所有数学符号必须使用Unicode标准字符，包括×, ÷, ±, √, π, ∑, ∫, ≤, ≥, ≠, ∞, ∈, ∉, ∩, ∪等。
-请严格按照用户提供的结构组织你的批改。
-你的输出语言必须是中文。""",
-        "en": """You are an experienced education expert, skilled in grading student answers.
-In your responses, you must use standard Unicode mathematical symbols, not LaTeX format.
-Even if students use non-standard notation in their answers, you must use standard Unicode symbols in your grading.
-For example: use "√2/2" rather than "\\sqrt{2}/2", use "sin θ" rather than "\\sin\\theta".
-All mathematical symbols must use Unicode standard characters, including ×, ÷, ±, √, π, ∑, ∫, ≤, ≥, ≠, ∞, ∈, ∉, ∩, ∪, etc.
-Please strictly follow the structure provided by the user in organizing your grading.
-Your output language must be English."""
-    }
-    
-    # 组合最终提示
-    final_prompt = enhanced_prompt + math_notation_emphasis[language]
-    
-    # 处理所有文件
-    text_contents = []
-    image_files = []
-    processing_summary = []
-    
-    for file_path in input_files:
-        content_type, content = process_file_content(file_path)
-        file_name = Path(file_path).name
+    # 处理文件
+    for single_content in input_contents:
+        if os.path.isfile(single_content):
+            content_type, processed_content = process_file_content(single_content)
         
-        if content_type == 'image':
-            image_files.append(file_path)
-            processing_summary.append(f"✓ 图像文件: {file_name}")
-        elif content_type == 'text':
-            text_contents.append(content)
-            processing_summary.append(f"✓ 文本内容: {file_name}")
-        elif content_type == 'error':
-            text_contents.append(content)
-            processing_summary.append(f"⚠ 处理失败: {file_name}")
-    
-    # 添加文件处理摘要到提示中
-    if processing_summary:
-        summary_text = "文件处理摘要：\n" + "\n".join(processing_summary) + "\n" + "="*50 + "\n"
-        final_prompt += "\n\n" + summary_text
-    
-    # 如果有文本内容，将其添加到提示中
-    if text_contents:
-        text_separator = "\n" + "="*50 + "\n"
-        final_prompt += text_separator + "文件内容：\n\n" + "\n\n".join(text_contents)
-    
-    content = [{"type": "text", "text": final_prompt}]
-    
-    # 处理图片文件
-    for image_path in image_files:
-        try:
-            # 检查是否是PDF文件
-            if get_file_type(image_path) == 'pdf':
-                # PDF文件作为图像处理
-                base_64_image = img_to_base64(image_path)
+            
+            if content_type == 'text':
                 content.append({
-                    "type": "image_url",
-                    "image_url": {
-                        "url": f"data:application/pdf;base64,{base_64_image}"
-                    }
+                    "type": "text",
+                    "text":processed_content
                 })
-            else:
+            elif content_type=='image':
                 # 普通图像文件
-                base_64_image = img_to_base64(image_path)
+                base_64_image = img_to_base64(single_content)
                 content.append({
                     "type": "image_url",
                     "image_url": {
                         "url": f"data:image/jpeg;base64,{base_64_image}"
                     }
+                })    
+            # 检查是否是PDF文件
+            elif content_type == 'pdf':
+                # PDF文件作为图像处理
+                base_64_images = pdf_pages_to_base64_images(single_content)
+                for base_64_image in base_64_images:
+                    content.append({
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:image/png;base64,{base_64_image}"
+                    }})
+            else:
+                raise ValueError(f"The file {single_content} could not be processed.")
+        else:
+            content.append({
+                    "type": "text",
+                    "text":single_content
                 })
-        except Exception as e:
-            print(f"警告：处理图像文件 {image_path} 失败: {e}")
-            # 如果图像处理失败，尝试作为文本处理
-            try:
-                fallback_type, fallback_content = process_file_content(image_path)
-                if fallback_type == 'text':
-                    content[0]["text"] += f"\n\n[图像处理失败，改为文本处理]\n{fallback_content}"
-            except Exception as e2:
-                print(f"错误：无法处理文件 {image_path}: {e2}")
-                content[0]["text"] += f"\n\n[文件处理失败: {Path(image_path).name}] - {str(e2)}"
 
     # 调用API
     try:
+        final_message=[]
+        if system_message:
+            final_message.append({"role": "system", "content": system_message})
+        final_message.append({"role": "user", "content": content})
         response = client.chat.completions.create(
             model="Qwen/Qwen2.5-VL-72B-Instruct",
-            messages=[
-                {"role": "system", "content": system_messages[language]},
-                {"role": "user", "content": content}
-            ],
+            messages=final_message,
             max_tokens=4096,
             temperature=0.7
         )
 
         # 获取结果并处理
         result = response.choices[0].message.content
-        
+    
         # 验证结果不为空
         if not result or not result.strip():
             fallback_msg = "API返回了空结果。可能的原因：文件内容无法识别或API服务暂时不可用。" if language == "zh" else "API returned empty result. Possible reasons: file content unrecognizable or API service temporarily unavailable."
             print(f"警告: API返回空结果，使用fallback消息")
             return fallback_msg
-        
-        # 强制处理以确保自然语言
-        processed_result = force_natural_language(result)
-        
-        # 再次验证处理后的结果
-        if not processed_result or not processed_result.strip():
-            fallback_msg = "处理后的结果为空。请检查上传的文件内容是否清晰可读。" if language == "zh" else "Processed result is empty. Please check if the uploaded file content is clear and readable."
-            return fallback_msg
-            
-        return processed_result
+        return result
         
     except Exception as e:
         error_msg = f"API调用失败: {str(e)}" if language == "zh" else f"API call failed: {str(e)}"
@@ -575,51 +328,74 @@ Your output language must be English."""
         return error_msg
 
 # 标准API调用函数
-default_api = call_api
+default_api = call_tongyiqianwen_api
 
-def generate_marking_scheme(*image_file, api=default_api, language="zh"):
-    """生成评分方案，返回纯文本形式"""
+def extract_json_from_str(string):
+    
+        json_match = re.search(r'\{.*\}', string, re.DOTALL)
+        if not json_match:
+            raise ValueError("返回字符串中未找到有效JSON")
+        
+        # 解析返回结果
+        try:
+            return json.loads(json_match.group(0))
+        except json.JSONDecodeError as e:
+            raise ValueError(f"返回内容不是有效JSON: {str(e)}") from e
+
+def generate_json_marking_scheme(image_files, api=default_api, language="zh"):
+    """生成评分方案
+    image_files:tuple(stdent answer)
+    """
     try:
-        prompt = marking_scheme_prompts[language]
-        return api(prompt, *image_file, language=language)
+        prompt = prompts.marking_scheme_prompts[language]
+        return extract_json_from_str(api(prompt, *image_files, language=language,system_message=prompts.system_messages[language]))
     except Exception as e:
         error_msg = "生成评分方案失败" if language == "zh" else "Failed to generate marking scheme"
         raise RuntimeError(f"{error_msg}: {str(e)}") from e
 
-def correction_with_marking_scheme(marking_scheme, *image_files, strictness_level="中等", api=default_api, language="zh"):
-    """使用提供的评分方案进行批改，返回纯文本形式"""
+def correction_with_json_marking_scheme(json_marking_scheme, image_files, strictness_level="中等", api=default_api, language="zh"):
+    """使用提供的评分方案进行批改，返回json形式"""
     try:
         # 将评分方案作为正常文本附加，避免引起结构化思维
-        prompt = correction_prompts[language] + "\n\n"
-        
+        prompt = prompts.correction_prompts[language] + "\n"
+        prompt+=prompts.strictness_descriptions[language][strictness_level]+'\n'
         # Add appropriate language text for marking scheme reference
         if language == "zh":
             prompt += "参考的评分标准如下（必须严格遵守）：\n\n"
         else:
             prompt += "Reference marking scheme below (must be strictly followed):\n\n"
-            
-        prompt += str(marking_scheme)
-        
-        return api(prompt, *image_files, strictness_level=strictness_level, language=language)
+        prompt += str(json_marking_scheme)
+        student_answer_notice="""以下是学生作答:\n"""if language=='zh'else"Student's answer is shown below:\n"
+        result=api(prompt,student_answer_notice, *image_files, language=language,system_message=prompts.system_messages[language])
+        return extract_json_from_str(result)
     except Exception as e:
         error_msg = "批改失败" if language == "zh" else "Correction failed"
         raise RuntimeError(f"{error_msg}: {str(e)}") from e
 
-def correction_with_image_marking_scheme(*image_files_and_marking_scheme, strictness_level="中等", api=default_api, language="zh"):
-    """使用图像中的评分方案进行批改，返回纯文本形式"""
+def correction_with_marking_scheme(marking_schemes:tuple[str],student_answers:tuple[str], strictness_level="中等", api=default_api, language="zh"):
+    """使用图像中的评分方案进行批改，返json形式
+    marking_schemes,student_answers:tuple(path)
+    """
     try:
-        return api(correction_with_images_prompts[language], *image_files_and_marking_scheme, strictness_level=strictness_level, language=language)
+        # 将评分方案作为正常文本附加，避免引起结构化思维
+        prompt = prompts.correction_prompts[language] + "\n\n"
+        prompt+=prompts.strictness_descriptions[language][strictness_level]+'\n\n'
+         # Add appropriate language text for marking scheme reference
+        if language == "zh":
+            prompt += "以下将先输入参考的评分标准（必须严格遵守）：\n\n"
+        else:
+            prompt += "Reference marking scheme below (must be strictly followed):\n\n"
+        student_answer_notice="""以下是学生作答:\n"""if language=='zh'else"Student's answer is shown below:\n"
+        result=api(prompt, *marking_schemes,student_answer_notice,*student_answers, language=language,system_message=prompts.system_messages[language])
+        return extract_json_from_str(result)
     except Exception as e:
         error_msg = "批改失败" if language == "zh" else "Correction failed"
         raise RuntimeError(f"{error_msg}: {str(e)}") from e
 
-def correction_without_marking_scheme(*images, strictness_level="中等", api=default_api, language="zh"):
-    """自动生成评分方案并批改，返回纯文本形式"""
-    marking_scheme = generate_marking_scheme(*images, language=language)
-    return correction_with_marking_scheme(marking_scheme, *images, strictness_level=strictness_level, api=api, language=language)
-
-# 保留原函数名以保持兼容性
-correction_with_json_marking_scheme = correction_with_marking_scheme
+def correction_without_marking_scheme(student_answer:tuple[str], strictness_level="中等", api=default_api, language="zh"):
+    """自动生成评分方案并批改，返回纯json形式"""
+    marking_scheme = generate_json_marking_scheme(student_answer, api=api,language=language)
+    return correction_with_json_marking_scheme(marking_scheme, student_answer, strictness_level=strictness_level, api=api, language=language)
 
 def correction_single_group(*image_files, strictness_level="中等", api=default_api, language="zh", group_index=1):
     """
@@ -751,12 +527,12 @@ Please carefully analyze the uploaded image content, including:
 
 Pay special attention to mathematical symbols, calculation processes, and final results in the student's answer to ensure accurate grading."""
         
-        return api(prompt, *image_files, strictness_level=strictness_level, language=language)
+        return force_natural_language(api(prompt,prompts.strictness_descriptions[language][strictness_level], *image_files, system_message=prompts.system_messages[language], language=language))
     except Exception as e:
         error_msg = f"第{group_index}题批改失败" if language == "zh" else f"Problem {group_index} correction failed"
         raise RuntimeError(f"{error_msg}: {str(e)}") from e
 
-def generate_comprehensive_summary(all_results, language="zh", total_groups=1):
+def generate_comprehensive_summary(all_results, language="zh", total_groups=1,api=default_api):
     """
     基于所有批改结果生成综合总结
     
@@ -885,13 +661,7 @@ Please carefully analyze all the following grading results and extract key infor
 {chr(10).join(all_results)}
 
 Note: Please ensure all mathematical symbols use standard Unicode characters, analysis should be objective and accurate, and suggestions should be specific and feasible."""
-
-        # 调用API生成综合总结
-        client = OpenAI(
-            base_url="https://api.siliconflow.cn/v1",
-            api_key="sk-exhlpcmlvywtnrzancrdqbohmsbfbmxkkodjhqxufkbhctay"
-        )
-
+        
         # 系统消息
         system_message = """你是一位资深教育专家，擅长分析学生的学习情况并提供综合性的学习建议。
 在回复中，你必须使用标准Unicode数学符号，而非LaTeX格式。
@@ -899,22 +669,13 @@ Note: Please ensure all mathematical symbols use standard Unicode characters, an
 In your responses, you must use standard Unicode mathematical symbols, not LaTeX format.
 Please conduct in-depth analysis based on the provided grading results and give objective, accurate, and constructive comprehensive evaluations."""
 
-        response = client.chat.completions.create(
-            model="Qwen/Qwen2.5-VL-72B-Instruct",
-            messages=[
-                {"role": "system", "content": system_message},
-                {"role": "user", "content": prompt}
-            ],
-            max_tokens=4096,
-            temperature=0.7
-        )
-
-        result = response.choices[0].message.content
-        return force_natural_language(result)
+        result = api(prompt,system_message=system_message,language=language)
+        return result
         
     except Exception as e:
         error_msg = "生成综合总结失败" if language == "zh" else "Failed to generate comprehensive summary"
         raise RuntimeError(f"{error_msg}: {str(e)}") from e
 
 if __name__ == "__main__":
+    print(str(correction_without_marking_scheme(('D:/Robin/Project/paper/l3.jpg',),language='en')))
     pass
