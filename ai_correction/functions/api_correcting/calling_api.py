@@ -248,7 +248,7 @@ def call_tongyiqianwen_api(input_text, *input_contents,system_message="", langua
     
     参数:
     input_text: 字符串，提示文本
-    input_contents: 一系列文件路径（支持图像、PDF、Word、文本等多种格式）/str
+    input_contents: 一系列文件路径（支持图像、PDF、Word、文本等多种格式）/str/(type,base64 image)
     
     
     返回:
@@ -263,10 +263,20 @@ def call_tongyiqianwen_api(input_text, *input_contents,system_message="", langua
     
     # 处理文件
     for single_content in input_contents:
-        if os.path.isfile(single_content):
-            content_type, processed_content = process_file_content(single_content)
-        
+        if (
+        isinstance(single_content, tuple) and 
+        len(single_content) == 2 and 
+        all(isinstance(item, str) for item in single_content)
+        ):
+            content.append({
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:image/{single_content[0]};base64,{single_content[1]}"
+                    }
+                })   
             
+        elif os.path.isfile(single_content):
+            content_type, processed_content = process_file_content(single_content)            
             if content_type == 'text':
                 content.append({
                     "type": "text",
@@ -599,7 +609,7 @@ def generate_comprehensive_summary(all_results, language="zh", total_groups=1,ap
 
 请仔细分析以下所有批改结果，提取关键信息进行综合分析：
 
-{chr(10).join(all_results)}
+{all_results}
 
 注意：请确保所有数学符号使用标准Unicode字符，分析要客观准确，建议要具体可行。"""
         else:
@@ -658,7 +668,7 @@ def generate_comprehensive_summary(all_results, language="zh", total_groups=1,ap
 
 Please carefully analyze all the following grading results and extract key information for comprehensive analysis:
 
-{chr(10).join(all_results)}
+{all_results}
 
 Note: Please ensure all mathematical symbols use standard Unicode characters, analysis should be objective and accurate, and suggestions should be specific and feasible."""
         
@@ -676,6 +686,37 @@ Please conduct in-depth analysis based on the provided grading results and give 
         error_msg = "生成综合总结失败" if language == "zh" else "Failed to generate comprehensive summary"
         raise RuntimeError(f"{error_msg}: {str(e)}") from e
 
+def correction_of_multiple_answers(marking_schemes:tuple[str],student_answers:str, strictness_level="中等", api=default_api, language="zh"):
+    """使用图像中的评分方案进行批改，返json形式
+    marking_schemes:paths
+    student_answers:path of pdf
+    """
+    try:
+        final_result={"individual_grading":[],
+       "overall_comment":""}
+        base64_student_answers=pdf_pages_to_base64_images(student_answers)
+
+         # 将评分方案作为正常文本附加，避免引起结构化思维
+        prompt = prompts.correction_prompts[language] + "\n\n"
+        prompt+=prompts.strictness_descriptions[language][strictness_level]+'\n\n'
+         # Add appropriate language text for marking scheme reference
+        if language == "zh":
+            prompt += "以下将先输入参考的评分标准（必须严格遵守）：\n\n"
+        else:
+            prompt += "Reference marking scheme below (must be strictly followed):\n\n"
+        student_answer_notice="""以下是学生作答:\n"""if language=='zh'else"Student's answer is shown below:\n"
+        #批改每一页
+        for i in base64_student_answers:
+            result=api(prompt, *marking_schemes,student_answer_notice,("png",i), language=language,system_message=prompts.system_messages[language])
+            individual_result=extract_json_from_str(result)
+            final_result["individual_grading"].append(individual_result)
+        comment=generate_comprehensive_summary(str(final_result["individual_grading"]),language=language,total_groups=len(base64_student_answers),api=api)
+        final_result["overall_comment"]=comment
+        return final_result
+    except Exception as e:
+        error_msg = "批改失败" if language == "zh" else "Correction failed"
+        raise RuntimeError(f"{error_msg}: {str(e)}") from e
 if __name__ == "__main__":
-    print(str(correction_without_marking_scheme(('D:/Robin/Project/paper/l3.jpg',),language='en')))
+    r=correction_of_multiple_answers(("d:/Robin/Project/paper/q16ms.png",),"d:/Robin/Project/paper/q16.pdf",language="en")
+    print(json.dumps(r,ensure_ascii=0,indent=2))
     pass
