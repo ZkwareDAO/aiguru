@@ -13,6 +13,21 @@ from datetime import datetime
 from pathlib import Path
 import time
 import re
+import base64
+import html
+from functions.api_correcting.calling_api import (
+    intelligent_correction_with_files, 
+    img_to_base64,
+    api_config  # 导入API配置
+)
+import logging
+import io
+from PIL import Image
+
+try:
+    import fitz  # PyMuPDF
+except ImportError:
+    fitz = None
 
 # 页面配置
 st.set_page_config(
@@ -420,14 +435,78 @@ def get_file_type(file_name):
     else:
         return 'unknown'
 
-def get_image_base64(image_path):
-    """将图片文件转换为base64编码"""
-    import base64
+def get_image_base64(image_path, max_size_mb=4):
+    """将图片转换为base64编码，如果超过限制则压缩"""
     try:
-        with open(image_path, "rb") as image_file:
-            return base64.b64encode(image_file.read()).decode('utf-8')
+        import base64
+        import os
+        from PIL import Image
+        import io
+        
+        # 检查文件大小
+        file_size_mb = os.path.getsize(image_path) / (1024 * 1024)
+        
+        if file_size_mb <= max_size_mb:
+            # 文件不大，直接转换
+            with open(image_path, "rb") as img_file:
+                return base64.b64encode(img_file.read()).decode()
+        else:
+            # 文件太大，需要压缩
+            print(f"图片文件过大 ({file_size_mb:.2f}MB)，正在压缩...")
+            
+            # 打开图片
+            img = Image.open(image_path)
+            
+            # 转换为RGB模式（如果是RGBA）
+            if img.mode in ('RGBA', 'LA', 'P'):
+                img = img.convert('RGB')
+            
+            # 计算压缩比例
+            quality = 85
+            max_dimension = 1920  # 最大尺寸
+            
+            # 如果图片尺寸太大，先缩放
+            if max(img.size) > max_dimension:
+                ratio = max_dimension / max(img.size)
+                new_size = (int(img.size[0] * ratio), int(img.size[1] * ratio))
+                img = img.resize(new_size, Image.Resampling.LANCZOS)
+            
+            # 压缩图片直到满足大小要求
+            while quality > 20:
+                buffer = io.BytesIO()
+                img.save(buffer, format='JPEG', quality=quality, optimize=True)
+                compressed_size_mb = len(buffer.getvalue()) / (1024 * 1024)
+                
+                if compressed_size_mb <= max_size_mb:
+                    print(f"压缩完成: {file_size_mb:.2f}MB -> {compressed_size_mb:.2f}MB (质量: {quality})")
+                    return base64.b64encode(buffer.getvalue()).decode()
+                
+                quality -= 10
+            
+            # 如果还是太大，进一步缩小尺寸
+            while max_dimension > 800:
+                max_dimension -= 200
+                ratio = max_dimension / max(img.size)
+                new_size = (int(img.size[0] * ratio), int(img.size[1] * ratio))
+                img_resized = img.resize(new_size, Image.Resampling.LANCZOS)
+                
+                buffer = io.BytesIO()
+                img_resized.save(buffer, format='JPEG', quality=70, optimize=True)
+                compressed_size_mb = len(buffer.getvalue()) / (1024 * 1024)
+                
+                if compressed_size_mb <= max_size_mb:
+                    print(f"缩放压缩完成: {file_size_mb:.2f}MB -> {compressed_size_mb:.2f}MB (尺寸: {new_size})")
+                    return base64.b64encode(buffer.getvalue()).decode()
+            
+            # 最后的尝试
+            buffer = io.BytesIO()
+            img.save(buffer, format='JPEG', quality=50, optimize=True)
+            final_size_mb = len(buffer.getvalue()) / (1024 * 1024)
+            print(f"最终压缩: {file_size_mb:.2f}MB -> {final_size_mb:.2f}MB")
+            return base64.b64encode(buffer.getvalue()).decode()
+            
     except Exception as e:
-        print(f"图片base64转换失败: {e}")
+        print(f"图片转换失败: {e}")
         return None
 
 def preview_file(file_path, file_name):
@@ -485,7 +564,7 @@ def init_session():
     if 'correction_result' not in st.session_state:
         st.session_state.correction_result = None
     if 'uploaded_files_data' not in st.session_state:
-        st.session_state.uploaded_files_data = []
+        st.session_state.uploaded_files_data = {}
     if 'current_file_index' not in st.session_state:
         st.session_state.current_file_index = 0
     if 'correction_settings' not in st.session_state:
@@ -725,15 +804,12 @@ def show_grading():
         all_uploaded_files.extend(marking_files)
     
     # 批改设置
-    col1, col2, col3 = st.columns(3)
+    col1, col2 = st.columns(2)
     
     with col1:
         strictness = st.selectbox("严格程度", ["宽松", "中等", "严格"], index=1)
     
     with col2:
-        language = st.selectbox("语言", [("中文", "zh"), ("English", "en")], format_func=lambda x: x[0])[1]
-    
-    with col3:
         mode = st.selectbox(
             "批改模式",
             [
@@ -749,76 +825,499 @@ def show_grading():
     # 批改按钮
     if answer_files:  # 至少需要有学生答案文件
         if st.button("🚀 开始AI批改", use_container_width=True, type="primary"):
-            with st.spinner("🤖 AI批改中..."):
-                try:
-                    # 分别保存不同类型的文件
-                    saved_question_files = save_files(question_files or [], st.session_state.username) if question_files else []
-                    saved_answer_files = save_files(answer_files, st.session_state.username)
-                    saved_marking_files = save_files(marking_files or [], st.session_state.username) if marking_files else []
+            # 检查API状态
+            if not api_config.api_key:
+                st.error("❌ AI引擎配置错误，请联系管理员")
+                return
+            
+            # 立即保存文件信息并跳转到结果页面
+            saved_question_files = save_files(question_files or [], st.session_state.username) if question_files else []
+            saved_answer_files = save_files(answer_files, st.session_state.username)
+            saved_marking_files = save_files(marking_files or [], st.session_state.username) if marking_files else []
                     
-                    # 调用AI批改 - 新的智能批改函数
-                    from functions.api_correcting.calling_api import intelligent_correction_with_files
-                    result = intelligent_correction_with_files(
-                        question_files=saved_question_files,
-                        answer_files=saved_answer_files,
-                        marking_scheme_files=saved_marking_files,
-                        strictness_level=strictness,
-                        language=language,
-                        mode=mode
-                    )
-                    
-                    # 保存记录
-                    users = read_users()
-                    if st.session_state.username in users:
-                        all_file_names = []
-                        if question_files:
-                            all_file_names.extend([f"[题目]{f.name}" for f in question_files])
-                        if answer_files:
-                            all_file_names.extend([f"[答案]{f.name}" for f in answer_files])
-                        if marking_files:
-                            all_file_names.extend([f"[标准]{f.name}" for f in marking_files])
-                        
-                        record = {
-                            'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                            'files': all_file_names,
-                            'settings': {'strictness': strictness, 'language': language, 'mode': mode},
-                            'result': result,
-                            'files_count': len(all_uploaded_files)
-                        }
-                        users[st.session_state.username]['records'].append(record)
-                        save_users(users)
-                    
-                    # 保存批改结果和文件数据，跳转到结果页面
-                    st.session_state.correction_result = result
-                    st.session_state.uploaded_files_data = [
-                        {'name': f.name, 'path': path, 'type': get_file_type(f.name)} 
-                        for f, path in zip(all_uploaded_files, saved_question_files + saved_answer_files + saved_marking_files)
-                    ]
-                    st.session_state.correction_settings = {
-                        'strictness': strictness, 
-                        'language': language, 
-                        'mode': mode
-                    }
-                    # 重置文件索引到第一个文件
-                    st.session_state.current_file_index = 0
-                    st.session_state.page = "result"
-                    st.success("🎉 批改完成！正在跳转...")
-                    time.sleep(1)
-                    st.rerun()
-                    
-                except Exception as e:
-                    st.error(f"批改失败：{str(e)}")
+            # 保存文件数据到session state
+            all_file_info = []
+            all_file_paths = saved_question_files + saved_answer_files + saved_marking_files
+            
+            for i, file in enumerate(all_uploaded_files):
+                file_info = {
+                    'name': file.name,
+                    'path': all_file_paths[i],
+                    'type': get_file_type(file.name)
+                }
+                
+                # 添加文件类型标识
+                if file in (question_files or []):
+                    file_info['category'] = 'question'
+                    file_info['display_name'] = f"[题目]{file.name}"
+                elif file in answer_files:
+                    file_info['category'] = 'answer'
+                    file_info['display_name'] = f"[答案]{file.name}"
+                elif file in (marking_files or []):
+                    file_info['category'] = 'marking'
+                    file_info['display_name'] = f"[标准]{file.name}"
+                else:
+                    file_info['category'] = 'other'
+                    file_info['display_name'] = file.name
+                
+                all_file_info.append(file_info)
+            
+            # 保存必要信息到session state
+            st.session_state.uploaded_files_data = [
+                {'name': f['name'], 'path': f['path'], 'type': f['type'], 'category': f.get('category', 'other')} 
+                for f in all_file_info
+            ]
+            st.session_state.correction_settings = {
+                'strictness': strictness, 
+                'mode': mode
+            }
+            st.session_state.current_file_index = 0
+            
+            # 设置批改任务信息
+            st.session_state.correction_task = {
+                'question_files': saved_question_files,
+                'answer_files': saved_answer_files,
+                'marking_files': saved_marking_files,
+                'all_file_info': all_file_info,
+                'status': 'pending'
+            }
+            
+            # 清空之前的结果
+            st.session_state.correction_result = None
+            
+            # 立即跳转到结果页面
+            st.session_state.page = "result"
+            st.rerun()
     else:
         st.warning("请先上传学生答案文件")
 
-# 批改结果展示页面 - 左右对照布局
+# 新的简化结果页面
 def show_result():
+    """使用iframe实现完全隔离的滚动区域"""
+    
     if not st.session_state.logged_in:
         st.warning("请先登录")
         st.session_state.page = "login"
         st.rerun()
         return
     
+    # 检查是否有待处理的批改任务
+    if 'correction_task' in st.session_state and st.session_state.correction_task.get('status') == 'pending':
+        # 执行批改任务
+        st.markdown('<h2 class="main-title">🤖 AI批改进行中...</h2>', unsafe_allow_html=True)
+        
+        # 显示加载动画
+        progress_container = st.container()
+        with progress_container:
+            col1, col2, col3 = st.columns([1, 2, 1])
+            with col2:
+                st.markdown("""
+                <div style="text-align: center; padding: 50px;">
+                    <div class="spinner"></div>
+                    <h3 style="color: #3b82f6; margin-top: 30px;">🤖 AI正在分析文件...</h3>
+                    <p style="color: #94a3b8; margin-top: 10px;">请稍候，这可能需要几秒钟</p>
+                </div>
+                <style>
+                .spinner {
+                    margin: 0 auto;
+                    width: 60px;
+                    height: 60px;
+                    border: 5px solid rgba(59, 130, 246, 0.1);
+                    border-radius: 50%;
+                    border-top-color: #3b82f6;
+                    animation: spin 1s ease-in-out infinite;
+                }
+                @keyframes spin {
+                    to { transform: rotate(360deg); }
+                }
+                </style>
+                """, unsafe_allow_html=True)
+        
+        # 执行批改
+        with st.spinner(""):
+            try:
+                task = st.session_state.correction_task
+                settings = st.session_state.correction_settings
+                
+                # 调用AI批改
+                from functions.api_correcting.calling_api import intelligent_correction_with_files
+                result = intelligent_correction_with_files(
+                    question_files=task['question_files'],
+                    answer_files=task['answer_files'],
+                    marking_scheme_files=task['marking_files'],
+                    strictness_level=settings['strictness'],
+                    mode=settings['mode']
+                )
+                
+                # 保存记录
+                users = read_users()
+                if st.session_state.username in users:
+                    record = {
+                        'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        'files': [f['display_name'] for f in task['all_file_info']],
+                        'file_data': task['all_file_info'],
+                        'settings': settings,
+                        'result': result,
+                        'files_count': len(task['all_file_info'])
+                    }
+                    users[st.session_state.username]['records'].append(record)
+                    save_users(users)
+                
+                # 保存结果并更新状态
+                st.session_state.correction_result = result
+                st.session_state.correction_task['status'] = 'completed'
+                
+                # 刷新页面显示结果
+                st.rerun()
+                
+            except Exception as e:
+                st.error(f"批改失败：{str(e)}")
+                st.session_state.correction_task['status'] = 'failed'
+                if st.button("返回重试"):
+                    st.session_state.page = "grading"
+                    st.rerun()
+                return
+    
+    st.markdown('<h2 class="main-title">📊 批改结果</h2>', unsafe_allow_html=True)
+    
+    # 检查批改结果和文件数据
+    if not st.session_state.get('correction_result') or not st.session_state.get('uploaded_files_data'):
+        st.warning("暂无批改结果或文件数据")
+        if st.button("返回批改", use_container_width=True):
+            st.session_state.page = "grading"
+            st.rerun()
+        return
+    
+    # 获取文件数据
+    files_data = st.session_state.get('uploaded_files_data', [])
+    current_index = st.session_state.get('current_file_index', 0)
+    
+    # 确保索引在有效范围内
+    if current_index >= len(files_data):
+        st.session_state.current_file_index = 0
+        current_index = 0
+    
+    # 创建两列布局
+    col_left, col_right = st.columns(2)
+    
+    # 左侧：文件预览
+    with col_left:
+        st.markdown("### 📁 文件预览")
+        
+        # 创建一个包含所有内容的HTML字符串
+        if files_data and current_index < len(files_data):
+            current_file = files_data[current_index]
+            
+            # 生成预览内容
+            preview_html = generate_file_preview_html(current_file)
+            
+            # 使用components.html显示
+            st.components.v1.html(preview_html, height=520, scrolling=True)
+            
+            # 文件切换
+            if len(files_data) > 1:
+                st.markdown("---")
+                new_index = st.selectbox(
+                    "切换文件",
+                    range(len(files_data)),
+                    format_func=lambda i: f"{i+1}. {files_data[i]['name']}",
+                    index=current_index,
+                    key="file_selector_result"
+                )
+                if new_index != current_index:
+                    st.session_state.current_file_index = new_index
+                    st.rerun()
+    
+    # 右侧：批改结果
+    with col_right:
+        st.markdown("### 📝 批改结果")
+        
+        # 创建结果HTML
+        result_html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <style>
+                body {{
+                    margin: 0;
+                    padding: 20px;
+                    background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
+                    color: #e2e8f0;
+                    font-family: 'SF Mono', Monaco, monospace;
+                    min-height: 100vh;
+                    box-sizing: border-box;
+                }}
+                pre {{
+                    white-space: pre-wrap;
+                    word-wrap: break-word;
+                    margin: 0;
+                    line-height: 1.6;
+                    font-size: 14px;
+                }}
+                ::-webkit-scrollbar {{
+                    width: 12px;
+                }}
+                ::-webkit-scrollbar-track {{
+                    background: rgba(0, 0, 0, 0.3);
+                    border-radius: 6px;
+                }}
+                ::-webkit-scrollbar-thumb {{
+                    background: #4a5568;
+                    border-radius: 6px;
+                }}
+                ::-webkit-scrollbar-thumb:hover {{
+                    background: #60a5fa;
+                }}
+            </style>
+        </head>
+        <body>
+            <pre>{html.escape(st.session_state.correction_result)}</pre>
+        </body>
+        </html>
+        """
+        
+        # 使用components.html显示
+        st.components.v1.html(result_html, height=520, scrolling=True)
+    
+    # 操作按钮
+    st.markdown("---")
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.download_button(
+            "📥 下载结果",
+            st.session_state.correction_result,
+            file_name="correction_result.txt",
+            mime="text/plain",
+            use_container_width=True
+        )
+    
+    with col2:
+        if st.button("🔄 重新批改", use_container_width=True):
+            st.session_state.page = "grading"
+            st.rerun()
+    
+    with col3:
+        if st.button("📚 查看历史", use_container_width=True):
+            st.session_state.page = "history"
+            st.rerun()
+
+def generate_file_preview_html(file_data):
+    """生成文件预览的完整HTML"""
+    
+    # 基础HTML模板
+    base_template = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <style>
+            body {{
+                margin: 0;
+                padding: 20px;
+                background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
+                color: #e2e8f0;
+                font-family: Arial, sans-serif;
+                box-sizing: border-box;
+            }}
+            .error {{
+                text-align: center;
+                padding: 50px;
+            }}
+            img {{
+                max-width: 100%;
+                height: auto;
+                display: block;
+                margin: 0 auto;
+                border-radius: 8px;
+                box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            }}
+            pre {{
+                white-space: pre-wrap;
+                word-wrap: break-word;
+                line-height: 1.6;
+                font-family: monospace;
+                background: rgba(0,0,0,0.2);
+                padding: 15px;
+                border-radius: 8px;
+                overflow-x: auto;
+            }}
+            h3 {{
+                text-align: center;
+                color: #60a5fa;
+                margin-bottom: 20px;
+            }}
+            ::-webkit-scrollbar {{
+                width: 12px;
+            }}
+            ::-webkit-scrollbar-track {{
+                background: rgba(0, 0, 0, 0.3);
+                border-radius: 6px;
+            }}
+            ::-webkit-scrollbar-thumb {{
+                background: #4a5568;
+                border-radius: 6px;
+            }}
+            ::-webkit-scrollbar-thumb:hover {{
+                background: #60a5fa;
+            }}
+        </style>
+    </head>
+    <body>
+        {content}
+    </body>
+    </html>
+    """
+    
+    # 检查文件是否存在
+    if not file_data.get('path') or not Path(file_data['path']).exists():
+        content = '<div class="error"><h3>⚠️ 文件不可用</h3><p>原始文件可能已被移动或删除</p></div>'
+        return base_template.format(content=content)
+    
+    file_type = get_file_type(file_data['name'])
+    
+    if file_type == 'image':
+        # 图片预览
+        try:
+            image_base64 = get_image_base64(file_data['path'])
+            if image_base64:
+                content = f'<h3>🖼️ {html.escape(file_data["name"])}</h3><img src="data:image/png;base64,{image_base64}" alt="Preview" />'
+            else:
+                content = '<div class="error"><p>图片加载失败</p></div>'
+        except Exception as e:
+            content = f'<div class="error"><p>错误: {html.escape(str(e))}</p></div>'
+    
+    elif file_type == 'text':
+        # 文本预览
+        try:
+            with open(file_data['path'], 'r', encoding='utf-8') as f:
+                text_content = f.read()
+            content = f'<h3>📄 {html.escape(file_data["name"])}</h3><pre>{html.escape(text_content)}</pre>'
+        except Exception as e:
+            content = f'<div class="error"><p>错误: {html.escape(str(e))}</p></div>'
+    
+    elif file_type == 'pdf':
+        # PDF预览功能
+        try:
+            from functions.api_correcting.calling_api import pdf_pages_to_base64_images
+            pdf_images = pdf_pages_to_base64_images(file_data['path'], zoom=1.5)
+            
+            if pdf_images:
+                # 构建PDF预览HTML
+                pdf_pages_html = ""
+                total_pages = len(pdf_images)
+                
+                for i, img_base64 in enumerate(pdf_images):
+                    # 页面指示器
+                    page_indicator = f'<div style="position: sticky; top: 0; z-index: 5; background: rgba(74, 85, 104, 0.95); backdrop-filter: blur(8px); color: #e2e8f0; font-size: 0.85rem; margin: 0 -20px 20px -20px; padding: 12px 20px; font-weight: 600; text-align: center; border-bottom: 2px solid rgba(96, 165, 250, 0.3); box-shadow: 0 2px 8px rgba(0,0,0,0.3);">📄 第 {i+1} 页 / 共 {total_pages} 页</div>'
+                    
+                    # PDF页面图片
+                    page_content = f'<div style="margin-bottom: 40px; width: 100%; text-align: center;"><img src="data:image/png;base64,{img_base64}" style="width: 100%; height: auto; max-width: 100%; border: 3px solid #4a5568; border-radius: 12px; box-shadow: 0 8px 16px rgba(0,0,0,0.3); background-color: white; object-fit: contain; display: block; margin: 0 auto; transition: transform 0.3s ease, box-shadow 0.3s ease;" onmouseover="this.style.transform=\'scale(1.02)\'; this.style.boxShadow=\'0 12px 24px rgba(0,0,0,0.4)\'" onmouseout="this.style.transform=\'scale(1)\'; this.style.boxShadow=\'0 8px 16px rgba(0,0,0,0.3)\'" alt="PDF 第{i+1}页" /></div>'
+                    
+                    pdf_pages_html += page_indicator + page_content
+                
+                # 添加底部导航提示
+                navigation_hint = '<div style="text-align: center; padding: 20px; color: #94a3b8; font-size: 0.9rem; border-top: 1px solid rgba(74, 85, 104, 0.3); margin-top: 20px; background: rgba(45, 55, 72, 0.5); border-radius: 8px;"><span style="background: rgba(96, 165, 250, 0.1); padding: 6px 12px; border-radius: 20px; border: 1px solid rgba(96, 165, 250, 0.3);">💡 使用鼠标滚轮浏览多页PDF内容</span></div>'
+                
+                content = f'<h3>📄 {html.escape(file_data["name"])}</h3>{pdf_pages_html}{navigation_hint}'
+            else:
+                content = f'<div class="error"><h3>📄 PDF文件</h3><p>{html.escape(file_data["name"])}</p><p>PDF转换失败，请检查文件格式</p></div>'
+        except Exception as e:
+            content = f'<div class="error"><h3>📄 PDF文件</h3><p>{html.escape(file_data["name"])}</p><p>PDF预览失败: {html.escape(str(e))}</p><p>请确保PyMuPDF库已正确安装</p></div>'
+    
+    else:
+        # 其他文件类型
+        content = f'<div class="error"><h3>📄 {html.escape(file_data["name"])}</h3><p>文件类型: {file_type}</p><p>此类型暂不支持预览</p></div>'
+    
+    return base_template.format(content=content)
+
+# 批改结果展示页面 - 左右对照布局（原始版本，备份）
+def show_result_original():
+    if not st.session_state.logged_in:
+        st.warning("请先登录")
+        st.session_state.page = "login"
+        st.rerun()
+        return
+    
+    # 检查是否有待处理的批改任务
+    if 'correction_task' in st.session_state and st.session_state.correction_task.get('status') == 'pending':
+        # 执行批改任务
+        st.markdown('<h2 class="main-title">🤖 AI批改进行中...</h2>', unsafe_allow_html=True)
+        
+        # 显示加载动画
+        progress_container = st.container()
+        with progress_container:
+            col1, col2, col3 = st.columns([1, 2, 1])
+            with col2:
+                st.markdown("""
+                <div style="text-align: center; padding: 50px;">
+                    <div class="spinner"></div>
+                    <h3 style="color: #3b82f6; margin-top: 30px;">🤖 AI正在分析文件...</h3>
+                    <p style="color: #94a3b8; margin-top: 10px;">请稍候，这可能需要几秒钟</p>
+                </div>
+                <style>
+                .spinner {
+                    margin: 0 auto;
+                    width: 60px;
+                    height: 60px;
+                    border: 5px solid rgba(59, 130, 246, 0.1);
+                    border-radius: 50%;
+                    border-top-color: #3b82f6;
+                    animation: spin 1s ease-in-out infinite;
+                }
+                @keyframes spin {
+                    to { transform: rotate(360deg); }
+                }
+                </style>
+                """, unsafe_allow_html=True)
+        
+        # 执行批改
+        with st.spinner(""):
+            try:
+                task = st.session_state.correction_task
+                settings = st.session_state.correction_settings
+                
+                # 调用AI批改
+                from functions.api_correcting.calling_api import intelligent_correction_with_files
+                result = intelligent_correction_with_files(
+                    question_files=task['question_files'],
+                    answer_files=task['answer_files'],
+                    marking_scheme_files=task['marking_files'],
+                    strictness_level=settings['strictness'],
+                    mode=settings['mode']
+                )
+                
+                # 保存记录
+                users = read_users()
+                if st.session_state.username in users:
+                    record = {
+                        'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        'files': [f['display_name'] for f in task['all_file_info']],
+                        'file_data': task['all_file_info'],
+                        'settings': settings,
+                        'result': result,
+                        'files_count': len(task['all_file_info'])
+                    }
+                    users[st.session_state.username]['records'].append(record)
+                    save_users(users)
+                
+                # 保存结果并更新状态
+                st.session_state.correction_result = result
+                st.session_state.correction_task['status'] = 'completed'
+                
+                # 刷新页面显示结果
+                st.rerun()
+                
+            except Exception as e:
+                st.error(f"批改失败：{str(e)}")
+                st.session_state.correction_task['status'] = 'failed'
+                if st.button("返回重试"):
+                    st.session_state.page = "grading"
+                    st.rerun()
+                return
+    
+    # 检查是否有批改结果
     if not st.session_state.correction_result or not st.session_state.uploaded_files_data:
         st.warning("没有批改结果数据")
         st.session_state.page = "grading"
@@ -832,7 +1331,7 @@ def show_result():
     
     with col1:
         settings = st.session_state.correction_settings
-        st.markdown(f"**设置：** {settings.get('mode', 'N/A')} | {settings.get('strictness', 'N/A')} | {settings.get('language', 'zh')}")
+        st.markdown(f"**设置：** {settings.get('mode', 'N/A')} | {settings.get('strictness', 'N/A')}")
     
     with col2:
         if st.button("🔄 重新批改"):
@@ -853,9 +1352,20 @@ def show_result():
     
     st.markdown("---")
     
-        # 使用Streamlit原生组件的简化版本
-    # 创建左右两列
-    col_left, col_right = st.columns(2)
+    # 添加CSS样式确保完美对齐
+    st.markdown("""
+    <style>
+    .stColumn > div {
+        height: auto;
+    }
+    .stTextArea > div > div > textarea {
+        font-family: 'Courier New', monospace;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
+    # 创建左右两列，完全等宽
+    col_left, col_right = st.columns([1, 1])
     
     with col_left:
         st.markdown("### 📁 文件预览")
@@ -871,10 +1381,508 @@ def show_result():
                 
                 current_file = st.session_state.uploaded_files_data[st.session_state.current_file_index]
                 
-                # 显示当前文件信息
-                st.info(f"📄 **{current_file['name']}** ({current_file['type']})")
+                # 创建统一的文件预览容器 - 强制限制在框内
+                st.markdown("""
+                <style>
+                .file-preview-frame {
+                    height: 520px !important;
+                    max-height: 520px !important;
+                    overflow: hidden !important;
+                    border: 3px solid #4a5568;
+                    border-radius: 12px;
+                    padding: 0 !important;
+                    margin: 0 !important;
+                    background-color: #1a202c;
+                    margin-bottom: 20px;
+                    box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+                    position: relative;
+                    box-sizing: border-box !important;
+                    cursor: default !important;
+                }
+                .preview-content-wrapper {
+                    height: 100% !important;
+                    max-height: 520px !important;
+                    width: 100% !important;
+                    overflow-y: auto !important;
+                    overflow-x: hidden !important;
+                    padding: 15px;
+                    background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
+                    box-sizing: border-box !important;
+                    display: block !important;
+                }
+                .preview-image-container {
+                    width: 100% !important;
+                    height: auto !important;
+                    max-width: 100% !important;
+                    text-align: center;
+                    padding: 10px;
+                    box-sizing: border-box !important;
+                }
+                .preview-image {
+                    max-width: calc(100% - 20px) !important;
+                    max-height: 450px !important;
+                    height: auto !important;
+                    width: auto !important;
+                    border: 2px solid #4a5568;
+                    border-radius: 8px;
+                    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+                    background-color: white;
+                    object-fit: contain !important;
+                    display: block !important;
+                    margin: 0 auto !important;
+                }
+                .pdf-page-container {
+                    margin-bottom: 25px;
+                    text-align: center;
+                    width: 100% !important;
+                    max-width: 100% !important;
+                    box-sizing: border-box !important;
+                    padding: 0 10px;
+                }
+                .pdf-page-container img {
+                    max-width: calc(100% - 20px) !important;
+                    max-height: 400px !important;
+                    height: auto !important;
+                    width: auto !important;
+                    border: 2px solid #4a5568;
+                    border-radius: 8px;
+                    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+                    background-color: white;
+                    object-fit: contain !important;
+                    display: block !important;
+                    margin: 0 auto !important;
+                }
+                .page-number-badge {
+                    color: #e2e8f0;
+                    font-size: 0.9rem;
+                    margin-bottom: 10px;
+                    font-weight: 600;
+                    background-color: #4a5568;
+                    padding: 6px 16px;
+                    border-radius: 20px;
+                    display: inline-block;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                }
+                .preview-text-content {
+                    width: calc(100% - 20px) !important;
+                    height: calc(100% - 40px) !important;
+                    max-height: 450px !important;
+                    background-color: #2d3748;
+                    border: 2px solid #4a5568;
+                    border-radius: 8px;
+                    padding: 20px;
+                    color: #e2e8f0;
+                    font-family: 'Courier New', monospace;
+                    font-size: 0.9rem;
+                    line-height: 1.6;
+                    overflow-y: auto !important;
+                    overflow-x: hidden !important;
+                    white-space: pre-wrap;
+                    word-wrap: break-word;
+                    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+                    box-sizing: border-box !important;
+                    margin: 10px auto;
+                }
+                .preview-placeholder {
+                    display: flex !important;
+                    flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
+                    height: calc(100% - 30px) !important;
+                    max-height: 490px !important;
+                    text-align: center;
+                    color: #a0aec0;
+                    padding: 15px;
+                    box-sizing: border-box !important;
+                }
+                .preview-placeholder h3 {
+                    color: #f6ad55;
+                    margin-bottom: 20px;
+                    font-size: 1.5rem;
+                }
+                .preview-placeholder p {
+                    font-size: 1.1rem;
+                    margin-bottom: 10px;
+                }
+                /* 强制覆盖Streamlit默认样式 */
+                .file-preview-frame * {
+                    max-width: 100% !important;
+                    box-sizing: border-box !important;
+                }
+                .file-preview-frame img {
+                    max-width: calc(100% - 40px) !important;
+                    max-height: 450px !important;
+                    object-fit: contain !important;
+                }
+                /* 隐藏Streamlit的图片容器溢出 */
+                .file-preview-frame .stImage {
+                    max-width: 100% !important;
+                    overflow: hidden !important;
+                }
+                .file-preview-frame .stImage > div {
+                    max-width: 100% !important;
+                    overflow: hidden !important;
+                }
+                /* 终极强制限制 - 不计一切代价 */
+                .file-preview-frame,
+                .file-preview-frame *,
+                .file-preview-frame img,
+                .file-preview-frame .preview-image,
+                .file-preview-frame .preview-image-container,
+                .file-preview-frame .preview-content-wrapper {
+                    max-width: 100% !important;
+                    max-height: 520px !important;
+                    overflow: hidden !important;
+                    box-sizing: border-box !important;
+                }
+                .file-preview-frame img {
+                    width: auto !important;
+                    height: auto !important;
+                    max-width: calc(100% - 60px) !important;
+                    max-height: 400px !important;
+                    object-fit: contain !important;
+                    object-position: center !important;
+                }
+                /* 强制所有子元素都不能超出父容器 */
+                .file-preview-frame > * {
+                    contain: layout size !important;
+                }
                 
-                # 文件预览 - 固定高度与批改结果区域一致
+                /* 自定义滚动条样式 - 针对预览框 */
+                .file-preview-frame .preview-content-wrapper::-webkit-scrollbar {
+                    width: 14px;
+                    height: 14px;
+                }
+                .file-preview-frame .preview-content-wrapper::-webkit-scrollbar-track {
+                    background: rgba(0, 0, 0, 0.4);
+                    border-radius: 8px;
+                    border: 1px solid rgba(74, 85, 104, 0.3);
+                }
+                .file-preview-frame .preview-content-wrapper::-webkit-scrollbar-thumb {
+                    background: linear-gradient(135deg, #4a5568, #2d3748);
+                    border-radius: 8px;
+                    border: 2px solid rgba(0, 0, 0, 0.2);
+                    transition: all 0.3s ease;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                }
+                .file-preview-frame .preview-content-wrapper::-webkit-scrollbar-thumb:hover {
+                    background: linear-gradient(135deg, #60a5fa, #3b82f6);
+                    transform: scale(1.05);
+                    box-shadow: 0 4px 8px rgba(96, 165, 250, 0.3);
+                }
+                .file-preview-frame .preview-content-wrapper::-webkit-scrollbar-thumb:active {
+                    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+                }
+                .file-preview-frame .preview-content-wrapper::-webkit-scrollbar-corner {
+                    background: rgba(0, 0, 0, 0.4);
+                    border-radius: 8px;
+                }
+                
+                /* 确保预览框可以正确响应滚轮事件 */
+                .file-preview-frame {
+                    position: relative;
+                    z-index: 1;
+                    user-select: none;
+                    -webkit-user-select: none;
+                    -moz-user-select: none;
+                    -ms-user-select: none;
+                }
+                .file-preview-frame .preview-content-wrapper {
+                    position: relative;
+                    z-index: 2;
+                    cursor: default;
+                    scroll-behavior: smooth;
+                    overflow-scrolling: touch; /* iOS平滑滚动 */
+                }
+                
+                /* 增强滚轮响应性 */
+                .file-preview-frame .preview-content-wrapper {
+                    overscroll-behavior: contain;
+                    scroll-snap-type: none;
+                }
+                
+                /* 鼠标悬停时的视觉反馈 */
+                .file-preview-frame:hover {
+                    border-color: #60a5fa;
+                    box-shadow: 0 12px 24px rgba(0,0,0,0.4), 0 0 0 1px rgba(96, 165, 250, 0.3);
+                    transition: all 0.3s ease;
+                }
+                
+                /* 滚动指示器 */
+                .file-preview-frame::before {
+                    content: "⚡ 可滚动预览";
+                    position: absolute;
+                    top: 8px;
+                    right: 12px;
+                    background: rgba(96, 165, 250, 0.8);
+                    color: white;
+                    padding: 4px 8px;
+                    border-radius: 12px;
+                    font-size: 0.7rem;
+                    font-weight: 600;
+                    z-index: 10;
+                    opacity: 0;
+                    transition: opacity 0.3s ease;
+                    pointer-events: none;
+                }
+                .file-preview-frame:hover::before {
+                    opacity: 1;
+                }
+                
+                /* 键盘导航支持 */
+                .file-preview-frame {
+                    outline: none;
+                }
+                .file-preview-frame:focus {
+                    border-color: #60a5fa;
+                    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
+                }
+                </style>
+                
+                <script>
+                // 增强滚轮响应性和键盘导航 - 修复页面滚动问题
+                (function() {
+                    // 立即执行的函数，不等待DOMContentLoaded
+                    function setupPreviewScrolling() {
+                        console.log('Setting up preview scrolling...');
+                        
+                        // 获取所有预览框和批改结果框
+                        const previewFrames = document.querySelectorAll('.file-preview-frame');
+                        const resultFrames = document.querySelectorAll('.correction-result-frame');
+                        
+                        console.log('Found preview frames:', previewFrames.length);
+                        console.log('Found result frames:', resultFrames.length);
+                        
+                        // 处理预览框
+                        previewFrames.forEach((previewFrame, index) => {
+                            const contentWrapper = previewFrame.querySelector('.preview-content-wrapper');
+                            
+                            if (contentWrapper) {
+                                console.log('Setting up preview frame', index);
+                                
+                                // 移除可能存在的旧事件监听器
+                                const newFrame = previewFrame.cloneNode(true);
+                                previewFrame.parentNode.replaceChild(newFrame, previewFrame);
+                                
+                                const newContentWrapper = newFrame.querySelector('.preview-content-wrapper');
+                                
+                                // 预览框滚轮事件 - 完全阻止冒泡
+                                newFrame.addEventListener('wheel', function(e) {
+                                    // 完全阻止事件传播
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    e.stopImmediatePropagation();
+                                    
+                                    // 检查是否可以滚动
+                                    const canScrollDown = newContentWrapper.scrollTop < (newContentWrapper.scrollHeight - newContentWrapper.clientHeight - 1);
+                                    const canScrollUp = newContentWrapper.scrollTop > 0;
+                                    
+                                    // 只有在可以滚动时才处理滚轮事件
+                                    if ((e.deltaY > 0 && canScrollDown) || (e.deltaY < 0 && canScrollUp)) {
+                                        // 自定义滚动行为
+                                        const scrollAmount = e.deltaY;
+                                        newContentWrapper.scrollTop += scrollAmount;
+                                    }
+                                    
+                                    return false;
+                                }, { passive: false, capture: true });
+                                
+                                // 鼠标进入预览框时的处理
+                                newFrame.addEventListener('mouseenter', function(e) {
+                                    // 添加视觉反馈
+                                    newFrame.style.borderColor = '#60a5fa';
+                                    newFrame.style.boxShadow = '0 12px 24px rgba(0,0,0,0.4), 0 0 0 1px rgba(96, 165, 250, 0.3)';
+                                    
+                                    // 设置焦点以支持键盘导航
+                                    newFrame.setAttribute('tabindex', '0');
+                                    newFrame.focus();
+                                });
+                                
+                                // 鼠标离开预览框时的处理
+                                newFrame.addEventListener('mouseleave', function(e) {
+                                    // 恢复原始样式
+                                    newFrame.style.borderColor = '#4a5568';
+                                    newFrame.style.boxShadow = '0 8px 16px rgba(0,0,0,0.3)';
+                                });
+                                
+                                // 键盘导航支持
+                                newFrame.addEventListener('keydown', function(e) {
+                                    switch(e.key) {
+                                        case 'ArrowUp':
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            newContentWrapper.scrollBy({ top: -50, behavior: 'smooth' });
+                                            break;
+                                        case 'ArrowDown':
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            newContentWrapper.scrollBy({ top: 50, behavior: 'smooth' });
+                                            break;
+                                        case 'PageUp':
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            newContentWrapper.scrollBy({ top: -300, behavior: 'smooth' });
+                                            break;
+                                        case 'PageDown':
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            newContentWrapper.scrollBy({ top: 300, behavior: 'smooth' });
+                                            break;
+                                        case 'Home':
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            newContentWrapper.scrollTo({ top: 0, behavior: 'smooth' });
+                                            break;
+                                        case 'End':
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            newContentWrapper.scrollTo({ top: newContentWrapper.scrollHeight, behavior: 'smooth' });
+                                            break;
+                                    }
+                                });
+                            }
+                        });
+                         
+                         // 处理批改结果框
+                         resultFrames.forEach((resultFrame, index) => {
+                             const contentWrapper = resultFrame.querySelector('.result-content-wrapper');
+                             
+                             if (contentWrapper) {
+                                 console.log('Setting up result frame', index);
+                                 
+                                 // 移除可能存在的旧事件监听器
+                                 const newFrame = resultFrame.cloneNode(true);
+                                 resultFrame.parentNode.replaceChild(newFrame, resultFrame);
+                                 
+                                 const newContentWrapper = newFrame.querySelector('.result-content-wrapper');
+                                 
+                                 // 批改结果框滚轮事件 - 完全阻止冒泡
+                                 newFrame.addEventListener('wheel', function(e) {
+                                     // 完全阻止事件传播
+                                     e.preventDefault();
+                                     e.stopPropagation();
+                                     e.stopImmediatePropagation();
+                                     
+                                     // 检查是否可以滚动
+                                     const canScrollDown = newContentWrapper.scrollTop < (newContentWrapper.scrollHeight - newContentWrapper.clientHeight - 1);
+                                     const canScrollUp = newContentWrapper.scrollTop > 0;
+                                     
+                                     // 只有在可以滚动时才处理滚轮事件
+                                     if ((e.deltaY > 0 && canScrollDown) || (e.deltaY < 0 && canScrollUp)) {
+                                         // 自定义滚动行为
+                                         const scrollAmount = e.deltaY;
+                                         newContentWrapper.scrollTop += scrollAmount;
+                                     }
+                                     
+                                     return false;
+                                 }, { passive: false, capture: true });
+                                 
+                                 // 鼠标进入批改结果框时的处理
+                                 newFrame.addEventListener('mouseenter', function(e) {
+                                     // 添加视觉反馈
+                                     newFrame.style.borderColor = '#60a5fa';
+                                     newFrame.style.boxShadow = '0 12px 24px rgba(0,0,0,0.4), 0 0 0 1px rgba(96, 165, 250, 0.3)';
+                                     
+                                     // 设置焦点以支持键盘导航
+                                     newFrame.setAttribute('tabindex', '0');
+                                     newFrame.focus();
+                                 });
+                                 
+                                 // 鼠标离开批改结果框时的处理
+                                 newFrame.addEventListener('mouseleave', function(e) {
+                                     // 恢复原始样式
+                                     newFrame.style.borderColor = '#4a5568';
+                                     newFrame.style.boxShadow = '0 8px 16px rgba(0,0,0,0.3)';
+                                 });
+                                 
+                                 // 键盘导航支持
+                                 newFrame.addEventListener('keydown', function(e) {
+                                     switch(e.key) {
+                                         case 'ArrowUp':
+                                             e.preventDefault();
+                                             e.stopPropagation();
+                                             newContentWrapper.scrollBy({ top: -50, behavior: 'smooth' });
+                                             break;
+                                         case 'ArrowDown':
+                                             e.preventDefault();
+                                             e.stopPropagation();
+                                             newContentWrapper.scrollBy({ top: 50, behavior: 'smooth' });
+                                             break;
+                                         case 'PageUp':
+                                             e.preventDefault();
+                                             e.stopPropagation();
+                                             newContentWrapper.scrollBy({ top: -300, behavior: 'smooth' });
+                                             break;
+                                         case 'PageDown':
+                                             e.preventDefault();
+                                             e.stopPropagation();
+                                             newContentWrapper.scrollBy({ top: 300, behavior: 'smooth' });
+                                             break;
+                                         case 'Home':
+                                             e.preventDefault();
+                                             e.stopPropagation();
+                                             newContentWrapper.scrollTo({ top: 0, behavior: 'smooth' });
+                                             break;
+                                         case 'End':
+                                             e.preventDefault();
+                                             e.stopPropagation();
+                                             newContentWrapper.scrollTo({ top: newContentWrapper.scrollHeight, behavior: 'smooth' });
+                                             break;
+                                     }
+                                 });
+                             }
+                         });
+                     }
+                     
+                     // 延迟初始化，确保DOM完全加载
+                     setTimeout(setupPreviewScrolling, 100);
+                     setTimeout(setupPreviewScrolling, 500);
+                     setTimeout(setupPreviewScrolling, 1000);
+                    
+                    // 监听DOM变化，重新初始化滚动
+                    const observer = new MutationObserver(function(mutations) {
+                        mutations.forEach(function(mutation) {
+                            if (mutation.type === 'childList') {
+                                const addedNodes = Array.from(mutation.addedNodes);
+                                if (addedNodes.some(node => node.nodeType === 1 && (
+                                    node.classList && (node.classList.contains('file-preview-frame') || node.classList.contains('correction-result-frame')) ||
+                                    (node.querySelector && (node.querySelector('.file-preview-frame') || node.querySelector('.correction-result-frame')))
+                                ))) {
+                                    setTimeout(setupPreviewScrolling, 100);
+                                }
+                            }
+                        });
+                    });
+                    
+                    // 开始观察DOM变化
+                    if (document.body) {
+                        observer.observe(document.body, {
+                            childList: true,
+                            subtree: true
+                        });
+                    }
+                    
+                    // 确保在DOM加载完成后也执行
+                    if (document.readyState === 'loading') {
+                        document.addEventListener('DOMContentLoaded', setupPreviewScrolling);
+                    } else {
+                        setupPreviewScrolling();
+                    }
+                })();
+                </script>
+                
+                /* 图片和内容的悬停效果 */
+                .file-preview-frame img:hover {
+                    transform: scale(1.02);
+                    transition: transform 0.3s ease;
+                    box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+                }
+                </style>
+                """, unsafe_allow_html=True)
+                
+                # 完全自定义的文件预览容器 - 强制HTML内嵌
+                preview_html = ""
+                
                 if current_file['path'] and Path(current_file['path']).exists():
                     file_type = get_file_type(current_file['name'])
                     
@@ -882,50 +1890,57 @@ def show_result():
                         try:
                             # 获取图片的base64编码
                             image_base64 = get_image_base64(current_file['path'])
+                            if not image_base64:
+                                # 尝试重新获取base64
+                                import base64
+                                with open(current_file['path'], "rb") as img_file:
+                                    image_base64 = base64.b64encode(img_file.read()).decode()
+                            
                             if image_base64:
-                                # 使用容器和CSS创建固定高度的图片预览区域
-                                st.markdown(f"""
-                                <div style="
-                                    height: 500px; 
-                                    overflow: auto; 
-                                    border: 1px solid #404040;
-                                    border-radius: 8px;
-                                    padding: 10px;
-                                    background-color: #262730;
-                                    display: flex;
-                                    justify-content: center;
-                                    align-items: flex-start;
-                                ">
-                                    <img src="data:image/jpeg;base64,{image_base64}" 
-                                         style="max-width: 100%; height: auto; object-fit: contain;" 
-                                         alt="{current_file['name']}" />
-                                </div>
-                                """, unsafe_allow_html=True)
+                                file_ext = current_file['path'].split('.')[-1].lower()
+                                mime_type = f"image/{file_ext}" if file_ext in ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'] else "image/jpeg"
+                                
+                                # 图片预览HTML - 优化滚动和缩放体验
+                                image_info = f'<div class="image-info-bar" style="position: sticky; top: 0; z-index: 5; background: rgba(74, 85, 104, 0.95); backdrop-filter: blur(8px); color: #e2e8f0; font-size: 0.85rem; margin: 0 -10px 20px -10px; padding: 12px 20px; font-weight: 600; text-align: center; border-bottom: 2px solid rgba(96, 165, 250, 0.3); box-shadow: 0 2px 8px rgba(0,0,0,0.3);">🖼️ 图片预览: {current_file["name"]}</div>'
+                                
+                                image_content = f'<div class="image-container" style="text-align: center; width: 100%; position: relative; margin-bottom: 20px;"><img src="data:{mime_type};base64,{image_base64}" style="max-width: 100%; height: auto; max-height: 600px; border: 3px solid #4a5568; border-radius: 12px; box-shadow: 0 8px 16px rgba(0,0,0,0.3); background-color: white; object-fit: contain; display: block; margin: 0 auto; transition: transform 0.3s ease, box-shadow 0.3s ease; cursor: zoom-in;" onmouseover="this.style.transform=\'scale(1.05)\'; this.style.boxShadow=\'0 12px 24px rgba(0,0,0,0.4)\'" onmouseout="this.style.transform=\'scale(1)\'; this.style.boxShadow=\'0 8px 16px rgba(0,0,0,0.3)\'" alt="{current_file["name"]}" /></div>'
+                                
+                                navigation_hint = '<div style="text-align: center; padding: 20px; color: #94a3b8; font-size: 0.9rem; border-top: 1px solid rgba(74, 85, 104, 0.3); margin-top: 20px; background: rgba(45, 55, 72, 0.5); border-radius: 8px;"><span style="background: rgba(96, 165, 250, 0.1); padding: 6px 12px; border-radius: 20px; border: 1px solid rgba(96, 165, 250, 0.3);">💡 鼠标悬停可放大预览，滚轮可上下滚动</span></div>'
+                                
+                                preview_html = f'<div class="file-preview-frame" onwheel="event.preventDefault(); event.stopPropagation(); var wrapper = this.querySelector(\'.preview-content-wrapper\'); if(wrapper) {{ var canScrollDown = wrapper.scrollTop < (wrapper.scrollHeight - wrapper.clientHeight - 1); var canScrollUp = wrapper.scrollTop > 0; if ((event.deltaY > 0 && canScrollDown) || (event.deltaY < 0 && canScrollUp)) {{ wrapper.scrollTop += event.deltaY; }} }} return false;" style="overscroll-behavior: contain;"><div class="preview-content-wrapper" style="height: 520px; overflow-y: auto; overflow-x: hidden; padding: 10px; background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%); scroll-behavior: smooth; position: relative; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;">{image_info}{image_content}{navigation_hint}</div></div>'
                             else:
                                 raise Exception("图片base64转换失败")
                         except Exception as e:
-                            # 如果base64转换失败，使用st.image但限制高度
-                            try:
-                                # 创建一个固定高度的容器来包含图片
-                                with st.container():
-                                    st.markdown("""
-                                    <style>
-                                    .fixed-height-image {
-                                        height: 500px;
-                                        overflow: auto;
-                                        border: 1px solid #404040;
-                                        border-radius: 8px;
-                                        padding: 10px;
-                                        background-color: #262730;
-                                    }
-                                    </style>
-                                    """, unsafe_allow_html=True)
+                            preview_html = f'<div class="file-preview-frame" style="overscroll-behavior: contain;"><div class="preview-content-wrapper" style="height: 520px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: #a0aec0; padding: 15px; background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%); overscroll-behavior: contain;"><h3 style="color: #f6ad55; margin-bottom: 20px; font-size: 1.5rem;">📷 图片预览失败</h3><p style="font-size: 1.1rem; margin-bottom: 10px;">错误信息: {str(e)}</p></div></div>'
+                    
+                    elif file_type == 'pdf':
+                        try:
+                            # PDF文件转换为图片预览
+                            from functions.api_correcting.calling_api import pdf_pages_to_base64_images
+                            pdf_images = pdf_pages_to_base64_images(current_file['path'], zoom=1.5)
+                            
+                            if pdf_images:
+                                # 构建PDF预览HTML - 优化滚动体验
+                                pdf_pages_html = ""
+                                total_pages = len(pdf_images)
+                                
+                                for i, img_base64 in enumerate(pdf_images):
+                                    # 页面分隔和页码指示器
+                                    page_indicator = f'<div class="pdf-page-indicator" style="position: sticky; top: 0; z-index: 5; background: rgba(74, 85, 104, 0.95); backdrop-filter: blur(8px); color: #e2e8f0; font-size: 0.85rem; margin: 0 -10px 20px -10px; padding: 12px 20px; font-weight: 600; text-align: center; border-bottom: 2px solid rgba(96, 165, 250, 0.3); box-shadow: 0 2px 8px rgba(0,0,0,0.3);">📄 第 {i+1} 页 / 共 {total_pages} 页</div>'
                                     
-                                    st.markdown('<div class="fixed-height-image">', unsafe_allow_html=True)
-                                    st.image(current_file['path'], caption=current_file['name'], width=400)
-                                    st.markdown('</div>', unsafe_allow_html=True)
-                            except Exception as e2:
-                                st.error(f"📷 图片预览失败: {str(e2)}")
+                                    # PDF页面图片
+                                    page_content = f'<div class="pdf-page-container" style="margin-bottom: 40px; width: 100%; position: relative;"><img src="data:image/png;base64,{img_base64}" style="width: 100%; height: auto; max-width: 100%; border: 3px solid #4a5568; border-radius: 12px; box-shadow: 0 8px 16px rgba(0,0,0,0.3); background-color: white; object-fit: contain; display: block; transition: transform 0.3s ease, box-shadow 0.3s ease;" onmouseover="this.style.transform=\'scale(1.02)\'; this.style.boxShadow=\'0 12px 24px rgba(0,0,0,0.4)\'" onmouseout="this.style.transform=\'scale(1)\'; this.style.boxShadow=\'0 8px 16px rgba(0,0,0,0.3)\'" alt="PDF 第{i+1}页" /></div>'
+                                    
+                                    pdf_pages_html += page_indicator + page_content
+                                
+                                # 添加底部导航提示
+                                navigation_hint = '<div style="text-align: center; padding: 20px; color: #94a3b8; font-size: 0.9rem; border-top: 1px solid rgba(74, 85, 104, 0.3); margin-top: 20px; background: rgba(45, 55, 72, 0.5); border-radius: 8px;"><span style="background: rgba(96, 165, 250, 0.1); padding: 6px 12px; border-radius: 20px; border: 1px solid rgba(96, 165, 250, 0.3);">💡 使用鼠标滚轮或拖拽滚动条浏览多页内容</span></div>'
+                                
+                                preview_html = f'<div class="file-preview-frame" onwheel="event.preventDefault(); event.stopPropagation(); var wrapper = this.querySelector(\'.preview-content-wrapper\'); if(wrapper) {{ var canScrollDown = wrapper.scrollTop < (wrapper.scrollHeight - wrapper.clientHeight - 1); var canScrollUp = wrapper.scrollTop > 0; if ((event.deltaY > 0 && canScrollDown) || (event.deltaY < 0 && canScrollUp)) {{ wrapper.scrollTop += event.deltaY; }} }} return false;" style="overscroll-behavior: contain;"><div class="preview-content-wrapper" style="height: 520px; overflow-y: auto; overflow-x: hidden; padding: 10px; background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%); scroll-behavior: smooth; position: relative; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;">{pdf_pages_html}{navigation_hint}</div></div>'
+                            else:
+                                raise Exception("PDF转换为图片失败")
+                        except Exception as e:
+                            preview_html = f'<div class="file-preview-frame"><div class="preview-content-wrapper" style="height: 520px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: #a0aec0; padding: 15px; background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);"><h3 style="color: #f6ad55; margin-bottom: 20px; font-size: 1.5rem;">📄 PDF 预览失败</h3><p style="font-size: 1.1rem; margin-bottom: 10px;">错误信息: {str(e)}</p><p style="font-size: 0.9rem;">请确保PyMuPDF库已正确安装</p></div></div>'
                     
                     elif file_type == 'text':
                         try:
@@ -935,105 +1950,172 @@ def show_result():
                             if len(content) > 5000:
                                 content = content[:5000] + "\n\n...(内容已截断，可滚动查看)"
                             
-                            # 使用st.text_area显示文本内容，高度与批改结果一致
-                            st.text_area("文件内容", content, height=500, disabled=True, label_visibility="collapsed")
+                            # HTML转义处理
+                            import html
+                            content_escaped = html.escape(content)
+                            
+                            # 文本文件预览HTML - 优化滚动和阅读体验
+                            file_info = f'<div class="text-info-bar" style="position: sticky; top: 0; z-index: 5; background: rgba(74, 85, 104, 0.95); backdrop-filter: blur(8px); color: #e2e8f0; font-size: 0.85rem; margin: 0 -10px 20px -10px; padding: 12px 20px; font-weight: 600; text-align: center; border-bottom: 2px solid rgba(96, 165, 250, 0.3); box-shadow: 0 2px 8px rgba(0,0,0,0.3);">📄 文本预览: {current_file["name"]} ({len(content)} 字符)</div>'
+                            
+                            text_content = f'<div class="text-content-area" style="width: 100%; min-height: 400px; background-color: #2d3748; border: 3px solid #4a5568; border-radius: 12px; padding: 25px; color: #e2e8f0; font-family: \'SF Mono\', \'Monaco\', \'Inconsolata\', \'Roboto Mono\', \'Source Code Pro\', monospace; font-size: 0.95rem; line-height: 1.7; white-space: pre-wrap; word-wrap: break-word; box-shadow: 0 8px 16px rgba(0,0,0,0.3), inset 0 2px 4px rgba(0,0,0,0.1); box-sizing: border-box; transition: all 0.3s ease; position: relative;">{content_escaped}</div>'
+                            
+                            navigation_hint = '<div style="text-align: center; padding: 20px; color: #94a3b8; font-size: 0.9rem; border-top: 1px solid rgba(74, 85, 104, 0.3); margin-top: 20px; background: rgba(45, 55, 72, 0.5); border-radius: 8px;"><span style="background: rgba(96, 165, 250, 0.1); padding: 6px 12px; border-radius: 20px; border: 1px solid rgba(96, 165, 250, 0.3);">💡 使用滚轮浏览文本内容，支持全文搜索</span></div>'
+                            
+                            preview_html = f'<div class="file-preview-frame" onwheel="event.preventDefault(); event.stopPropagation(); var wrapper = this.querySelector(\'.preview-content-wrapper\'); if(wrapper) {{ var canScrollDown = wrapper.scrollTop < (wrapper.scrollHeight - wrapper.clientHeight - 1); var canScrollUp = wrapper.scrollTop > 0; if ((event.deltaY > 0 && canScrollDown) || (event.deltaY < 0 && canScrollUp)) {{ wrapper.scrollTop += event.deltaY; }} }} return false;" style="overscroll-behavior: contain;"><div class="preview-content-wrapper" style="height: 520px; overflow-y: auto; overflow-x: hidden; padding: 10px; background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%); scroll-behavior: smooth; position: relative; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;">{file_info}{text_content}{navigation_hint}</div></div>'
                             
                         except Exception as e:
-                            st.error(f"📄 文本预览失败: {str(e)}")
+                            preview_html = f'<div class="file-preview-frame"><div class="preview-content-wrapper" style="height: 520px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: #a0aec0; padding: 15px; background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);"><h3 style="color: #f6ad55; margin-bottom: 20px; font-size: 1.5rem;">📄 文本预览失败</h3><p style="font-size: 1.1rem; margin-bottom: 10px;">错误信息: {str(e)}</p></div></div>'
                     
                     else:
-                        # 为其他文件类型创建一个固定高度的信息容器
-                        st.markdown(f"""
-                        <div style="
-                            height: 500px; 
-                            overflow: auto; 
-                            border: 1px solid #404040;
-                            border-radius: 8px;
-                            padding: 20px;
-                            background-color: #262730;
-                            display: flex;
-                            flex-direction: column;
-                            justify-content: center;
-                            align-items: center;
-                            text-align: center;
-                        ">
-                            <h3>📄 {file_type.upper()} 文件</h3>
-                            <p><strong>文件名:</strong> {current_file['name']}</p>
-                            <p style="color: #94a3b8;">此文件类型暂不支持预览</p>
-                        </div>
-                        """, unsafe_allow_html=True)
+                        preview_html = f'<div class="file-preview-frame"><div class="preview-content-wrapper" style="height: 520px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: #a0aec0; padding: 15px; background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);"><h3 style="color: #f6ad55; margin-bottom: 20px; font-size: 1.5rem;">📄 {file_type.upper()} 文件</h3><p style="font-size: 1.1rem; margin-bottom: 10px;">此文件类型暂不支持预览</p></div></div>'
                 else:
-                    # 为文件预览不可用创建一个固定高度的提示容器
+                    # 文件不存在的情况
                     warning_msg = "💡 历史记录，原始文件可能已被清理" if not current_file['path'] else "⚠️ 原始文件不存在"
-                    st.markdown(f"""
-                    <div style="
-                        height: 500px; 
-                        overflow: auto; 
-                        border: 1px solid #404040;
-                        border-radius: 8px;
-                        padding: 20px;
-                        background-color: #262730;
-                        display: flex;
-                        flex-direction: column;
-                        justify-content: center;
-                        align-items: center;
-                        text-align: center;
-                    ">
-                        <h3 style="color: #f59e0b;">⚠️ 文件预览不可用</h3>
-                        <p style="color: #94a3b8;">{warning_msg}</p>
-                        <p style="color: #6b7280; font-size: 0.9rem;">文件名: {current_file['name']}</p>
-                    </div>
-                    """, unsafe_allow_html=True)
+                    preview_html = f'<div class="file-preview-frame"><div class="preview-content-wrapper" style="height: 520px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: #a0aec0; padding: 15px; background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);"><h3 style="color: #f6ad55; margin-bottom: 20px; font-size: 1.5rem;">⚠️ 文件预览不可用</h3><p style="font-size: 1.1rem; margin-bottom: 10px;">{warning_msg}</p></div></div>'
+                
+                # 显示完整的预览HTML
+                st.markdown(preview_html, unsafe_allow_html=True)
+                
+                # 文件信息和切换器放在预览框下方
+                st.markdown("---")
+                
+                # 当前文件信息
+                category = current_file.get('category', 'other')
+                category_icons = {
+                    'question': '📋',
+                    'answer': '✏️', 
+                    'marking': '📊',
+                    'other': '📄'
+                }
+                category_names = {
+                    'question': '题目文件',
+                    'answer': '学生作答',
+                    'marking': '批改标准',
+                    'other': '其他文件'
+                }
+                
+                icon = category_icons.get(category, '📄')
+                name = category_names.get(category, '其他文件')
+                file_type_display = current_file.get('type', get_file_type(current_file['name']))
+                
+                st.info(f"{icon} **{name}**: {current_file['name']} ({file_type_display})")
+                
             else:
-                # 为没有可预览文件创建一个固定高度的提示容器
-                st.markdown("""
-                <div style="
-                    height: 500px; 
-                    overflow: auto; 
-                    border: 1px solid #404040;
-                    border-radius: 8px;
-                    padding: 20px;
-                    background-color: #262730;
-                    display: flex;
-                    flex-direction: column;
-                    justify-content: center;
-                    align-items: center;
-                    text-align: center;
-                ">
-                    <h3 style="color: #3b82f6;">📁 没有可预览的文件</h3>
-                    <p style="color: #94a3b8;">请先上传文件进行批改</p>
-                </div>
-                """, unsafe_allow_html=True)
+                # 没有文件时的显示
+                preview_html = '<div class="file-preview-frame"><div class="preview-content-wrapper" style="height: 520px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: #a0aec0; padding: 15px; background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);"><h3 style="color: #f6ad55; margin-bottom: 20px; font-size: 1.5rem;">📁 没有可预览的文件</h3><p style="font-size: 1.1rem; margin-bottom: 10px;">请先上传文件进行批改</p></div></div>'
+                st.markdown(preview_html, unsafe_allow_html=True)
     
     with col_right:
         st.markdown("### 📝 批改结果")
-        
-        # 批改结果容器
-        result_container = st.container()
-        
-        with result_container:
-            if st.session_state.correction_result:
-                # 使用st.text_area显示批改结果，避免HTML解析问题
-                st.text_area(
-                    "批改详情",
-                    st.session_state.correction_result,
-                    height=500,
-                    disabled=True,
-                    label_visibility="collapsed"
-                )
-            else:
-                st.info("没有批改结果")
-    
-
-    
-    # 文件切换功能 (在HTML渲染后提供交互)
+                
+        # 批改结果容器 - 与左侧预览框对齐，支持独立滚轮控制
+        if st.session_state.correction_result:
+            # 创建与左侧相同样式的容器，使用相同的class名称
+            import html
+            result_html = f'''
+            <div class="correction-result-frame" onwheel="event.preventDefault(); event.stopPropagation(); var wrapper = this.querySelector('.result-content-wrapper'); if(wrapper) {{ var canScrollDown = wrapper.scrollTop < (wrapper.scrollHeight - wrapper.clientHeight - 1); var canScrollUp = wrapper.scrollTop > 0; if ((event.deltaY > 0 && canScrollDown) || (event.deltaY < 0 && canScrollUp)) {{ wrapper.scrollTop += event.deltaY; }} }} return false;" style="height: 520px; border: 3px solid #4a5568; border-radius: 12px; background-color: #1a202c; box-shadow: 0 8px 16px rgba(0,0,0,0.3); overflow: hidden; position: relative; z-index: 1; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; overscroll-behavior: contain;">
+                <div class="result-content-wrapper" style="height: 100%; overflow-y: auto; overflow-x: hidden; padding: 20px; background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%); scroll-behavior: smooth; position: relative; z-index: 2; cursor: default; overflow-scrolling: touch; overscroll-behavior: contain; scroll-snap-type: none; -webkit-overflow-scrolling: touch;">
+                    <div class="result-info-bar" style="position: sticky; top: 0; z-index: 5; background: rgba(74, 85, 104, 0.95); backdrop-filter: blur(8px); color: #e2e8f0; font-size: 0.85rem; margin: 0 -20px 20px -20px; padding: 12px 20px; font-weight: 600; text-align: center; border-bottom: 2px solid rgba(96, 165, 250, 0.3); box-shadow: 0 2px 8px rgba(0,0,0,0.3);">📝 批改结果 ({len(st.session_state.correction_result)} 字符)</div>
+                    <pre style="margin: 0; padding: 0; color: #e2e8f0; font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Source Code Pro', monospace; font-size: 0.95rem; line-height: 1.7; white-space: pre-wrap; word-wrap: break-word; background: rgba(45, 55, 72, 0.3); padding: 20px; border-radius: 8px; border: 1px solid rgba(74, 85, 104, 0.3);">{html.escape(st.session_state.correction_result)}</pre>
+                    <div style="text-align: center; padding: 20px; color: #94a3b8; font-size: 0.9rem; border-top: 1px solid rgba(74, 85, 104, 0.3); margin-top: 20px; background: rgba(45, 55, 72, 0.5); border-radius: 8px;"><span style="background: rgba(96, 165, 250, 0.1); padding: 6px 12px; border-radius: 20px; border: 1px solid rgba(96, 165, 250, 0.3);">💡 使用滚轮浏览批改结果，支持复制内容</span></div>
+                </div>
+            </div>
+            <style>
+            /* 批改结果滚动条样式 - 与预览框保持一致 */
+            .correction-result-frame .result-content-wrapper::-webkit-scrollbar {{
+                width: 14px;
+                height: 14px;
+            }}
+            .correction-result-frame .result-content-wrapper::-webkit-scrollbar-track {{
+                background: rgba(0, 0, 0, 0.4);
+                border-radius: 8px;
+                border: 1px solid rgba(74, 85, 104, 0.3);
+            }}
+            .correction-result-frame .result-content-wrapper::-webkit-scrollbar-thumb {{
+                background: linear-gradient(135deg, #4a5568, #2d3748);
+                border-radius: 8px;
+                border: 2px solid rgba(0, 0, 0, 0.2);
+                transition: all 0.3s ease;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            }}
+            .correction-result-frame .result-content-wrapper::-webkit-scrollbar-thumb:hover {{
+                background: linear-gradient(135deg, #60a5fa, #3b82f6);
+                transform: scale(1.05);
+                box-shadow: 0 4px 8px rgba(96, 165, 250, 0.3);
+            }}
+            .correction-result-frame .result-content-wrapper::-webkit-scrollbar-thumb:active {{
+                background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            }}
+            .correction-result-frame .result-content-wrapper::-webkit-scrollbar-corner {{
+                background: rgba(0, 0, 0, 0.4);
+                border-radius: 8px;
+            }}
+            
+            /* 批改结果框悬停效果 */
+            .correction-result-frame:hover {{
+                border-color: #60a5fa;
+                box-shadow: 0 12px 24px rgba(0,0,0,0.4), 0 0 0 1px rgba(96, 165, 250, 0.3);
+                transition: all 0.3s ease;
+            }}
+            
+            /* 批改结果框焦点效果 */
+            .correction-result-frame:focus {{
+                border-color: #60a5fa;
+                box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
+                outline: none;
+            }}
+            
+            /* 滚动指示器 */
+            .correction-result-frame::before {{
+                content: "⚡ 可滚动预览";
+                position: absolute;
+                top: 8px;
+                right: 12px;
+                background: rgba(96, 165, 250, 0.8);
+                color: white;
+                padding: 4px 8px;
+                border-radius: 12px;
+    # 文件切换功能 (放在左侧预览区域内)
     if len(st.session_state.uploaded_files_data) > 1:
-        st.markdown("---")
-        col1, col2, col3 = st.columns([1, 2, 1])
-        with col2:
+        file_options = []
+        for i, file_data in enumerate(st.session_state.uploaded_files_data):
+            file_name = file_data['name']
+            category = file_data.get('category', 'other')
+            }}
+            .correction-result-frame:hover::before {{
+                opacity: 1;
+            }}
+            </style>
+            '''
+            st.markdown(result_html, unsafe_allow_html=True)
+        else:
+            # 空结果时的占位容器
+            empty_html = '''
+            <div class="correction-result-frame" style="height: 520px; border: 3px solid #4a5568; border-radius: 12px; background-color: #1a202c; box-shadow: 0 8px 16px rgba(0,0,0,0.3); display: flex; justify-content: center; align-items: center;">
+                <div style="text-align: center; color: #a0aec0;">
+                    <h3 style="color: #f6ad55; margin-bottom: 20px; font-size: 1.5rem;">📝 暂无批改结果</h3>
+                    <p style="font-size: 1.1rem;">请先上传文件并执行批改</p>
+                </div>
+            </div>
+            '''
+            st.markdown(empty_html, unsafe_allow_html=True)
+    
+    # 文件切换功能 (放在左侧预览区域内)
+    if len(st.session_state.uploaded_files_data) > 1:
             file_options = []
             for i, file_data in enumerate(st.session_state.uploaded_files_data):
                 file_name = file_data['name']
+            category = file_data.get('category', 'other')
+            
+            # 优先使用保存的category信息
+            if category == 'question':
+                label = f"📋 题目: {file_name}"
+            elif category == 'answer':
+                label = f"✏️ 学生作答: {file_name}"
+            elif category == 'marking':
+                label = f"📊 评分标准: {file_name}"
+            else:
+                # 兼容旧记录，通过文件名判断
                 if 'question' in file_name.lower() or '题目' in file_name:
                     label = f"📋 题目: {file_name}"
                 elif 'answer' in file_name.lower() or '答案' in file_name or '作答' in file_name:
@@ -1045,7 +2127,7 @@ def show_result():
                 file_options.append(label)
             
             new_selection = st.selectbox(
-                "快速切换文件:",
+            "🔄 切换文件:",
                 options=range(len(file_options)),
                 format_func=lambda x: file_options[x],
                 index=st.session_state.current_file_index,
@@ -1085,9 +2167,29 @@ def show_history():
         st.metric("处理文件数", total_files)
     with col3:
         if st.button("🗑️ 清空历史"):
-            users[st.session_state.username]['records'] = []
-            save_users(users)
-            st.rerun()
+            if 'confirm_delete' not in st.session_state:
+                st.session_state.confirm_delete = True
+            else:
+                users[st.session_state.username]['records'] = []
+                save_users(users)
+                del st.session_state.confirm_delete
+                st.success('历史记录已清空')
+                st.rerun()
+
+    if 'confirm_delete' in st.session_state and st.session_state.confirm_delete:
+        st.warning("确定要清空所有历史记录吗？此操作无法撤销。")
+        col_confirm, col_cancel = st.columns(2)
+        with col_confirm:
+            if st.button("✅ 是，清空", use_container_width=True):
+                users[st.session_state.username]['records'] = []
+                save_users(users)
+                del st.session_state.confirm_delete
+                st.success("历史记录已清空")
+                st.rerun()
+        with col_cancel:
+            if st.button("❌ 否，取消", use_container_width=True):
+                del st.session_state.confirm_delete
+                st.rerun()
     
     st.markdown("---")
     
@@ -1097,41 +2199,50 @@ def show_history():
             col1, col2 = st.columns([3, 1])
             
             with col1:
-                st.write(f"**文件：** {', '.join(record.get('files', []))}")
+                st.write(f"**文件：** {', '.join(record.get('files', ['无文件信息']))}")
                 settings = record.get('settings', {})
                 st.write(f"**设置：** {settings.get('mode', 'N/A')} | {settings.get('strictness', 'N/A')}")
-                
-                preview = record.get('result', '')[:200]
-                if preview:
-                    st.text_area("结果预览", preview + ("..." if len(record.get('result', '')) > 200 else ""), height=100, disabled=True)
             
             with col2:
-                if st.button("👁️ 查看", key=f"view_{i}"):
+                if st.button("👁️ 查看详情", key=f"view_{i}", use_container_width=True):
+                    # 设置批改结果到session state
                     st.session_state.correction_result = record.get('result', '')
-                    # 尝试重建文件数据用于结果页面展示
-                    file_names = record.get('files', [])
-                    if file_names:
-                        # 构建文件数据 - 注意：历史记录可能没有实际文件路径
+                    
+                    # 重建文件数据用于结果页面展示
+                    file_data = record.get('file_data', [])
+                    if file_data:
+                        # 使用保存的文件路径信息
+                        st.session_state.uploaded_files_data = [
+                            {
+                                'name': f['name'],
+                                'path': f.get('path'),
+                                'type': f.get('type', get_file_type(f['name']))
+                            }
+                            for f in file_data
+                        ]
+                    else:
+                        # 兼容旧记录（没有file_data字段）
+                        file_names = record.get('files', [])
                         st.session_state.uploaded_files_data = [
                             {'name': name, 'path': None, 'type': get_file_type(name)} 
                             for name in file_names
                         ]
-                        st.session_state.correction_settings = record.get('settings', {})
-                        # 重置文件索引到第一个文件
-                        st.session_state.current_file_index = 0
-                        st.session_state.page = "result"
-                    else:
-                        # 如果没有文件信息，回到批改页面
-                        st.session_state.page = "grading"
+                    
+                    st.session_state.correction_settings = record.get('settings', {})
+                    # 重置文件索引到第一个文件
+                    st.session_state.current_file_index = 0
+                    st.session_state.page = "result"
+                    st.rerun()
                     st.rerun()
                 
                 if record.get('result'):
                     st.download_button(
                         "💾 下载",
                         data=record.get('result', ''),
-                        file_name=f"record_{i}.txt",
+                        file_name=f"record_{record['timestamp'].replace(':', '-').replace(' ', '_')}.txt",
                         mime="text/plain",
-                        key=f"download_{i}"
+                        key=f"download_{i}",
+                        use_container_width=True
                     )
 
 # 侧边栏
@@ -1208,6 +2319,49 @@ def show_sidebar():
                 st.success("✅ 系统就绪")
             else:
                 st.warning("⚠️ 演示模式")
+
+    # 侧边栏配置
+    with st.sidebar:
+        st.header("⚙️ 设置")
+        
+        # API状态显示
+        st.subheader("🤖 AI模型")
+        st.info(f"**模型**: {api_config.model}")
+        st.info(f"**提供商**: OpenRouter (Google)")
+        st.success("✅ AI引擎已就绪")
+        
+        st.markdown("---")
+        
+        # 批改严格程度设置
+        st.subheader("📊 批改设置")
+        strictness = st.selectbox(
+            "批改严格程度",
+            options=["宽松", "中等", "严格"],
+            index=1,
+            help="选择AI批改的严格程度"
+        )
+        
+        st.markdown("---")
+        
+        # 使用说明
+        st.subheader("📖 使用说明")
+        st.markdown("""
+        1. **上传文件**：支持图片、PDF、Word、文本等格式
+        2. **选择模式**：根据需要选择批改模式
+        3. **设置严格度**：调整批改的严格程度
+        4. **开始批改**：点击"开始AI批改"按钮
+        5. **查看结果**：在结果页面查看详细批改
+        """)
+        
+        # 技术信息
+        st.markdown("---")
+        st.subheader("🔧 技术信息")
+        st.markdown(f"""
+                        - **AI模型**: Google Gemini 2.5 Flash Lite Preview
+        - **API提供商**: OpenRouter
+        - **支持格式**: 图片、PDF、Word、文本
+        - **最大文件**: 4MB (自动压缩)
+        """)
 
 # 主函数
 def main():
