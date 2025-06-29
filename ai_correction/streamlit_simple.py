@@ -45,10 +45,51 @@ try:
         batch_efficient_correction,
         generate_marking_scheme,
         correction_with_marking_scheme,
-        correction_without_marking_scheme
+        correction_without_marking_scheme,
+        api_config  # 导入API配置
     )
-    API_AVAILABLE = True
-    st.success("✅ AI批改引擎已就绪")
+    
+    # 检查API配置状态
+    api_status = api_config.get_status()
+    if api_config.is_valid():
+        API_AVAILABLE = True
+        st.success(f"✅ AI批改引擎已就绪 ({api_status['api_key_source']})")
+    else:
+        API_AVAILABLE = False
+        st.error("❌ API配置无效")
+        
+        # 显示配置指导
+        with st.expander("🔧 API配置指导", expanded=True):
+            st.markdown("""
+            ### 配置OpenRouter API密钥
+            
+            **方法1：环境变量 (推荐)**
+            ```bash
+            # Windows PowerShell
+            $env:OPENROUTER_API_KEY="your_api_key_here"
+            
+            # Windows CMD
+            set OPENROUTER_API_KEY=your_api_key_here
+            
+            # Linux/Mac
+            export OPENROUTER_API_KEY=your_api_key_here
+            ```
+            
+            **方法2：.env文件**
+            1. 复制 `config_template.env` 为 `.env`
+            2. 编辑 `.env` 文件，填入您的API密钥
+            3. 重启应用程序
+            
+            **获取API密钥：**
+            1. 访问 [OpenRouter](https://openrouter.ai)
+            2. 注册账户并登录
+            3. 前往 [API Keys](https://openrouter.ai/keys)
+            4. 生成新的API密钥
+            5. 复制密钥并按上述方法配置
+            """)
+            
+            st.info(f"**当前状态：** {json.dumps(api_status, ensure_ascii=False, indent=2)}")
+            
 except ImportError as e:
     API_AVAILABLE = False
     st.warning(f"⚠️ AI批改引擎未就绪：{str(e)}")
@@ -826,8 +867,25 @@ def show_grading():
     if answer_files:  # 至少需要有学生答案文件
         if st.button("🚀 开始AI批改", use_container_width=True, type="primary"):
             # 检查API状态
-            if not api_config.api_key:
-                st.error("❌ AI引擎配置错误，请联系管理员")
+            if not API_AVAILABLE or not api_config.is_valid():
+                st.error("❌ API配置无效，请先配置API密钥")
+                
+                # 显示配置指导
+                with st.expander("🔧 如何配置API", expanded=True):
+                    st.markdown("""
+                    ### 快速配置步骤：
+                    
+                    1. **获取API密钥**：访问 [OpenRouter](https://openrouter.ai/keys)
+                    2. **设置环境变量**：
+                       ```bash
+                       # Windows PowerShell
+                       $env:OPENROUTER_API_KEY="your_api_key_here"
+                       ```
+                    3. **重启应用**：重新运行程序
+                    
+                    **当前状态：**
+                    """)
+                    st.json(api_config.get_status())
                 return
             
             # 立即保存文件信息并跳转到结果页面

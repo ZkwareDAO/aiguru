@@ -50,13 +50,37 @@ logger = logging.getLogger(__name__)
 @dataclass
 class APIConfig:
     """API配置类"""
-    api_key: str = "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"
+    api_key: str = ""
     base_url: str = "https://openrouter.ai/api/v1"
     model: str = "google/gemini-2.5-flash-lite-preview-06-17"
     max_tokens: int = 4096
     temperature: float = 0.7
     max_retries: int = 3
     retry_delay: float = 1.0
+    
+    def __post_init__(self):
+        """初始化后处理，从环境变量或默认值设置API密钥"""
+        # 优先级：环境变量 > 硬编码值
+        env_key = os.getenv('OPENROUTER_API_KEY') or os.getenv('OPENAI_API_KEY')
+        if env_key:
+            self.api_key = env_key
+        elif not self.api_key:
+            # 使用新的OpenRouter API密钥
+            self.api_key = "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"
+    
+    def is_valid(self) -> bool:
+        """检查API配置是否有效"""
+        return bool(self.api_key and self.api_key.startswith(('sk-', 'or-')))
+    
+    def get_status(self) -> dict:
+        """获取配置状态信息"""
+        return {
+            "api_key_configured": bool(self.api_key),
+            "api_key_source": "environment" if os.getenv('OPENROUTER_API_KEY') or os.getenv('OPENAI_API_KEY') else "default",
+            "base_url": self.base_url,
+            "model": self.model,
+            "is_valid": self.is_valid()
+        }
 
 # 全局配置实例
 api_config = APIConfig()
@@ -570,61 +594,94 @@ def call_tongyiqianwen_api(input_text: str, *input_contents, system_message: str
     """
     from openai import OpenAI
     
-    client = OpenAI(
-        api_key=api_config.api_key,
-        base_url=api_config.base_url
-    )
+    # 检查API配置
+    if not api_config.is_valid():
+        error_msg = """
+🚫 API配置错误
+
+可能的解决方案：
+1. 设置环境变量：
+   - OPENROUTER_API_KEY=your_api_key
+   - 或 OPENAI_API_KEY=your_api_key
+
+2. 检查API密钥格式：
+   - OpenRouter密钥应以 'sk-or-' 开头
+   - OpenAI密钥应以 'sk-' 开头
+
+3. 确认密钥有效性：
+   - 登录 https://openrouter.ai 检查密钥状态
+   - 确认账户有足够的余额
+
+当前配置状态：
+""" + json.dumps(api_config.get_status(), ensure_ascii=False, indent=2)
+        logger.error("API配置无效")
+        return error_msg
+    
+    try:
+        client = OpenAI(
+            api_key=api_config.api_key,
+            base_url=api_config.base_url
+        )
+    except Exception as e:
+        error_msg = f"❌ OpenAI客户端初始化失败: {str(e)}"
+        logger.error(error_msg)
+        return error_msg
     
     content = [{"type": "text", "text": input_text}]
     
     # 处理文件
-    for single_content in input_contents:
-        if (
-            isinstance(single_content, tuple) and 
-            len(single_content) == 2 and 
-            all(isinstance(item, str) for item in single_content)
-        ):
-            content.append({
-                "type": "image_url",
-                "image_url": {
-                    "url": f"data:image/{single_content[0]};base64,{single_content[1]}"
-                }
-            })   
-        
-        elif os.path.isfile(single_content):
-            content_type, processed_content = process_file_content(single_content)            
-            if content_type == 'text':
-                content.append({
-                    "type": "text",
-                    "text": processed_content
-                })
-            elif content_type == 'image':
-                # 普通图像文件
-                base_64_image = img_to_base64(single_content)
+    try:
+        for single_content in input_contents:
+            if (
+                isinstance(single_content, tuple) and 
+                len(single_content) == 2 and 
+                all(isinstance(item, str) for item in single_content)
+            ):
                 content.append({
                     "type": "image_url",
                     "image_url": {
-                        "url": f"data:image/jpeg;base64,{base_64_image}"
+                        "url": f"data:image/{single_content[0]};base64,{single_content[1]}"
                     }
-                })    
-            # 检查是否是PDF文件
-            elif content_type == 'pdf':
-                # PDF文件作为图像处理
-                base_64_images = pdf_pages_to_base64_images(single_content)
-                for base_64_image in base_64_images:
+                })   
+            
+            elif os.path.isfile(single_content):
+                content_type, processed_content = process_file_content(single_content)            
+                if content_type == 'text':
+                    content.append({
+                        "type": "text",
+                        "text": processed_content
+                    })
+                elif content_type == 'image':
+                    # 普通图像文件
+                    base_64_image = img_to_base64(single_content)
                     content.append({
                         "type": "image_url",
                         "image_url": {
-                            "url": f"data:image/png;base64,{base_64_image}"
+                            "url": f"data:image/jpeg;base64,{base_64_image}"
                         }
-                    })
+                    })    
+                # 检查是否是PDF文件
+                elif content_type == 'pdf':
+                    # PDF文件作为图像处理
+                    base_64_images = pdf_pages_to_base64_images(single_content)
+                    for base_64_image in base_64_images:
+                        content.append({
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/png;base64,{base_64_image}"
+                            }
+                        })
+                else:
+                    raise ValueError(f"The file {single_content} could not be processed.")
             else:
-                raise ValueError(f"The file {single_content} could not be processed.")
-        else:
-            content.append({
-                "type": "text",
-                "text": single_content
-            })
+                content.append({
+                    "type": "text",
+                    "text": single_content
+                })
+    except Exception as e:
+        error_msg = f"❌ 文件处理失败: {str(e)}"
+        logger.error(error_msg)
+        return error_msg
 
     # 调用API，带重试机制
     for attempt in range(api_config.max_retries):
@@ -653,7 +710,7 @@ def call_tongyiqianwen_api(input_text: str, *input_contents, system_message: str
                     time.sleep(api_config.retry_delay)
                     continue
                 else:
-                    fallback_msg = "API返回了空结果。可能的原因：文件内容无法识别或API服务暂时不可用。"
+                    fallback_msg = "❌ API返回了空结果。可能的原因：文件内容无法识别或API服务暂时不可用。"
                     logger.error("所有重试都失败，返回fallback消息")
                     return fallback_msg
             
@@ -661,12 +718,75 @@ def call_tongyiqianwen_api(input_text: str, *input_contents, system_message: str
             return result
         
         except Exception as e:
-            logger.error(f"API调用失败 (尝试 {attempt + 1}): {str(e)}")
+            error_str = str(e)
+            logger.error(f"API调用失败 (尝试 {attempt + 1}): {error_str}")
+            
+            # 特殊错误处理
+            if "401" in error_str or "Unauthorized" in error_str:
+                auth_error_msg = f"""
+❌ 认证失败 (401 Unauthorized)
+
+问题分析：
+- API密钥无效或已过期
+- 密钥格式错误
+- 账户余额不足
+
+解决方案：
+1. 检查API密钥：
+   - 当前使用的密钥来源：{api_config.get_status()['api_key_source']}
+   - 密钥前缀：{api_config.api_key[:10]}...
+
+2. 更新API密钥：
+   - 访问 https://openrouter.ai/keys
+   - 生成新的API密钥
+   - 设置环境变量：OPENROUTER_API_KEY=your_new_key
+
+3. 检查账户状态：
+   - 登录 https://openrouter.ai
+   - 查看账户余额和使用情况
+
+原始错误：{error_str}
+"""
+                logger.error("认证失败")
+                return auth_error_msg
+            
+            elif "429" in error_str or "rate_limit" in error_str.lower():
+                rate_limit_msg = f"❌ API调用频率限制，请稍后重试。错误：{error_str}"
+                if attempt < api_config.max_retries - 1:
+                    wait_time = api_config.retry_delay * (2 ** attempt)  # 指数退避
+                    logger.info(f"遇到频率限制，等待 {wait_time} 秒后重试")
+                    time.sleep(wait_time)
+                    continue
+                else:
+                    return rate_limit_msg
+            
+            elif "500" in error_str or "502" in error_str or "503" in error_str:
+                server_error_msg = f"❌ 服务器错误，请稍后重试。错误：{error_str}"
+                if attempt < api_config.max_retries - 1:
+                    time.sleep(api_config.retry_delay * (attempt + 1))
+                    continue
+                else:
+                    return server_error_msg
+            
+            # 其他错误
             if attempt < api_config.max_retries - 1:
                 time.sleep(api_config.retry_delay * (attempt + 1))  # 指数退避
                 continue
             else:
-                error_msg = f"API调用失败 (所有重试已耗尽): {str(e)}"
+                error_msg = f"""
+❌ API调用失败 (所有重试已耗尽)
+
+错误详情：{error_str}
+
+可能的解决方案：
+1. 检查网络连接
+2. 验证API密钥有效性
+3. 确认账户余额充足
+4. 稍后重试
+
+配置信息：
+{json.dumps(api_config.get_status(), ensure_ascii=False, indent=2)}
+"""
                 logger.error(error_msg)
                 return error_msg
 
@@ -1061,13 +1181,7 @@ def get_api_status() -> Dict[str, Any]:
     API状态信息
     """
     return {
-        "api_config": {
-            "base_url": api_config.base_url,
-            "model": api_config.model,
-            "max_tokens": api_config.max_tokens,
-            "temperature": api_config.temperature,
-            "max_retries": api_config.max_retries
-        },
+        "api_config": api_config.get_status(),
         "status": "ready",
         "timestamp": time.time()
     }
