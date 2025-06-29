@@ -864,6 +864,69 @@
         },
         "result": "📋 **批改结果**\n**得分：18/20** | **等级：A**\n\n🔍 **关键问题**\n• 未作答部分题目。\n• 电子排布与化学键解释可更深入。\n\n✅ **亮点**\n• 对碳同素异形体理解透彻。\n• 准确绘制电子排布图。\n\n💡 **改进建议**\n• 答题需全面，不留空白。\n• 深入理解化学键和晶体结构。",
         "files_count": 1
+      },
+      {
+        "timestamp": "2025-06-29 11:50:31",
+        "files": [
+          "[答案]Topic1_SQ.pdf"
+        ],
+        "file_data": [
+          {
+            "name": "Topic1_SQ.pdf",
+            "path": "uploads\\test_user_2\\20250629_115029_Topic1_SQ.pdf",
+            "type": "pdf",
+            "category": "answer",
+            "display_name": "[答案]Topic1_SQ.pdf"
+          }
+        ],
+        "settings": {
+          "strictness": "中等",
+          "mode": "efficient"
+        },
+        "result": "\n❌ 认证失败 (401 Unauthorized)\n\n问题分析：\n- API密钥无效或已过期\n- 密钥格式错误\n- 账户余额不足\n\n解决方案：\n1. 检查API密钥：\n   - 当前使用的密钥来源：default\n   - 密钥前缀：sk-or-v1-9...\n\n2. 更新API密钥：\n   - 访问 https://openrouter.ai/keys\n   - 生成新的API密钥\n   - 设置环境变量：OPENROUTER_API_KEY=your_new_key\n\n3. 检查账户状态：\n   - 登录 https://openrouter.ai\n   - 查看账户余额和使用情况\n\n原始错误：Error code: 401 - {'error': {'message': 'No auth credentials found', 'code': 401}}\n",
+        "files_count": 1
+      },
+      {
+        "timestamp": "2025-06-29 11:50:46",
+        "files": [
+          "[答案]Topic1_SQ.pdf"
+        ],
+        "file_data": [
+          {
+            "name": "Topic1_SQ.pdf",
+            "path": "uploads\\test_user_2\\20250629_115043_Topic1_SQ.pdf",
+            "type": "pdf",
+            "category": "answer",
+            "display_name": "[答案]Topic1_SQ.pdf"
+          }
+        ],
+        "settings": {
+          "strictness": "中等",
+          "mode": "efficient"
+        },
+        "result": "\n❌ 认证失败 (401 Unauthorized)\n\n问题分析：\n- API密钥无效或已过期\n- 密钥格式错误\n- 账户余额不足\n\n解决方案：\n1. 检查API密钥：\n   - 当前使用的密钥来源：default\n   - 密钥前缀：sk-or-v1-9...\n\n2. 更新API密钥：\n   - 访问 https://openrouter.ai/keys\n   - 生成新的API密钥\n   - 设置环境变量：OPENROUTER_API_KEY=your_new_key\n\n3. 检查账户状态：\n   - 登录 https://openrouter.ai\n   - 查看账户余额和使用情况\n\n原始错误：Error code: 401 - {'error': {'message': 'No auth credentials found', 'code': 401}}\n",
+        "files_count": 1
+      },
+      {
+        "timestamp": "2025-06-29 17:10:18",
+        "files": [
+          "[答案]Topic1_SQ.pdf"
+        ],
+        "file_data": [
+          {
+            "name": "Topic1_SQ.pdf",
+            "path": "uploads\\test_user_2\\20250629_171010_Topic1_SQ.pdf",
+            "type": "pdf",
+            "category": "answer",
+            "display_name": "[答案]Topic1_SQ.pdf"
+          }
+        ],
+        "settings": {
+          "strictness": "中等",
+          "mode": "efficient"
+        },
+        "result": "📋 **批改结果**\n**得分：4/5** | **等级：A**\n\n🔍 **关键问题**\n• CE02_06a(i)气密性检查描述不准确。\n\n✅ **亮点**\n• CE02_06a(i)装置图绘制正确。\n• CE02_06a(ii)现象和方程式准确。\n\n💡 **改进建议**\n• 加强实验操作细节的理解和表述。\n• 继续保持优良的作答习惯。",
+        "files_count": 1
       }
     ]
   },

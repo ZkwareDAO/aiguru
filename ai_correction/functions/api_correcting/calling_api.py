@@ -59,14 +59,34 @@ class APIConfig:
     retry_delay: float = 1.0
     
     def __post_init__(self):
-        """初始化后处理，从环境变量或默认值设置API密钥"""
-        # 优先级：环境变量 > 硬编码值
+        """初始化后处理，从环境变量、.env文件或默认值设置API密钥"""
+        # 优先级：环境变量 > .env文件 > 硬编码值
+        
+        # 1. 首先检查环境变量
         env_key = os.getenv('OPENROUTER_API_KEY') or os.getenv('OPENAI_API_KEY')
         if env_key:
             self.api_key = env_key
-        elif not self.api_key:
-            # 使用新的OpenRouter API密钥
-            self.api_key = "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"
+            return
+        
+        # 2. 然后检查.env文件
+        env_file_path = Path('.env')
+        if env_file_path.exists():
+            try:
+                with open(env_file_path, 'r', encoding='utf-8') as f:
+                    for line in f:
+                        line = line.strip()
+                        if line and not line.startswith('#') and '=' in line:
+                            key, value = line.split('=', 1)
+                            if key.strip() == 'OPENROUTER_API_KEY' and value.strip():
+                                self.api_key = value.strip()
+                                return
+            except Exception as e:
+                logger.warning(f"读取.env文件失败: {e}")
+        
+        # 3. 最后使用硬编码值（不推荐用于生产环境）
+        if not self.api_key:
+            # 使用新的OpenRouter API密钥 - 请替换为您的密钥
+            self.api_key = "请在此处输入您的新API密钥"
     
     def is_valid(self) -> bool:
         """检查API配置是否有效"""
@@ -74,9 +94,27 @@ class APIConfig:
     
     def get_status(self) -> dict:
         """获取配置状态信息"""
+        # 确定API密钥来源
+        api_key_source = "default"
+        if os.getenv('OPENROUTER_API_KEY') or os.getenv('OPENAI_API_KEY'):
+            api_key_source = "environment"
+        elif Path('.env').exists():
+            # 检查.env文件中是否有有效的API密钥
+            try:
+                with open('.env', 'r', encoding='utf-8') as f:
+                    for line in f:
+                        line = line.strip()
+                        if line and not line.startswith('#') and '=' in line:
+                            key, value = line.split('=', 1)
+                            if key.strip() == 'OPENROUTER_API_KEY' and value.strip() and value.strip() != 'your_api_key_here':
+                                api_key_source = ".env file"
+                                break
+            except:
+                pass
+        
         return {
-            "api_key_configured": bool(self.api_key),
-            "api_key_source": "environment" if os.getenv('OPENROUTER_API_KEY') or os.getenv('OPENAI_API_KEY') else "default",
+            "api_key_configured": bool(self.api_key and self.api_key != "请在此处输入您的新API密钥"),
+            "api_key_source": api_key_source,
             "base_url": self.base_url,
             "model": self.model,
             "is_valid": self.is_valid()
