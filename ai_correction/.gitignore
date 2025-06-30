@@ -89,3 +89,4 @@ temp_*.py
 *.db
 *.sqlite
 *.sqlite3
+user_data.json 

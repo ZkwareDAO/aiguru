@@ -15,11 +15,18 @@ import time
 import re
 import base64
 import html
-from functions.api_correcting.calling_api import (
+from functions.api_correcting import (
     intelligent_correction_with_files, 
     img_to_base64,
-    api_config  # 导入API配置
+    api_config,  # 导入API配置
+    call_tongyiqianwen_api,  # 导入API调用函数
+    batch_correction_with_standard,  # 添加批改函数
+    batch_correction_without_standard,  # 添加批改函数
+    simplified_batch_correction  # 添加简化批改函数
 )
+# 修复版批改函数已通过 functions.api_correcting 导入
+FIXED_API_AVAILABLE = True
+print("✅ 使用修复版API调用模块")
 import logging
 import io
 from PIL import Image
@@ -37,16 +44,15 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 导入API函数
+# 导入额外API函数
 try:
-    from functions.api_correcting.calling_api import (
+    from functions.api_correcting import (
         correction_single_group,
         efficient_correction_single,
         batch_efficient_correction,
         generate_marking_scheme,
         correction_with_marking_scheme,
-        correction_without_marking_scheme,
-        api_config  # 导入API配置
+        correction_without_marking_scheme
     )
     
     # 检查API配置状态
@@ -476,6 +482,29 @@ def get_file_type(file_name):
     else:
         return 'unknown'
 
+def safe_download_data(data):
+    """
+    安全转换下载数据为字符串格式，防止Streamlit下载按钮错误
+    
+    Args:
+        data: 任意类型的数据
+        
+    Returns:
+        str: 字符串格式的数据
+    """
+    if isinstance(data, dict):
+        # 如果是字典格式的批改结果
+        if data.get('has_separate_scheme', False):
+            marking_scheme = data.get('marking_scheme', '')
+            correction_content = data.get('correction_result', '')
+            return f"=== 评分标准 ===\n\n{marking_scheme}\n\n=== 批改结果 ===\n\n{correction_content}"
+        else:
+            return str(data.get('correction_result', data))
+    elif data is None:
+        return ""
+    else:
+        return str(data)
+
 def get_image_base64(image_path, max_size_mb=4):
     """将图片转换为base64编码，如果超过限制则压缩"""
     try:
@@ -641,16 +670,37 @@ def save_users(data):
     except Exception as e:
         st.error(f"保存失败: {e}")
 
-def save_files(files, username):
+def save_files(files, username, file_category=None):
+    """
+    保存文件并根据类别添加前缀
+    
+    Args:
+        files: 上传的文件列表
+        username: 用户名
+        file_category: 文件类别 ('question', 'answer', 'marking')
+    """
     user_dir = UPLOAD_DIR / username
     user_dir.mkdir(exist_ok=True)
+    
+    # 定义文件类别前缀
+    category_prefixes = {
+        'question': 'QUESTION_',
+        'answer': 'ANSWER_', 
+        'marking': 'MARKING_'
+    }
     
     saved_paths = []
     for file in files:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         file_ext = Path(file.name).suffix
         safe_name = re.sub(r'[^\w\-_.]', '_', Path(file.name).stem)
-        filename = f"{timestamp}_{safe_name}{file_ext}"
+        
+        # 根据文件类别添加前缀
+        if file_category and file_category in category_prefixes:
+            prefix = category_prefixes[file_category]
+            filename = f"{prefix}{timestamp}_{safe_name}{file_ext}"
+        else:
+            filename = f"{timestamp}_{safe_name}{file_ext}"
         
         file_path = user_dir / filename
         with open(file_path, "wb") as f:
@@ -796,44 +846,82 @@ def show_grading():
     # 分类文件上传区域
     st.markdown("### 📤 文件上传")
     
+    # 智能分类系统说明
+    with st.expander("🤖 智能文件分类说明", expanded=False):
+        st.markdown("""
+        ### 🆕 自动文件分类系统
+        
+        为了提高AI批改的准确性，系统现在会自动为上传的文件添加类别前缀：
+        
+        - **📋 题目文件** → `QUESTION_前缀`：让AI准确识别题目内容
+        - **✏️ 学生答案** → `ANSWER_前缀`：让AI专注于学生的解题过程  
+        - **📊 批改标准** → `MARKING_前缀`：让AI准确识别评分标准
+        
+        **优势**：
+        - 🎯 **精确分类**：100%准确的文件类型识别
+        - ⚡ **快速处理**：无需内容分析即可分类
+        - 🛡️ **错误防护**：杜绝文件类型混淆
+        - 🤖 **智能批改**：AI能更准确地理解每个文件的作用
+        
+        您只需要按原来的方式上传文件，系统会自动处理文件命名！
+        """)
+    
     # 使用三列布局
     col1, col2, col3 = st.columns(3)
     
     with col1:
         st.markdown("**📋 题目文件**")
+        st.caption("🤖 系统会自动将文件名改为 QUESTION_前缀")
         question_files = st.file_uploader(
             "上传题目",
             type=ALLOWED_EXTENSIONS,
             accept_multiple_files=True,
-            help="上传题目文件（可选）",
+            help="上传题目文件（可选）- 系统将自动添加QUESTION_前缀",
             key="question_upload"
         )
         if question_files:
             st.success(f"✅ {len(question_files)} 个题目文件")
+            with st.expander("📝 文件预览"):
+                for f in question_files:
+                    st.text(f"原文件名: {f.name}")
+                    st.text(f"保存为: QUESTION_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{f.name}")
+                    st.divider()
     
     with col2:
         st.markdown("**✏️ 学生作答**")
+        st.caption("🤖 系统会自动将文件名改为 ANSWER_前缀")
         answer_files = st.file_uploader(
             "上传学生答案",
             type=ALLOWED_EXTENSIONS,
             accept_multiple_files=True,
-            help="上传学生作答文件（必填）",
+            help="上传学生作答文件（必填）- 系统将自动添加ANSWER_前缀",
             key="answer_upload"
         )
         if answer_files:
             st.success(f"✅ {len(answer_files)} 个答案文件")
+            with st.expander("📝 文件预览"):
+                for f in answer_files:
+                    st.text(f"原文件名: {f.name}")
+                    st.text(f"保存为: ANSWER_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{f.name}")
+                    st.divider()
     
     with col3:
         st.markdown("**📊 批改标准**")
+        st.caption("🤖 系统会自动将文件名改为 MARKING_前缀")
         marking_files = st.file_uploader(
             "上传评分标准",
             type=ALLOWED_EXTENSIONS,
             accept_multiple_files=True,
-            help="上传评分标准文件（可选）",
+            help="上传评分标准文件（可选）- 系统将自动添加MARKING_前缀",
             key="marking_upload"
         )
         if marking_files:
             st.success(f"✅ {len(marking_files)} 个标准文件")
+            with st.expander("📝 文件预览"):
+                for f in marking_files:
+                    st.text(f"原文件名: {f.name}")
+                    st.text(f"保存为: MARKING_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{f.name}")
+                    st.divider()
     
     # 合并所有文件
     all_uploaded_files = []
@@ -851,17 +939,14 @@ def show_grading():
         strictness = st.selectbox("严格程度", ["宽松", "中等", "严格"], index=1)
     
     with col2:
-        mode = st.selectbox(
-            "批改模式",
-            [
-                ("🎯 高效模式", "efficient"),
-                ("📝 详细模式", "detailed"),
-                ("🚀 批量模式", "batch"),
-                ("📋 生成标准", "generate_scheme"),
-                ("🤖 自动批改", "auto")
-            ],
-            format_func=lambda x: x[0]
-        )[1]
+        # 简化为两种模式
+        has_marking_scheme = st.checkbox("已有批改标准", value=bool(marking_files))
+        
+    # 根据是否有批改标准，显示不同的提示
+    if has_marking_scheme:
+        st.info("✅ 使用批改标准模式：系统将根据您提供的批改标准进行批改")
+    else:
+        st.info("🤖 自动生成批改标准模式：系统将先生成批改标准，然后进行批改")
     
     # 批改按钮
     if answer_files:  # 至少需要有学生答案文件
@@ -888,10 +973,10 @@ def show_grading():
                     st.json(api_config.get_status())
                 return
             
-            # 立即保存文件信息并跳转到结果页面
-            saved_question_files = save_files(question_files or [], st.session_state.username) if question_files else []
-            saved_answer_files = save_files(answer_files, st.session_state.username)
-            saved_marking_files = save_files(marking_files or [], st.session_state.username) if marking_files else []
+            # 立即保存文件信息并跳转到结果页面，带上文件类别标识
+            saved_question_files = save_files(question_files or [], st.session_state.username, 'question') if question_files else []
+            saved_answer_files = save_files(answer_files, st.session_state.username, 'answer')
+            saved_marking_files = save_files(marking_files or [], st.session_state.username, 'marking') if marking_files else []
                     
             # 保存文件数据到session state
             all_file_info = []
@@ -927,7 +1012,7 @@ def show_grading():
             ]
             st.session_state.correction_settings = {
                 'strictness': strictness, 
-                'mode': mode
+                'has_marking_scheme': has_marking_scheme
             }
             st.session_state.current_file_index = 0
             
@@ -951,7 +1036,7 @@ def show_grading():
 
 # 新的简化结果页面
 def show_result():
-    """使用iframe实现完全隔离的滚动区域"""
+    """使用iframe实现完全隔离的滚动区域，支持评分标准和批改结果的切换显示"""
     
     if not st.session_state.logged_in:
         st.warning("请先登录")
@@ -997,14 +1082,20 @@ def show_result():
                 task = st.session_state.correction_task
                 settings = st.session_state.correction_settings
                 
-                # 调用AI批改
-                from functions.api_correcting.calling_api import intelligent_correction_with_files
-                result = intelligent_correction_with_files(
-                    question_files=task['question_files'],
-                    answer_files=task['answer_files'],
+                # 调用AI批改 - 使用新的简化API
+                if settings.get('has_marking_scheme') and task['marking_files']:
+                    # 有批改标准模式
+                    result = batch_correction_with_standard(
                     marking_scheme_files=task['marking_files'],
-                    strictness_level=settings['strictness'],
-                    mode=settings['mode']
+                        student_answer_files=task['answer_files'],
+                        strictness_level=settings['strictness']
+                    )
+                else:
+                    # 无批改标准模式
+                    result = batch_correction_without_standard(
+                        question_files=task['question_files'],
+                        student_answer_files=task['answer_files'],
+                        strictness_level=settings['strictness']
                 )
                 
                 # 保存记录
@@ -1046,14 +1137,32 @@ def show_result():
             st.rerun()
         return
     
-    # 获取文件数据
+    # 获取文件数据和批改结果
     files_data = st.session_state.get('uploaded_files_data', [])
     current_index = st.session_state.get('current_file_index', 0)
+    correction_result = st.session_state.get('correction_result')
     
     # 确保索引在有效范围内
     if current_index >= len(files_data):
         st.session_state.current_file_index = 0
         current_index = 0
+    
+    # 处理新的返回格式（字典格式）
+    has_separate_scheme = False
+    marking_scheme = None
+    correction_content = correction_result
+    
+    if isinstance(correction_result, dict):
+        has_separate_scheme = correction_result.get('has_separate_scheme', False)
+        if has_separate_scheme:
+            marking_scheme = correction_result.get('marking_scheme', '')
+            correction_content = correction_result.get('correction_result', '')
+        else:
+            correction_content = correction_result.get('correction_result', str(correction_result))
+    elif isinstance(correction_result, str):
+        correction_content = correction_result
+    else:
+        correction_content = str(correction_result)
     
     # 创建两列布局
     col_left, col_right = st.columns(2)
@@ -1086,9 +1195,38 @@ def show_result():
                     st.session_state.current_file_index = new_index
                     st.rerun()
     
-    # 右侧：批改结果
+    # 右侧：批改结果（支持切换显示）
     with col_right:
-        st.markdown("### 📝 批改结果")
+        # 如果有分离的评分标准，显示切换选项
+        if has_separate_scheme and marking_scheme:
+            st.markdown("### 📝 批改内容")
+            
+            # 初始化显示模式
+            if 'result_display_mode' not in st.session_state:
+                st.session_state.result_display_mode = 'correction'
+            
+            # 切换按钮
+            col_r1, col_r2 = st.columns(2)
+            with col_r1:
+                if st.button("📊 批改结果", use_container_width=True, 
+                           type="primary" if st.session_state.result_display_mode == 'correction' else "secondary"):
+                    st.session_state.result_display_mode = 'correction'
+                    st.rerun()
+            
+            with col_r2:
+                if st.button("📋 评分标准", use_container_width=True,
+                           type="primary" if st.session_state.result_display_mode == 'scheme' else "secondary"):
+                    st.session_state.result_display_mode = 'scheme'
+                    st.rerun()
+            
+            # 根据选择显示内容
+            display_content = marking_scheme if st.session_state.result_display_mode == 'scheme' else correction_content
+            content_title = "评分标准" if st.session_state.result_display_mode == 'scheme' else "批改结果"
+            
+        else:
+            st.markdown("### 📝 批改结果")
+            display_content = correction_content
+            content_title = "批改结果"
         
         # 创建结果HTML
         result_html = f"""
@@ -1130,33 +1268,51 @@ def show_result():
             </style>
         </head>
         <body>
-            <pre>{html.escape(st.session_state.correction_result)}</pre>
+            <pre>{html.escape(str(display_content))}</pre>
         </body>
         </html>
         """
         
         # 使用components.html显示
-        st.components.v1.html(result_html, height=520, scrolling=True)
+        st.components.v1.html(result_html, height=480, scrolling=True)
     
     # 操作按钮
     st.markdown("---")
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
     
     with col1:
+        # 下载批改结果
+        download_content = correction_content
+        if has_separate_scheme and marking_scheme:
+            download_content = f"=== 评分标准 ===\n\n{marking_scheme}\n\n=== 批改结果 ===\n\n{correction_content}"
+        
         st.download_button(
             "📥 下载结果",
-            st.session_state.correction_result,
+            str(download_content),
             file_name="correction_result.txt",
             mime="text/plain",
             use_container_width=True
         )
     
     with col2:
+        # 单独下载评分标准（如果有）
+        if has_separate_scheme and marking_scheme:
+            st.download_button(
+                "📋 下载标准",
+                str(marking_scheme),
+                file_name="marking_scheme.txt",
+                mime="text/plain",
+                use_container_width=True
+            )
+        else:
+            st.write("")  # 占位
+    
+    with col3:
         if st.button("🔄 重新批改", use_container_width=True):
             st.session_state.page = "grading"
             st.rerun()
     
-    with col3:
+    with col4:
         if st.button("📚 查看历史", use_container_width=True):
             st.session_state.page = "history"
             st.rerun()
@@ -1336,14 +1492,20 @@ def show_result_original():
                 task = st.session_state.correction_task
                 settings = st.session_state.correction_settings
                 
-                # 调用AI批改
-                from functions.api_correcting.calling_api import intelligent_correction_with_files
-                result = intelligent_correction_with_files(
-                    question_files=task['question_files'],
-                    answer_files=task['answer_files'],
+                # 调用AI批改 - 使用新的简化API
+                if settings.get('has_marking_scheme') and task['marking_files']:
+                    # 有批改标准模式
+                    result = batch_correction_with_standard(
                     marking_scheme_files=task['marking_files'],
-                    strictness_level=settings['strictness'],
-                    mode=settings['mode']
+                        student_answer_files=task['answer_files'],
+                        strictness_level=settings['strictness']
+                    )
+                else:
+                    # 无批改标准模式
+                    result = batch_correction_without_standard(
+                        question_files=task['question_files'],
+                        student_answer_files=task['answer_files'],
+                        strictness_level=settings['strictness']
                 )
                 
                 # 保存记录
@@ -1389,7 +1551,8 @@ def show_result_original():
     
     with col1:
         settings = st.session_state.correction_settings
-        st.markdown(f"**设置：** {settings.get('mode', 'N/A')} | {settings.get('strictness', 'N/A')}")
+        mode_text = "有批改标准" if settings.get('has_marking_scheme') else "自动生成标准"
+        st.markdown(f"**设置：** {mode_text} | {settings.get('strictness', 'N/A')}")
     
     with col2:
         if st.button("🔄 重新批改"):
@@ -1398,8 +1561,20 @@ def show_result_original():
     
     with col3:
         filename = f"correction_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+        # 处理下载数据，确保是字符串格式
+        result_data = st.session_state.correction_result
+        if isinstance(result_data, dict):
+            if result_data.get('has_separate_scheme', False):
+                marking_scheme = result_data.get('marking_scheme', '')
+                correction_content = result_data.get('correction_result', '')
+                download_content = f"=== 评分标准 ===\n\n{marking_scheme}\n\n=== 批改结果 ===\n\n{correction_content}"
+            else:
+                download_content = str(result_data.get('correction_result', result_data))
+        else:
+            download_content = str(result_data)
+        
         st.download_button("💾 下载结果", 
-                         data=st.session_state.correction_result, 
+                         data=download_content, 
                          file_name=filename, 
                          mime="text/plain")
     
@@ -2259,7 +2434,8 @@ def show_history():
             with col1:
                 st.write(f"**文件：** {', '.join(record.get('files', ['无文件信息']))}")
                 settings = record.get('settings', {})
-                st.write(f"**设置：** {settings.get('mode', 'N/A')} | {settings.get('strictness', 'N/A')}")
+                mode_text = "有批改标准" if settings.get('has_marking_scheme') else "自动生成标准"
+                st.write(f"**设置：** {mode_text} | {settings.get('strictness', 'N/A')}")
             
             with col2:
                 if st.button("👁️ 查看详情", key=f"view_{i}", use_container_width=True):
@@ -2294,9 +2470,22 @@ def show_history():
                     st.rerun()
                 
                 if record.get('result'):
+                    # 处理结果数据，确保是字符串格式
+                    result_data = record.get('result', '')
+                    if isinstance(result_data, dict):
+                        # 如果是字典格式，转换为字符串
+                        if result_data.get('has_separate_scheme', False):
+                            marking_scheme = result_data.get('marking_scheme', '')
+                            correction_content = result_data.get('correction_result', '')
+                            download_content = f"=== 评分标准 ===\n\n{marking_scheme}\n\n=== 批改结果 ===\n\n{correction_content}"
+                        else:
+                            download_content = str(result_data.get('correction_result', result_data))
+                    else:
+                        download_content = str(result_data)
+                    
                     st.download_button(
                         "💾 下载",
-                        data=record.get('result', ''),
+                        data=download_content,
                         file_name=f"record_{record['timestamp'].replace(':', '-').replace(' ', '_')}.txt",
                         mime="text/plain",
                         key=f"download_{i}",
@@ -2365,7 +2554,7 @@ def show_sidebar():
             st.markdown("### 💡 功能特色")
             st.markdown("""
             - 🎯 智能批改
-            - 📊 多种模式
+            - 📊 两种模式（有标准/无标准）
             - 📚 历史管理
             - 💾 结果导出
             """)
@@ -2405,7 +2594,7 @@ def show_sidebar():
         st.subheader("📖 使用说明")
         st.markdown("""
         1. **上传文件**：支持图片、PDF、Word、文本等格式
-        2. **选择模式**：根据需要选择批改模式
+        2. **选择批改方式**：有批改标准或自动生成标准
         3. **设置严格度**：调整批改的严格程度
         4. **开始批改**：点击"开始AI批改"按钮
         5. **查看结果**：在结果页面查看详细批改

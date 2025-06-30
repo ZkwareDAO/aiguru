@@ -17,7 +17,7 @@ status = get_api_status()
 
 # 更新配置
 new_config = {
-    "max_tokens": 3000,
+    "max_tokens": 50000,  # 支持更长的输入输出
     "temperature": 0.8,
     "max_retries": 5
 }
@@ -227,8 +227,8 @@ print(f"成功处理: {batch_result.data['success_count']}/{batch_result.data['t
 ### 生产环境配置
 ```python
 production_config = {
-    "max_tokens": 4096,
-    "temperature": 0.3,  # 更稳定的输出
+    "max_tokens": 50000,  # 支持复杂的长篇批改任务
+    "temperature": 0.3,   # 更稳定的输出
     "max_retries": 5,     # 更多重试次数
     "retry_delay": 2.0    # 更长的重试间隔
 }
@@ -238,7 +238,7 @@ update_api_config(production_config)
 ### 开发环境配置
 ```python
 development_config = {
-    "max_tokens": 2048,
+    "max_tokens": 25000,  # 开发环境适中配置
     "temperature": 0.7,
     "max_retries": 3,
     "retry_delay": 1.0

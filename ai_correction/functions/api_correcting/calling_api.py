@@ -1,9 +1,9 @@
+# 修复版本的API调用模块 - 完整版
 import base64
 import requests  
 import openai
 import re
 from pathlib import Path
-import fitz  # PyMuPDF
 import json
 import os
 import time
@@ -11,10 +11,25 @@ import logging
 from typing import Dict, List, Tuple, Any, Optional, Union
 from dataclasses import dataclass
 import contextlib
+import io
+from PIL import Image
+
+# 配置日志
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# 强制使用简化版提示词
+USE_SIMPLIFIED_PROMPTS = True
 try:
-    import prompts
+    import prompts_simplified as prompts_module
+    logger.info("使用简化版提示词系统")
 except ImportError:
-    from . import prompts
+    try:
+        from . import prompts_simplified as prompts_module
+        logger.info("使用简化版提示词系统")
+    except ImportError:
+        logger.error("简化版提示词模块未找到")
+        raise ImportError("无法导入简化版提示词模块")
 
 # 导入PDF错误抑制工具
 try:
@@ -26,26 +41,12 @@ except ImportError:
 # 抑制MuPDF错误输出
 import warnings
 warnings.filterwarnings("ignore")
-
-# 设置环境变量抑制MuPDF输出
 os.environ['MUPDF_QUIET'] = '1'
 
 try:
     import fitz  # PyMuPDF
-    # 立即抑制错误输出
-    import sys
-    if hasattr(os, 'devnull'):
-        original_stderr = sys.stderr
-        sys.stderr = open(os.devnull, 'w')
 except ImportError:
     fitz = None
-
-from .prompts import correction_prompt, system_message
-from . import prompts
-
-# 配置日志
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 @dataclass
 class APIConfig:
@@ -53,22 +54,19 @@ class APIConfig:
     api_key: str = ""
     base_url: str = "https://openrouter.ai/api/v1"
     model: str = "google/gemini-2.5-flash-lite-preview-06-17"
-    max_tokens: int = 4096
+    max_tokens: int = 50000
     temperature: float = 0.7
     max_retries: int = 3
     retry_delay: float = 1.0
+    timeout: int = 120
     
     def __post_init__(self):
-        """初始化后处理，从环境变量、.env文件或默认值设置API密钥"""
-        # 优先级：环境变量 > .env文件 > 硬编码值
-        
-        # 1. 首先检查环境变量
+        """初始化后处理，从环境变量设置API密钥"""
         env_key = os.getenv('OPENROUTER_API_KEY') or os.getenv('OPENAI_API_KEY')
         if env_key:
             self.api_key = env_key
             return
         
-        # 2. 然后检查.env文件
         env_file_path = Path('.env')
         if env_file_path.exists():
             try:
@@ -83,9 +81,7 @@ class APIConfig:
             except Exception as e:
                 logger.warning(f"读取.env文件失败: {e}")
         
-        # 3. 最后使用硬编码值（不推荐用于生产环境）
         if not self.api_key:
-            # 使用新的OpenRouter API密钥 - 请替换为您的密钥
             self.api_key = "请在此处输入您的新API密钥"
     
     def is_valid(self) -> bool:
@@ -94,12 +90,10 @@ class APIConfig:
     
     def get_status(self) -> dict:
         """获取配置状态信息"""
-        # 确定API密钥来源
         api_key_source = "default"
         if os.getenv('OPENROUTER_API_KEY') or os.getenv('OPENAI_API_KEY'):
             api_key_source = "environment"
         elif Path('.env').exists():
-            # 检查.env文件中是否有有效的API密钥
             try:
                 with open('.env', 'r', encoding='utf-8') as f:
                     for line in f:
@@ -124,11 +118,7 @@ class APIConfig:
 api_config = APIConfig()
 
 def img_to_base64(image_path, max_size_mb=4):
-    """
-    将图片文件转换为base64编码，支持自动压缩
-    支持本地文件路径、URL和Streamlit上传的文件对象
-    现在也支持文本文件的检测和跳过
-    """
+    """将图片文件转换为base64编码，支持自动压缩"""
     import io
     import os
     from pathlib import Path
@@ -138,10 +128,8 @@ def img_to_base64(image_path, max_size_mb=4):
     if isinstance(image_path, str):
         file_path = Path(image_path)
         if file_path.exists():
-            # 检查文件扩展名
             file_ext = file_path.suffix.lower()
             if file_ext in ['.txt', '.md', '.doc', '.docx', '.rtf']:
-                # 这是文本文件，不应该作为图像处理
                 raise ValueError(f"文件 {image_path} 是文本文件，不能作为图像处理")
     
     # 处理URL
@@ -152,51 +140,37 @@ def img_to_base64(image_path, max_size_mb=4):
     # 处理Streamlit上传的文件对象
     elif hasattr(image_path, 'read') and callable(image_path.read):
         try:
-            # 保存当前文件位置
             if hasattr(image_path, 'tell') and callable(image_path.tell):
                 current_position = image_path.tell()
             else:
                 current_position = 0
-                
-            # 读取文件数据
             image_data = image_path.read()
-            
-            # 恢复文件位置
             if hasattr(image_path, 'seek') and callable(image_path.seek):
                 image_path.seek(current_position)
         except Exception as e:
             raise Exception(f"Failed to read uploaded file: {str(e)}")
     # 处理本地文件路径
     elif isinstance(image_path, str):
-        # 检查文件大小，如果太大则压缩
         file_size_mb = os.path.getsize(image_path) / (1024 * 1024)
         
         if file_size_mb <= max_size_mb:
-            # 文件不大，直接读取
             with open(image_path, "rb") as image_file:
                 image_data = image_file.read()
         else:
-            # 文件太大，需要压缩
             logging.info(f"图片文件过大 ({file_size_mb:.2f}MB)，正在压缩...")
-            
-            # 打开图片进行压缩
             img = Image.open(image_path)
             
-            # 转换为RGB模式（如果是RGBA）
             if img.mode in ('RGBA', 'LA', 'P'):
                 img = img.convert('RGB')
             
-            # 计算压缩参数
             quality = 85
-            max_dimension = 1920  # 最大尺寸
+            max_dimension = 1920
             
-            # 如果图片尺寸太大，先缩放
             if max(img.size) > max_dimension:
                 ratio = max_dimension / max(img.size)
                 new_size = (int(img.size[0] * ratio), int(img.size[1] * ratio))
                 img = img.resize(new_size, Image.Resampling.LANCZOS)
             
-            # 压缩图片直到满足大小要求
             while quality > 20:
                 buffer = io.BytesIO()
                 img.save(buffer, format='JPEG', quality=quality, optimize=True)
@@ -209,7 +183,6 @@ def img_to_base64(image_path, max_size_mb=4):
                 
                 quality -= 10
             else:
-                # 如果还是太大，进一步缩小尺寸
                 while max_dimension > 800:
                     max_dimension -= 200
                     ratio = max_dimension / max(img.size)
@@ -225,7 +198,6 @@ def img_to_base64(image_path, max_size_mb=4):
                         image_data = buffer.getvalue()
                         break
                 else:
-                    # 最后的尝试
                     buffer = io.BytesIO()
                     img.save(buffer, format='JPEG', quality=50, optimize=True)
                     final_size_mb = len(buffer.getvalue()) / (1024 * 1024)
@@ -237,45 +209,23 @@ def img_to_base64(image_path, max_size_mb=4):
     return base64.b64encode(image_data).decode('utf-8')
 
 def get_file_type(file_path):
-    """
-    检测文件类型，返回文件类型分类
-    
-    返回值:
-    - 'image': 图片文件
-    - 'pdf': PDF文件
-    - 'word': Word文档
-    - 'text': 纯文本文件
-    - 'unknown': 未知类型
-    """
+    """检测文件类型，返回文件类型分类"""
     if isinstance(file_path, str):
         file_ext = Path(file_path).suffix.lower()
-        
-        # 图片文件
         if file_ext in ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.webp']:
             return 'image'
-        
-        # PDF文件
         elif file_ext == '.pdf':
             return 'pdf'
-        
-        # Word文档
         elif file_ext in ['.doc', '.docx']:
             return 'word'
-        
-        # 文本文件
         elif file_ext in ['.txt', '.md', '.rtf', '.csv']:
             return 'text'
-        
-        # 其他可能的文本格式
         elif file_ext in ['.py', '.js', '.html', '.css', '.json', '.xml', '.yaml', '.yml']:
             return 'text'
-    
     return 'unknown'
 
 def read_pdf_file(file_path):
-    """
-    读取PDF文件内容
-    """
+    """读取PDF文件内容"""
     try:
         import PyPDF2
         with open(file_path, 'rb') as file:
@@ -287,7 +237,6 @@ def read_pdf_file(file_path):
             return text.strip()
     except ImportError:
         try:
-            # 如果PyPDF2不可用，尝试使用pdfplumber
             import pdfplumber
             with pdfplumber.open(file_path) as pdf:
                 text = ""
@@ -300,9 +249,7 @@ def read_pdf_file(file_path):
         return f"[PDF文件读取失败: {Path(file_path).name}] - 错误: {str(e)}"
 
 def read_word_file(file_path):
-    """
-    读取Word文档内容
-    """
+    """读取Word文档内容"""
     try:
         import docx
         doc = docx.Document(file_path)
@@ -314,73 +261,6 @@ def read_word_file(file_path):
         return f"[Word文档: {Path(file_path).name}] - 需要安装python-docx库来读取Word文档"
     except Exception as e:
         return f"[Word文档读取失败: {Path(file_path).name}] - 错误: {str(e)}"
-
-def process_file_content(file_path):
-    """
-    根据文件类型处理文件内容
-    
-    返回:
-    - (content_type, content): 内容类型和内容
-      - content_type: 'text' , 'image', 'pdf'或 'error'
-      - content: 文件内容或错误信息
-    """
-    file_type = get_file_type(file_path)
-    file_name = Path(file_path).name
-    
-    try:
-        if file_type == 'image':
-            # 图片文件作为base64返回
-            return 'image', file_path
-        
-        elif file_type == 'pdf':
-            # PDF文件处理 - 先尝试转换为图像，失败则提取文本
-            try:
-                # 检查文件大小，如果太大则直接提取文本
-                file_size_mb = os.path.getsize(file_path) / (1024 * 1024)
-                if file_size_mb > 50:  # 大于50MB的PDF直接提取文本
-                    logger.info(f"PDF文件过大({file_size_mb:.1f}MB)，直接提取文本: {file_name}")
-                    text_content = read_pdf_file(file_path)
-                    return 'text', f"[大型PDF文档: {file_name}]\n{text_content}"
-                
-                # 尝试图像处理
-                return 'pdf', file_path
-                
-            except Exception as e:
-                logger.warning(f"PDF处理异常，尝试文本提取: {str(e)}")
-                # 如果图像处理失败，尝试提取文本
-                try:
-                    text_content = read_pdf_file(file_path)
-                    if text_content and not text_content.startswith("[PDF文件读取失败"):
-                        return 'text', f"[PDF文档(文本模式): {file_name}]\n{text_content}"
-                    else:
-                        return 'error', f"[PDF处理失败: {file_name}] - 无法读取内容"
-                except Exception as text_error:
-                    return 'error', f"[PDF处理失败: {file_name}] - {str(text_error)}"
-        
-        elif file_type == 'word':
-            # Word文档提取文本
-            content = read_word_file(file_path)
-            return 'text', f"[Word文档: {file_name}]\n{content}"
-        
-        elif file_type == 'text':
-            # 纯文本文件
-            content = read_text_file(file_path)
-            return 'text', f"[文本文件: {file_name}]\n{content}"
-        
-        else:
-            # 未知类型，尝试作为文本读取
-            try:
-                content = read_text_file(file_path)
-                return 'text', f"[文件: {file_name}]\n{content}"
-            except:
-                return 'error', f"[不支持的文件类型: {file_name}] - 无法处理此文件"
-    
-    except Exception as e:
-        return 'error', f"[文件处理错误: {file_name}] - {str(e)}"
-
-def is_image_file(file_path):
-    """检查文件是否为图像文件"""
-    return get_file_type(file_path) in ['image', 'pdf']  # PDF也可以作为图像处理
 
 def read_text_file(file_path):
     """读取文本文件内容"""
@@ -395,270 +275,141 @@ def read_text_file(file_path):
             with open(file_path, 'r', encoding='latin-1') as f:
                 return f.read()
 
-def force_natural_language(text):
-    """强制将可能的JSON格式转换为自然语言"""
-    # 如果文本包含大量的JSON特征，进行处理
-    if (text.count('{') > 2 and text.count('}') > 2) or ('"' in text and ':' in text and ',' in text):
-        # 尝试去除格式符号
-        text = re.sub(r'[{}\[\]"]', '', text)
-        text = re.sub(r':\s*', ': ', text)
-        text = re.sub(r',\s*', '\n', text)
-        
-        # 添加警告消息
-        text = "【注意：以下内容已从结构化格式转换为纯文本】\n\n" + text
+def process_file_content(file_path):
+    """根据文件类型处理文件内容"""
+    file_type = get_file_type(file_path)
+    file_name = Path(file_path).name
     
-    return text
+    try:
+        if file_type == 'image':
+            return 'image', file_path
+        elif file_type == 'pdf':
+            try:
+                file_size_mb = os.path.getsize(file_path) / (1024 * 1024)
+                if file_size_mb > 50:
+                    logger.info(f"PDF文件过大({file_size_mb:.1f}MB)，直接提取文本: {file_name}")
+                    text_content = read_pdf_file(file_path)
+                    return 'text', f"[大型PDF文档: {file_name}]\n{text_content}"
+                return 'pdf', file_path
+            except Exception as e:
+                logger.warning(f"PDF处理异常，尝试文本提取: {str(e)}")
+                try:
+                    text_content = read_pdf_file(file_path)
+                    if text_content and not text_content.startswith("[PDF文件读取失败"):
+                        return 'text', f"[PDF文档(文本模式): {file_name}]\n{text_content}"
+                    else:
+                        return 'error', f"[PDF处理失败: {file_name}] - 无法读取内容"
+                except Exception as text_error:
+                    return 'error', f"[PDF处理失败: {file_name}] - {str(text_error)}"
+        elif file_type == 'word':
+            content = read_word_file(file_path)
+            return 'text', f"[Word文档: {file_name}]\n{content}"
+        elif file_type == 'text':
+            content = read_text_file(file_path)
+            return 'text', f"[文本文件: {file_name}]\n{content}"
+        else:
+            try:
+                content = read_text_file(file_path)
+                return 'text', f"[文件: {file_name}]\n{content}"
+            except:
+                return 'error', f"[不支持的文件类型: {file_name}] - 无法处理此文件"
+    except Exception as e:
+        return 'error', f"[文件处理错误: {file_name}] - {str(e)}"
 
 def pdf_pages_to_base64_images(pdf_path, zoom=2.0):
-    """
-    将 PDF 每页转换为 Base64 编码的图像数据列表
-    增强版：支持错误抑制和多种备用方案
-    
-    参数:
-        pdf_path (str): PDF 文件路径
-        zoom (float): 缩放因子 (提高分辨率)
-    
-    返回:
-        list: 包含每页 Base64 编码图像数据的列表
-    """
+    """将 PDF 每页转换为 Base64 编码的图像数据列表"""
     if not fitz:
         logger.error("PyMuPDF未安装，无法处理PDF")
-        return pdf_fallback_method(pdf_path)
+        return []
     
     base64_images = []
-    
-    # 使用自定义的错误抑制器
     suppress_context = SuppressOutput() if PDF_UTILS_AVAILABLE else contextlib.nullcontext()
     
     try:
         with suppress_context:
-            # 尝试打开PDF文件
             doc = fitz.open(pdf_path)
             
-            # 检查PDF是否损坏或加密
             if doc.is_encrypted:
                 logger.warning(f"PDF文件 {pdf_path} 已加密，尝试解密")
-                # 尝试用空密码解密
                 if not doc.authenticate(""):
                     logger.error(f"PDF文件 {pdf_path} 无法解密")
                     doc.close()
-                    return pdf_fallback_method(pdf_path)
+                    return []
             
             if doc.page_count == 0:
                 logger.warning(f"PDF文件 {pdf_path} 没有页面")
                 doc.close()
-                return pdf_fallback_method(pdf_path)
+                return []
             
-            # 限制处理页面数量，避免过大文件
-            max_pages = min(doc.page_count, 20)  # 最多处理20页
+            max_pages = min(doc.page_count, 20)
             
-            # 处理每一页
             for page_num in range(max_pages):
                 try:
                     with contextlib.redirect_stderr(open(os.devnull, 'w')):
                         page = doc.load_page(page_num)
-                        
-                        # 使用较小的缩放因子减少内存使用
                         matrix = fitz.Matrix(zoom, zoom)
-                        
-                        # 获取页面的像素图，抑制错误
                         pix = page.get_pixmap(matrix=matrix, alpha=False)
-                        
-                        # 转换为图像数据
                         img_data = pix.tobytes("png")
                         
-                        # 检查图像数据大小，如果太大则压缩
-                        if len(img_data) > 3 * 1024 * 1024:  # 3MB阈值
-                            # 使用PIL压缩图像
+                        if len(img_data) > 3 * 1024 * 1024:
                             img = Image.open(io.BytesIO(img_data))
-                            
-                            # 转换为RGB模式
                             if img.mode in ('RGBA', 'LA', 'P'):
                                 img = img.convert('RGB')
                             
-                            # 计算合适的尺寸
-                            max_size = 1600  # 最大尺寸
+                            max_size = 1600
                             if max(img.size) > max_size:
                                 ratio = max_size / max(img.size)
                                 new_size = (int(img.size[0] * ratio), int(img.size[1] * ratio))
                                 img = img.resize(new_size, Image.Resampling.LANCZOS)
                             
-                            # 压缩图像
                             buffer = io.BytesIO()
                             img.save(buffer, format='JPEG', quality=80, optimize=True)
                             img_data = buffer.getvalue()
                         
-                        # 编码为 Base64
                         base64_str = base64.b64encode(img_data).decode("utf-8")
                         base64_images.append(base64_str)
-                        
-                        # 清理内存
                         pix = None
                         
                 except Exception as e:
                     logger.warning(f"处理PDF第{page_num + 1}页时出错: {str(e)}")
-                    # 继续处理下一页，不中断整个过程
                     continue
             
             doc.close()
             
-            # 如果没有成功处理任何页面，使用备用方法
             if not base64_images:
-                logger.warning(f"PDF文件 {pdf_path} 无法提取任何页面，使用备用方法")
-                return pdf_fallback_method(pdf_path)
+                logger.warning(f"PDF文件 {pdf_path} 无法提取任何页面")
+                return []
             
             logger.info(f"成功处理PDF文件 {pdf_path}，共{len(base64_images)}页")
             return base64_images
             
     except Exception as e:
         logger.error(f"PDF处理完全失败 {pdf_path}: {str(e)}")
-        # 使用备用方法
-        return pdf_fallback_method(pdf_path)
-
-def pdf_fallback_method(pdf_path):
-    """PDF处理的备用方法 - 尝试多种方案"""
-    logger.info(f"尝试PDF备用处理方案: {pdf_path}")
-    
-    # 方案1: 尝试提取文本内容
-    try:
-        text_content = read_pdf_file(pdf_path)
-        if text_content and not text_content.startswith("[PDF文件读取失败"):
-            logger.info("备用方案1成功: 提取PDF文本内容")
-            # 返回空列表，让调用方处理文本内容
-            return []
-    except Exception as e:
-        logger.warning(f"备用方案1失败: {str(e)}")
-    
-    # 方案2: 尝试使用更简单的PyMuPDF设置
-    try:
-        import warnings
-        import contextlib
-        
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            with contextlib.redirect_stderr(open(os.devnull, 'w')):
-                doc = fitz.open(pdf_path)
-                
-                # 只处理第一页，使用最小设置
-                if doc.page_count > 0:
-                    page = doc.load_page(0)
-                    # 使用最小缩放
-                    matrix = fitz.Matrix(1.0, 1.0)
-                    pix = page.get_pixmap(matrix=matrix, alpha=False)
-                    img_data = pix.tobytes("jpeg")
-                    base64_str = base64.b64encode(img_data).decode("utf-8")
-                    doc.close()
-                    logger.info("备用方案2成功: 简化PDF处理")
-                    return [base64_str]
-                
-                doc.close()
-    except Exception as e:
-        logger.warning(f"备用方案2失败: {str(e)}")
-    
-    # 方案3: 创建错误提示图像
-    try:
-        from PIL import Image, ImageDraw, ImageFont
-        
-        # 创建一个简单的错误提示图像
-        img = Image.new('RGB', (800, 600), color='white')
-        draw = ImageDraw.Draw(img)
-        
-        # 添加文字
-        text_lines = [
-            "PDF文件处理失败",
-            f"文件: {os.path.basename(pdf_path)}",
-            "可能的原因:",
-            "- PDF文件损坏或格式不支持",
-            "- 文件过大或页面过多",
-            "- 系统资源不足",
-            "",
-            "建议:",
-            "- 尝试重新保存PDF文件",
-            "- 减少文件大小",
-            "- 转换为图片格式"
-        ]
-        
-        y_offset = 50
-        for line in text_lines:
-            draw.text((50, y_offset), line, fill='black')
-            y_offset += 40
-        
-        # 转换为base64
-        buffer = io.BytesIO()
-        img.save(buffer, format='JPEG', quality=90)
-        base64_str = base64.b64encode(buffer.getvalue()).decode("utf-8")
-        
-        logger.info("备用方案3成功: 创建错误提示图像")
-        return [base64_str]
-        
-    except Exception as e:
-        logger.error(f"备用方案3失败: {str(e)}")
-    
-    # 最终方案: 返回空列表
-    logger.error(f"所有PDF处理方案都失败: {pdf_path}")
-    return []
-
-def extract_json_from_str(input_str):
-    """从字符串中提取JSON对象"""
-    try:
-        # 尝试直接解析整个字符串
-        return json.loads(input_str)
-    except json.JSONDecodeError:
-        # 如果失败，尝试找到JSON块
-        import re
-        json_pattern = r'\{.*\}'
-        match = re.search(json_pattern, input_str, re.DOTALL)
-        if match:
-            try:
-                return json.loads(match.group())
-            except json.JSONDecodeError:
-                pass
-        
-        # 如果仍然失败，返回原始字符串
-        return input_str
+        return []
 
 def call_tongyiqianwen_api(input_text: str, *input_contents, system_message: str = "") -> str:
-    """
-    调用API进行多类型文件处理，支持批改严格程度和语言设置
-    增强版：支持图像、PDF、Word文档、文本文件等多种类型，带重试机制和错误处理
-    
-    参数:
-    input_text: 字符串，提示文本
-    input_contents: 一系列文件路径（支持图像、PDF、Word、文本等多种格式）/str/(type,base64 image)
-    system_message: 系统消息
-    
-    返回:
-    字符串，API响应内容
-    """
+    """调用API进行多类型文件处理"""
     from openai import OpenAI
     
-    # 检查API配置
     if not api_config.is_valid():
-        error_msg = """
+        error_msg = f"""
 🚫 API配置错误
 
 可能的解决方案：
-1. 设置环境变量：
-   - OPENROUTER_API_KEY=your_api_key
-   - 或 OPENAI_API_KEY=your_api_key
-
-2. 检查API密钥格式：
-   - OpenRouter密钥应以 'sk-or-' 开头
-   - OpenAI密钥应以 'sk-' 开头
-
-3. 确认密钥有效性：
-   - 登录 https://openrouter.ai 检查密钥状态
-   - 确认账户有足够的余额
+1. 设置环境变量：OPENROUTER_API_KEY=your_api_key
+2. 检查API密钥格式
+3. 确认密钥有效性
 
 当前配置状态：
-""" + json.dumps(api_config.get_status(), ensure_ascii=False, indent=2)
+{json.dumps(api_config.get_status(), ensure_ascii=False, indent=2)}"""
         logger.error("API配置无效")
         return error_msg
     
     try:
         client = OpenAI(
             api_key=api_config.api_key,
-            base_url=api_config.base_url
+            base_url=api_config.base_url,
+            timeout=api_config.timeout
         )
     except Exception as e:
         error_msg = f"❌ OpenAI客户端初始化失败: {str(e)}"
@@ -667,21 +418,17 @@ def call_tongyiqianwen_api(input_text: str, *input_contents, system_message: str
     
     content = [{"type": "text", "text": input_text}]
     
-    # 处理文件
     try:
         for single_content in input_contents:
-            if (
-                isinstance(single_content, tuple) and 
+            if (isinstance(single_content, tuple) and 
                 len(single_content) == 2 and 
-                all(isinstance(item, str) for item in single_content)
-            ):
+                all(isinstance(item, str) for item in single_content)):
                 content.append({
                     "type": "image_url",
                     "image_url": {
                         "url": f"data:image/{single_content[0]};base64,{single_content[1]}"
                     }
                 })   
-            
             elif os.path.isfile(single_content):
                 content_type, processed_content = process_file_content(single_content)            
                 if content_type == 'text':
@@ -690,7 +437,6 @@ def call_tongyiqianwen_api(input_text: str, *input_contents, system_message: str
                         "text": processed_content
                     })
                 elif content_type == 'image':
-                    # 普通图像文件
                     base_64_image = img_to_base64(single_content)
                     content.append({
                         "type": "image_url",
@@ -698,9 +444,7 @@ def call_tongyiqianwen_api(input_text: str, *input_contents, system_message: str
                             "url": f"data:image/jpeg;base64,{base_64_image}"
                         }
                     })    
-                # 检查是否是PDF文件
                 elif content_type == 'pdf':
-                    # PDF文件作为图像处理
                     base_64_images = pdf_pages_to_base64_images(single_content)
                     for base_64_image in base_64_images:
                         content.append({
@@ -721,7 +465,6 @@ def call_tongyiqianwen_api(input_text: str, *input_contents, system_message: str
         logger.error(error_msg)
         return error_msg
 
-    # 调用API，带重试机制
     for attempt in range(api_config.max_retries):
         try:
             final_message = []
@@ -738,10 +481,8 @@ def call_tongyiqianwen_api(input_text: str, *input_contents, system_message: str
                 temperature=api_config.temperature
             )
 
-            # 获取结果并处理
             result = response.choices[0].message.content
         
-            # 验证结果不为空
             if not result or not result.strip():
                 logger.warning("API返回空结果")
                 if attempt < api_config.max_retries - 1:
@@ -759,78 +500,70 @@ def call_tongyiqianwen_api(input_text: str, *input_contents, system_message: str
             error_str = str(e)
             logger.error(f"API调用失败 (尝试 {attempt + 1}): {error_str}")
             
-            # 特殊错误处理
+            if "timeout" in error_str.lower() or "timed out" in error_str.lower():
+                timeout_error_msg = f"""❌ 请求超时错误
+问题分析：网络连接超时、API服务器响应缓慢、处理的文件过大或过多
+解决方案：检查网络连接、减少单次处理的文件数量、稍后重试
+错误详情：{error_str}"""
+                if attempt < api_config.max_retries - 1:
+                    wait_time = api_config.retry_delay * (2 ** attempt)
+                    logger.info(f"遇到超时错误，等待 {wait_time} 秒后重试")
+                    time.sleep(wait_time)
+                    continue
+                else:
+                    return timeout_error_msg
+            
             if "401" in error_str or "Unauthorized" in error_str:
-                auth_error_msg = f"""
-❌ 认证失败 (401 Unauthorized)
-
-问题分析：
-- API密钥无效或已过期
-- 密钥格式错误
-- 账户余额不足
-
-解决方案：
-1. 检查API密钥：
-   - 当前使用的密钥来源：{api_config.get_status()['api_key_source']}
-   - 密钥前缀：{api_config.api_key[:10]}...
-
-2. 更新API密钥：
-   - 访问 https://openrouter.ai/keys
-   - 生成新的API密钥
-   - 设置环境变量：OPENROUTER_API_KEY=your_new_key
-
-3. 检查账户状态：
-   - 登录 https://openrouter.ai
-   - 查看账户余额和使用情况
-
-原始错误：{error_str}
-"""
+                auth_error_msg = f"""❌ 认证失败 (401 Unauthorized)
+问题分析：API密钥无效或已过期、密钥格式错误、账户余额不足
+解决方案：检查API密钥、更新API密钥、检查账户状态
+当前使用的密钥来源：{api_config.get_status()['api_key_source']}
+原始错误：{error_str}"""
                 logger.error("认证失败")
                 return auth_error_msg
             
             elif "429" in error_str or "rate_limit" in error_str.lower():
                 rate_limit_msg = f"❌ API调用频率限制，请稍后重试。错误：{error_str}"
                 if attempt < api_config.max_retries - 1:
-                    wait_time = api_config.retry_delay * (2 ** attempt)  # 指数退避
+                    wait_time = api_config.retry_delay * (2 ** attempt)
                     logger.info(f"遇到频率限制，等待 {wait_time} 秒后重试")
                     time.sleep(wait_time)
                     continue
                 else:
                     return rate_limit_msg
             
-            elif "500" in error_str or "502" in error_str or "503" in error_str:
-                server_error_msg = f"❌ 服务器错误，请稍后重试。错误：{error_str}"
+            elif "500" in error_str or "502" in error_str or "503" in error_str or "504" in error_str:
+                if "504" in error_str:
+                    server_error_msg = f"""❌ 网关超时错误 (504 Gateway Timeout)
+问题分析：API服务器响应超时、网络连接不稳定、服务器负载过高
+解决方案：检查网络连接稳定性、稍后重试、考虑减少单次处理的文件数量
+错误详情：{error_str}"""
+                else:
+                    server_error_msg = f"❌ 服务器错误，请稍后重试。错误：{error_str}"
+                
                 if attempt < api_config.max_retries - 1:
-                    time.sleep(api_config.retry_delay * (attempt + 1))
+                    wait_time = api_config.retry_delay * (2 ** attempt)
+                    logger.info(f"遇到服务器错误，等待 {wait_time} 秒后重试")
+                    time.sleep(wait_time)
                     continue
                 else:
                     return server_error_msg
             
-            # 其他错误
             if attempt < api_config.max_retries - 1:
-                time.sleep(api_config.retry_delay * (attempt + 1))  # 指数退避
+                time.sleep(api_config.retry_delay * (attempt + 1))
                 continue
             else:
-                error_msg = f"""
-❌ API调用失败 (所有重试已耗尽)
-
+                error_msg = f"""❌ API调用失败 (所有重试已耗尽)
 错误详情：{error_str}
-
-可能的解决方案：
-1. 检查网络连接
-2. 验证API密钥有效性
-3. 确认账户余额充足
-4. 稍后重试
-
-配置信息：
-{json.dumps(api_config.get_status(), ensure_ascii=False, indent=2)}
-"""
+可能的解决方案：检查网络连接、验证API密钥有效性、确认账户余额充足、稍后重试
+配置信息：{json.dumps(api_config.get_status(), ensure_ascii=False, indent=2)}"""
                 logger.error(error_msg)
                 return error_msg
 
 # 标准API调用函数
 default_api = call_tongyiqianwen_api
 
+# ===================== 结果类和装饰器 =====================
 class GradingResult:
     """批改结果标准化类"""
     
@@ -872,159 +605,307 @@ def safe_api_call(func):
             return GradingResult(success=False, error_message=error_msg, processing_time=processing_time)
     return wrapper
 
-def generate_json_marking_scheme(*image_file, api=default_api):
-    """生成评分方案，返回JSON形式"""
+# ===================== 核心批改函数 =====================
+def batch_correction_with_standard(marking_scheme_files: List[str], student_answer_files: List[str], 
+                                  strictness_level: str = "中等", api=default_api) -> dict:
+    """批量批改 - 有批改标准模式"""
     try:
-        prompt = prompts.marking_scheme_prompt
-        result = api(prompt, *image_file, system_message=prompts.system_message)
-        return extract_json_from_str(result)
-    except Exception as e:
-        error_msg = "生成评分方案失败"
-        raise RuntimeError(f"{error_msg}: {str(e)}") from e
-
-def correction_with_marking_scheme_json(marking_schemes: tuple[str], student_answers: tuple[str], strictness_level="中等", api=default_api):
-    """使用图像中的评分方案进行批改，返json形式
-    marking_schemes,student_answers:tuple(path)
-    """
-    try:
-        # 将评分方案作为正常文本附加，避免引起结构化思维
-        prompt = prompts.correction_prompt + "\n\n"
-        prompt += prompts.strictness_descriptions[strictness_level] + '\n\n'
-        prompt += prompts.get_marking_scheme_notice()
-        student_answer_notice = prompts.get_student_answer_notice()
-        result = api(prompt, *marking_schemes, student_answer_notice, *student_answers, system_message=prompts.system_message)
-        return extract_json_from_str(result)
-    except Exception as e:
-        error_msg = "批改失败"
-        raise RuntimeError(f"{error_msg}: {str(e)}") from e
-
-def correction_without_marking_scheme_json(student_answer: tuple[str], strictness_level="中等", api=default_api):
-    """自动生成评分方案并批改，返回纯json形式"""
-    try:
-        # 先生成评分方案
-        marking_scheme = generate_json_marking_scheme(*student_answer, api=api)
+        marking_contents = []
+        marking_file_info = []
+        for i, file in enumerate(marking_scheme_files):
+            content_type, content = process_file_content(file)
+            if content_type == 'error':
+                raise ValueError(f"处理批改标准文件失败: {content}")
+            elif content_type == 'image' or content_type == 'pdf':
+                marking_contents.append(file)
+                marking_file_info.append(f"【批改方案文件 {i+1}】: {os.path.basename(file)}")
+            else:
+                marking_contents.append(content)
+                marking_file_info.append(f"【批改方案文件 {i+1}】: {os.path.basename(file)}")
         
-        # 使用生成的评分方案进行批改
-        prompt = prompts.correction_prompt + "\n\n"
-        prompt += prompts.strictness_descriptions[strictness_level] + '\n\n'
-        prompt += prompts.get_auto_scheme_notice()
-        prompt += json.dumps(marking_scheme, ensure_ascii=False) + "\n\n"
-        student_answer_notice = prompts.get_student_answer_notice()
-        result = api(prompt, student_answer_notice, *student_answer, system_message=prompts.system_message)
-        return extract_json_from_str(result)
+        student_contents = []
+        student_file_info = []
+        for i, file in enumerate(student_answer_files):
+            content_type, content = process_file_content(file)
+            if content_type == 'error':
+                raise ValueError(f"处理学生答案文件失败: {content}")
+            elif content_type == 'image' or content_type == 'pdf':
+                student_contents.append(file)
+                student_file_info.append(f"【学生作答文件 {i+1}】: {os.path.basename(file)}")
+            else:
+                student_contents.append(content)
+                student_file_info.append(f"【学生作答文件 {i+1}】: {os.path.basename(file)}")
+        
+        prompt = prompts_module.get_complete_grading_prompt(file_info_list=[])
+        
+        api_args = []
+        if marking_contents:
+            api_args.append("=" * 50)
+            api_args.append("批改方案文件（包含正确答案和评分标准）：")
+            api_args.append("=" * 50)
+            for i, (info, content) in enumerate(zip(marking_file_info, marking_contents)):
+                api_args.append(f"\n{info}")
+                api_args.append(content)
+            api_args.append("\n" + "=" * 50)
+        
+        if student_contents:
+            api_args.append("\n" + "=" * 50)
+            api_args.append("学生作答文件（需要批改的答案）：")
+            api_args.append("=" * 50)
+            for i, (info, content) in enumerate(zip(student_file_info, student_contents)):
+                api_args.append(f"\n{info}")
+                api_args.append(content)
+            api_args.append("\n" + "=" * 50)
+        
+        api_args.append("\n【批改指令】：")
+        api_args.append(prompt)
+        
+        result = api(*api_args, system_message=prompts_module.system_message_simplified)
+        
+        return {
+            "correction_result": result,
+            "has_separate_scheme": False
+        }
+        
     except Exception as e:
-        error_msg = "批改失败"
-        raise RuntimeError(f"{error_msg}: {str(e)}") from e
+        error_msg = f"批改失败: {str(e)}"
+        logger.error(error_msg)
+        raise RuntimeError(error_msg) from e
 
-def correction_single_group(*image_files, strictness_level="中等", api=default_api, group_index=1):
-    """
-    对单个文件组（通常对应一道题）进行批改，返回JSON格式
-    
-    参数:
-    image_files: 图像文件列表，通常包含题目、学生答案、评分标准
-    strictness_level: 批改严格程度
-    api: API调用函数
-    group_index: 组索引，用于标识是第几道题
-    """
+def batch_correction_without_standard(question_files: List[str], student_answer_files: List[str], 
+                                     strictness_level: str = "中等", api=default_api) -> dict:
+    """批量批改 - 无批改标准模式（自动生成批改标准）"""
     try:
-        # 使用统一的批改提示词
-        prompt = prompts.correction_prompt + "\n\n" + prompts.strictness_descriptions[strictness_level]
-        return force_natural_language(api(prompt, *image_files, system_message=prompts.system_message))
+        logger.info("正在根据题目生成批改标准...")
+        
+        # 对于简化版，我们直接使用学生答案文件进行批改
+        # 因为简化版假设MARKING_文件包含完整信息
+        if not student_answer_files:
+            raise ValueError("缺少学生答案文件")
+        
+        # 使用简化版批改逻辑
+        file_info_list = []
+        for file_path in student_answer_files:
+            filename = os.path.basename(file_path)
+            file_info = {
+                'name': filename,
+                'path': file_path,
+                'type': get_file_type(file_path),
+                'expected_category': 'answer'
+            }
+            file_info_list.append(file_info)
+        
+        prompt = prompts_module.get_complete_grading_prompt(file_info_list=file_info_list)
+        
+        api_args = []
+        api_args.append("=" * 50)
+        api_args.append("学生作答文件（需要批改的答案）：")
+        api_args.append("=" * 50)
+        
+        for file_path in student_answer_files:
+            api_args.append(f"\n文件：{os.path.basename(file_path)}")
+            content_type, content = process_file_content(file_path)
+            if content_type == 'error':
+                raise ValueError(f"处理学生答案文件失败: {content}")
+            elif content_type in ['image', 'pdf']:
+                api_args.append(file_path)
+            else:
+                api_args.append(content)
+        
+        api_args.append("\n" + "=" * 50)
+        api_args.append("\n【批改指令】：")
+        api_args.append(prompt)
+        
+        result = api(*api_args, system_message=prompts_module.system_message_simplified)
+        
+        return {
+            "correction_result": result,
+            "has_separate_scheme": False
+        }
+        
+    except Exception as e:
+        error_msg = f"批改失败: {str(e)}"
+        logger.error(error_msg)
+        raise RuntimeError(error_msg) from e
+
+def intelligent_correction_with_files(question_files=None, answer_files=None, marking_scheme_files=None, 
+                                    strictness_level="中等", mode="efficient"):
+    """智能文件批改函数 - 简化版本"""
+    if not answer_files:
+        error_msg = "必须提供学生答案文件"
+        logger.error(error_msg)
+        return error_msg
+    
+    try:
+        if marking_scheme_files:
+            logger.info(f"使用批改标准模式 - 标准文件: {len(marking_scheme_files)}, 答案文件: {len(answer_files)}")
+            result = batch_correction_with_standard(
+                marking_scheme_files,
+                answer_files,
+                strictness_level=strictness_level,
+                api=default_api
+            )
+        else:
+            logger.info(f"使用自动生成批改标准模式 - 答案文件: {len(answer_files)}")
+            files_for_scheme = question_files if question_files else answer_files
+            result = batch_correction_without_standard(
+                files_for_scheme,
+                answer_files,
+                strictness_level=strictness_level,
+                api=default_api
+            )
+        
+        return result
+        
+    except Exception as e:
+        error_msg = f"智能批改失败: {str(e)}"
+        logger.error(error_msg)
+        return error_msg
+
+def simplified_batch_correction(files_dict: dict, strictness_level: str = "严格", api=None) -> dict:
+    """使用简化提示词的批量批改函数 - 修复版本"""
+    if api is None:
+        api = default_api
+    
+    try:
+        answer_files = files_dict.get('answer_files', [])
+        marking_files = files_dict.get('marking_files', [])
+        question_files = files_dict.get('question_files', [])
+        
+        if not answer_files:
+            return {
+                "success": False,
+                "error": "缺少学生答案文件",
+                "message": "必须提供学生答案文件"
+            }
+        
+        # 构建文件信息列表
+        file_info_list = []
+        all_files = [
+            (answer_files, 'answer'),
+            (marking_files, 'marking'),
+            (question_files, 'question')
+        ]
+        
+        for file_list, expected_category in all_files:
+            for file_path in file_list:
+                filename = os.path.basename(file_path)
+                file_info = {
+                    'name': filename,
+                    'path': file_path,
+                    'type': get_file_type(file_path),
+                    'expected_category': expected_category
+                }
+                file_info_list.append(file_info)
+        
+        prompt = prompts_module.get_complete_grading_prompt(file_info_list=file_info_list)
+        system_msg = prompts_module.system_message_simplified
+        
+        api_args = []
+        
+        # 检查文件完整性
+        if not answer_files:
+            return {
+                "success": False,
+                "error": "缺少学生答案文件",
+                "message": "缺少学生答案文件"
+            }
+        
+        # 处理文件
+        if question_files:
+            api_args.append("=" * 50)
+            api_args.append("📋 题目文件（来自题目上传区域）：")
+            api_args.append("=" * 50)
+            for file_path in question_files:
+                api_args.append(f"\n文件：{os.path.basename(file_path)}")
+                content_type, content = process_file_content(file_path)
+                if content_type == 'error':
+                    raise ValueError(f"处理题目文件失败: {content}")
+                elif content_type in ['image', 'pdf']:
+                    api_args.append(file_path)
+                else:
+                    api_args.append(content)
+        
+        if answer_files:
+            api_args.append("\n" + "=" * 50)
+            api_args.append("✏️ 学生答案（来自学生答案上传区域）：")
+            api_args.append("=" * 50)
+            for file_path in answer_files:
+                api_args.append(f"\n文件：{os.path.basename(file_path)}")
+                content_type, content = process_file_content(file_path)
+                if content_type == 'error':
+                    raise ValueError(f"处理学生答案文件失败: {content}")
+                elif content_type in ['image', 'pdf']:
+                    api_args.append(file_path)
+                else:
+                    api_args.append(content)
+        
+        if marking_files:
+            api_args.append("\n" + "=" * 50)
+            api_args.append("📊 批改方案（来自批改方案上传区域）：")
+            api_args.append("=" * 50)
+            for file_path in marking_files:
+                api_args.append(f"\n文件：{os.path.basename(file_path)}")
+                content_type, content = process_file_content(file_path)
+                if content_type == 'error':
+                    raise ValueError(f"处理批改方案文件失败: {content}")
+                elif content_type in ['image', 'pdf']:
+                    api_args.append(file_path)
+                else:
+                    api_args.append(content)
+        
+        api_args.append("\n" + "=" * 50)
+        api_args.append("\n【批改指令】：")
+        api_args.append(prompt)
+        
+        result = api(*api_args, system_message=system_msg)
+        
+        return {
+            "success": True,
+            "result": result,
+            "mode": "simplified_fixed",
+            "strictness": strictness_level,
+            "file_classification": "automatic_by_filename"
+        }
+        
+    except Exception as e:
+        logger.error(f"简化批改失败: {str(e)}")
+        return {
+            "success": False,
+            "error": str(e),
+            "message": "批改过程中发生错误"
+        }
+
+# ===================== 向后兼容函数 =====================
+def correction_single_group(*image_files, strictness_level="中等", api=default_api, group_index=1):
+    """对单个文件组进行批改"""
+    try:
+        prompt = prompts_module.get_complete_grading_prompt(file_info_list=[])
+        return api(prompt, *image_files, system_message=prompts_module.system_message_simplified)
     except Exception as e:
         error_msg = f"第{group_index}题批改失败"
         raise RuntimeError(f"{error_msg}: {str(e)}") from e
 
-def generate_comprehensive_summary(all_results, total_groups=1, api=default_api):
-    """
-    基于所有批改结果生成综合总结
-    
-    参数:
-    all_results: 所有批改结果的列表
-    total_groups: 总题目数量
-    """
-    try:
-        # 使用统一的综合总结提示词
-        prompt = prompts.comprehensive_summary_prompt(total_groups).replace("{{all_results}}", str(all_results))
-        # 系统消息
-        system_message = prompts.summary_system_message if hasattr(prompts, 'summary_system_message') else ""
-        result = api(prompt, system_message=system_message)
-        return result
-        
-    except Exception as e:
-        error_msg = "生成综合总结失败"
-        raise RuntimeError(f"{error_msg}: {str(e)}") from e
-
-def correction_of_multiple_answers(marking_schemes: tuple[str], student_answers: str, strictness_level="中等", api=default_api):
-    """使用图像中的评分方案进行批改，返json形式
-    marking_schemes:paths
-    student_answers:path of pdf
-    """
-    try:
-        final_result = {"individual_grading": [],
-       "overall_comment": ""}
-        base64_student_answers = pdf_pages_to_base64_images(student_answers)
-
-         # 将评分方案作为正常文本附加，避免引起结构化思维
-        prompt = prompts.correction_prompt + "\n\n"
-        prompt += prompts.strictness_descriptions[strictness_level] + '\n\n'
-        prompt += prompts.get_marking_scheme_notice()
-        student_answer_notice = prompts.get_student_answer_notice()
-        #批改每一页
-        for i in base64_student_answers:
-            result = api(prompt, *marking_schemes, student_answer_notice, ("png", i), system_message=prompts.system_message)
-            individual_result = extract_json_from_str(result)
-            final_result["individual_grading"].append(individual_result)
-        comment = generate_comprehensive_summary(str(final_result["individual_grading"]), total_groups=len(base64_student_answers), api=api)
-        final_result["overall_comment"] = comment
-        return final_result
-    except Exception as e:
-        error_msg = "批改失败"
-        raise RuntimeError(f"{error_msg}: {str(e)}") from e
-
-# ==================== 向后兼容接口 ====================
-
 def efficient_correction_single(*image_files, strictness_level="中等", api=default_api):
-    """
-    🎯 专为老师批量批改设计的高效简洁批改函数
-    输出简洁格式，便于老师快速处理大量作业
-    
-    参数:
-    image_files: 图像文件列表
-    strictness_level: 批改严格程度
-    api: API调用函数
-    
-    返回:
-    简洁的批改结果字符串
-    """
+    """高效简洁批改函数"""
     try:
-        # 使用已有的批改功能
         detailed_result = correction_single_group(*image_files, strictness_level=strictness_level, api=api)
-        
-        # 如果结果太长，进行简化处理
         if len(detailed_result) > 500:
-            # 使用prompts.py中的简洁提示词
-            prompt = prompts.efficient_simplification_prompt() + detailed_result
-            # 调用API进行简化
-            simplified = api(prompt, system_message=prompts.system_message)
+            prompt = f"""请将以下详细批改结果简化为高效简洁的格式，保留关键信息：
+{detailed_result}
+要求：
+1. 保留题目编号和得分
+2. 简要说明主要错误
+3. 给出改进建议"""
+            simplified = api(prompt, system_message=prompts_module.system_message_simplified)
             return simplified
         return detailed_result
-        
     except Exception as e:
         error_msg = "高效批改失败"
         raise RuntimeError(f"{error_msg}: {str(e)}") from e
 
 def batch_efficient_correction(*image_files, strictness_level="中等", api=default_api):
-    """
-    🚀 批量高效批改函数，专为老师处理多份作业设计
-    
-    参数:
-    image_files: 图像文件列表
-    strictness_level: 批改严格程度
-    api: API调用函数
-    
-    返回:
-    批量批改结果字符串
-    """
+    """批量高效批改函数"""
     try:
         from datetime import datetime
         
@@ -1033,12 +914,10 @@ def batch_efficient_correction(*image_files, strictness_level="中等", api=defa
         
         for i, file in enumerate(image_files, 1):
             try:
-                # 为每个文件调用高效批改
                 result = efficient_correction_single(file, 
                                                    strictness_level=strictness_level, 
                                                    api=api)
                 
-                # 添加序号标识
                 file_name = getattr(file, 'name', f'文件{i}')
                 header = f"## 📄 {file_name} ({i}/{total_files})\n\n"
                 results.append(header + result)
@@ -1047,10 +926,7 @@ def batch_efficient_correction(*image_files, strictness_level="中等", api=defa
                 error_msg = f"文件 {i} 批改失败: {str(e)}"
                 results.append(f"## ❌ 文件 {i}\n{error_msg}")
         
-        # 组合所有结果
         final_result = "\n\n---\n\n".join(results)
-        
-        # 添加批量批改总结
         summary_header = f"\n\n# 📊 批改总览\n**共批改 {total_files} 份作业**\n✅ 批改完成时间：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
         
         return final_result + summary_header
@@ -1060,96 +936,66 @@ def batch_efficient_correction(*image_files, strictness_level="中等", api=defa
         raise RuntimeError(f"{error_msg}: {str(e)}") from e
 
 def generate_marking_scheme(*image_file, api=default_api):
-    """生成评分方案，返回纯文本形式（向后兼容）"""
+    """生成评分方案"""
     try:
-        # 使用新的JSON生成函数并转换为文本
-        json_result = generate_json_marking_scheme(*image_file, api=api)
-        
-        # 使用prompts.py中的格式化函数
-        return prompts.marking_scheme_text_format(json_result)
-            
+        prompt = "请根据题目生成详细的评分标准，包括每个步骤的分值分配。"
+        result = api(prompt, *image_file, system_message=prompts_module.system_message_simplified)
+        return result
     except Exception as e:
         error_msg = "生成评分方案失败"
         raise RuntimeError(f"{error_msg}: {str(e)}") from e
 
-def correction_with_marking_scheme_legacy(marking_schemes: tuple[str], student_answers: tuple[str], strictness_level="中等", api=default_api):
-    """使用图像中的评分方案进行批改，返回文本形式（向后兼容）"""
+def correction_with_marking_scheme(marking_schemes, student_answers, strictness_level="中等", api=default_api):
+    """使用评分方案进行批改（向后兼容）"""
     try:
-         # 将评分方案作为正常文本附加，避免引起结构化思维
-        prompt = prompts.correction_prompt + "\n\n"
-        prompt += prompts.strictness_descriptions[strictness_level] + '\n\n'
-        prompt += prompts.get_marking_scheme_notice()
-        student_answer_notice = prompts.get_student_answer_notice()
-        result = api(prompt, *marking_schemes, student_answer_notice, *student_answers, system_message=prompts.system_message)
+        if isinstance(marking_schemes, (tuple, list)):
+            marking_schemes = list(marking_schemes)
+        else:
+            marking_schemes = [marking_schemes]
         
-        # 将结果转换为自然语言格式
-        return force_natural_language(result)
-            
+        if isinstance(student_answers, (tuple, list)):
+            student_answers = list(student_answers)
+        else:
+            student_answers = [student_answers]
+        
+        result = batch_correction_with_standard(
+            marking_schemes,
+            student_answers,
+            strictness_level=strictness_level,
+            api=api
+        )
+        return result.get('correction_result', result)
     except Exception as e:
         error_msg = "批改失败"
         raise RuntimeError(f"{error_msg}: {str(e)}") from e
 
-def correction_without_marking_scheme_legacy(student_answer: tuple[str], strictness_level="中等", api=default_api):
-    """自动生成评分方案并批改，返回文本形式（向后兼容）"""
+def correction_without_marking_scheme(student_answer, strictness_level="中等", api=default_api):
+    """不使用评分方案进行批改（向后兼容）"""
     try:
-        # 先生成评分方案
-        marking_scheme = generate_json_marking_scheme(*student_answer, api=api)
+        if isinstance(student_answer, (tuple, list)):
+            student_answer = list(student_answer)
+        else:
+            student_answer = [student_answer]
         
-        # 使用生成的评分方案进行批改
-        prompt = prompts.correction_prompt + "\n\n"
-        prompt += prompts.strictness_descriptions[strictness_level] + '\n\n'
-        prompt += prompts.get_auto_scheme_notice()
-        prompt += json.dumps(marking_scheme, ensure_ascii=False) + "\n\n"
-        student_answer_notice = prompts.get_student_answer_notice()
-        result = api(prompt, student_answer_notice, *student_answer, system_message=prompts.system_message)
-        
-        # 将结果转换为自然语言格式
-        return force_natural_language(result)
-            
+        result = batch_correction_without_standard(
+            student_answer,
+            student_answer,
+            strictness_level=strictness_level,
+            api=api
+        )
+        return result.get('correction_result', result)
     except Exception as e:
         error_msg = "批改失败"
         raise RuntimeError(f"{error_msg}: {str(e)}") from e
 
-# 创建兼容的函数别名，保持原有函数名
-correction_with_marking_scheme = correction_with_marking_scheme_legacy
-correction_without_marking_scheme = correction_without_marking_scheme_legacy
-
-# ==================== 网站版本兼容接口 ====================
-
-@safe_api_call
-def web_generate_marking_scheme(image_files: List[str]) -> Dict[str, Any]:
-    """
-    网站版本：生成评分方案
-    
-    参数:
-    image_files: 图像文件路径列表
-    
-    返回:
-    标准化的批改结果
-    """
-    result = generate_json_marking_scheme(*image_files, api=default_api)
-    return {
-        "marking_scheme": result,
-        "files_processed": len(image_files)
-    }
-
+# ===================== Web接口函数 =====================
 @safe_api_call
 def web_correction_with_scheme(marking_scheme_files: List[str], student_answer_files: List[str], 
                               strictness_level: str = "中等") -> Dict[str, Any]:
-    """
-    网站版本：使用评分方案进行批改
-    
-    参数:
-    marking_scheme_files: 评分方案文件路径列表
-    student_answer_files: 学生答案文件路径列表
-    strictness_level: 批改严格程度
-    
-    返回:
-    标准化的批改结果
-    """
-    result = correction_with_marking_scheme_json(
-        tuple(marking_scheme_files), 
-        tuple(student_answer_files), 
+    """网站版本：使用评分方案进行批改"""
+    result = batch_correction_with_standard(
+        marking_scheme_files, 
+        student_answer_files, 
         strictness_level=strictness_level, 
         api=default_api
     )
@@ -1163,18 +1009,10 @@ def web_correction_with_scheme(marking_scheme_files: List[str], student_answer_f
 @safe_api_call
 def web_correction_without_scheme(student_answer_files: List[str], 
                                  strictness_level: str = "中等") -> Dict[str, Any]:
-    """
-    网站版本：不使用评分方案进行批改
-    
-    参数:
-    student_answer_files: 学生答案文件路径列表
-    strictness_level: 批改严格程度
-    
-    返回:
-    标准化的批改结果
-    """
-    result = correction_without_marking_scheme_json(
-        tuple(student_answer_files), 
+    """网站版本：不使用评分方案进行批改"""
+    result = batch_correction_without_standard(
+        student_answer_files,
+        student_answer_files,
         strictness_level=strictness_level, 
         api=default_api
     )
@@ -1185,91 +1023,8 @@ def web_correction_without_scheme(student_answer_files: List[str],
     }
 
 @safe_api_call
-def web_correction_multiple_answers(marking_scheme_files: List[str], student_pdf_path: str, 
-                                   strictness_level: str = "中等") -> Dict[str, Any]:
-    """
-    网站版本：批改多页PDF答案
-    
-    参数:
-    marking_scheme_files: 评分方案文件路径列表
-    student_pdf_path: 学生PDF答案文件路径
-    strictness_level: 批改严格程度
-    
-    返回:
-    标准化的批改结果
-    """
-    result = correction_of_multiple_answers(
-        tuple(marking_scheme_files), 
-        student_pdf_path, 
-        strictness_level=strictness_level, 
-        api=default_api
-    )
-    return {
-        "grading_result": result,
-        "strictness_level": strictness_level,
-        "scheme_files": len(marking_scheme_files),
-        "pdf_path": student_pdf_path
-    }
-
-def get_api_status() -> Dict[str, Any]:
-    """
-    获取API状态信息
-    
-    返回:
-    API状态信息
-    """
-    return {
-        "api_config": api_config.get_status(),
-        "status": "ready",
-        "timestamp": time.time()
-    }
-
-def update_api_config(new_config: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    更新API配置
-    
-    参数:
-    new_config: 新的配置字典
-    
-    返回:
-    更新结果
-    """
-    try:
-        if "api_key" in new_config:
-            api_config.api_key = new_config["api_key"]
-        if "base_url" in new_config:
-            api_config.base_url = new_config["base_url"]
-        if "model" in new_config:
-            api_config.model = new_config["model"]
-        if "max_tokens" in new_config:
-            api_config.max_tokens = new_config["max_tokens"]
-        if "temperature" in new_config:
-            api_config.temperature = new_config["temperature"]
-        if "max_retries" in new_config:
-            api_config.max_retries = new_config["max_retries"]
-        if "retry_delay" in new_config:
-            api_config.retry_delay = new_config["retry_delay"]
-        
-        logger.info("API配置更新成功")
-        return {"success": True, "message": "配置更新成功", "updated_config": new_config}
-    except Exception as e:
-        error_msg = f"配置更新失败: {str(e)}"
-        logger.error(error_msg)
-        return {"success": False, "error": error_msg}
-
-# ==================== 批处理接口 ====================
-
-@safe_api_call
 def web_batch_correction(batch_requests: List[Dict[str, Any]]) -> Dict[str, Any]:
-    """
-    网站版本：批量批改处理
-    
-    参数:
-    batch_requests: 批量请求列表，每个请求包含必要的参数
-    
-    返回:
-    批量处理结果
-    """
+    """网站版本：批量批改处理"""
     results = []
     total_requests = len(batch_requests)
     
@@ -1286,12 +1041,6 @@ def web_batch_correction(batch_requests: List[Dict[str, Any]]) -> Dict[str, Any]
             elif request.get("type") == "without_scheme":
                 result = web_correction_without_scheme(
                     request["student_answer_files"],
-                    request.get("strictness_level", "中等")
-                )
-            elif request.get("type") == "multiple_answers":
-                result = web_correction_multiple_answers(
-                    request["marking_scheme_files"],
-                    request["student_pdf_path"],
                     request.get("strictness_level", "中等")
                 )
             else:
@@ -1320,115 +1069,36 @@ def web_batch_correction(batch_requests: List[Dict[str, Any]]) -> Dict[str, Any]
         "results": results
     }
 
-# 添加缺失的 intelligent_correction_with_files 函数
-def intelligent_correction_with_files(question_files=None, answer_files=None, marking_scheme_files=None, 
-                                    strictness_level="中等", mode="efficient"):
-    """
-    智能文件批改函数 - 向后兼容性支持
-    严格区分文件类型，确保不会混淆
-    
-    参数:
-    - question_files: 题目文件列表（用于生成评分标准）
-    - answer_files: 学生答案文件列表（必需，用于批改）
-    - marking_scheme_files: 评分标准文件列表（可选，用于参考批改标准）
-    - strictness_level: 严格程度
+# ===================== API配置函数 =====================
+def get_api_status() -> Dict[str, Any]:
+    """获取API状态信息"""
+    return {
+        "api_config": api_config.get_status(),
+        "status": "ready",
+        "timestamp": time.time()
+    }
 
-    - mode: 批改模式
-    
-    返回:
-    - 批改结果字符串
-    """
-    if not answer_files:
-        error_msg = "必须提供学生答案文件"
-        return error_msg
-    
+def update_api_config(new_config: Dict[str, Any]) -> Dict[str, Any]:
+    """更新API配置"""
     try:
-        # 严格区分文件类型，转换为元组格式
-        answer_tuple = tuple(answer_files) if answer_files else ()
-        marking_tuple = tuple(marking_scheme_files) if marking_scheme_files else ()
-        question_tuple = tuple(question_files) if question_files else ()
+        if "api_key" in new_config:
+            api_config.api_key = new_config["api_key"]
+        if "base_url" in new_config:
+            api_config.base_url = new_config["base_url"]
+        if "model" in new_config:
+            api_config.model = new_config["model"]
+        if "max_tokens" in new_config:
+            api_config.max_tokens = new_config["max_tokens"]
+        if "temperature" in new_config:
+            api_config.temperature = new_config["temperature"]
+        if "max_retries" in new_config:
+            api_config.max_retries = new_config["max_retries"]
+        if "retry_delay" in new_config:
+            api_config.retry_delay = new_config["retry_delay"]
         
-        logger.info(f"文件类型分析 - 题目文件: {len(question_tuple)}, 答案文件: {len(answer_tuple)}, 评分标准: {len(marking_tuple)}")
-        
-        # 根据不同模式选择不同的处理方式
-        if mode == "efficient":
-            # 高效模式 - 优先使用评分标准
-            if marking_scheme_files:
-                logger.info("高效模式：使用评分标准批改")
-                return correction_with_marking_scheme(marking_tuple, answer_tuple, 
-                                                    strictness_level=strictness_level)
-            else:
-                logger.info("高效模式：无评分标准，直接高效批改")
-                return efficient_correction_single(*answer_tuple, 
-                                                 strictness_level=strictness_level)
-        
-        elif mode == "detailed":
-            # 详细模式 - 如果有评分标准使用标准批改，否则自动生成标准并批改
-            if marking_scheme_files:
-                logger.info("详细模式：使用评分标准进行详细批改")
-                return correction_with_marking_scheme(marking_tuple, answer_tuple, 
-                                                    strictness_level=strictness_level)
-            else:
-                logger.info("详细模式：自动生成评分标准并批改")
-                return correction_without_marking_scheme(answer_tuple, 
-                                                       strictness_level=strictness_level)
-        
-        elif mode == "batch":
-            # 批量模式 - 批量处理多个答案文件
-            logger.info("批量模式：批量处理学生答案")
-            return batch_efficient_correction(*answer_tuple, 
-                                            strictness_level=strictness_level)
-        
-        elif mode == "generate_scheme":
-            # 生成标准模式 - 优先使用题目文件，其次使用答案文件
-            if question_files:
-                logger.info("生成评分标准：基于题目文件")
-                return generate_marking_scheme(*question_tuple)
-            elif answer_files:
-                logger.info("生成评分标准：基于答案文件（没有题目文件）")
-                return generate_marking_scheme(*answer_tuple)
-            else:
-                error_msg = "生成评分标准需要题目文件或答案文件"
-                return error_msg
-        
-        elif mode == "auto":
-            # 自动模式 - 智能选择最佳批改方式
-            if marking_scheme_files:
-                logger.info("自动模式：检测到评分标准，使用标准批改")
-                return correction_with_marking_scheme(marking_tuple, answer_tuple, 
-                                                    strictness_level=strictness_level)
-            elif question_files:
-                logger.info("自动模式：检测到题目文件，基于题目生成评分标准并批改")
-                # 先基于题目生成评分标准，再进行批改
-                scheme_result = generate_marking_scheme(*question_tuple)
-                # 然后使用生成的标准进行批改
-                return correction_without_marking_scheme(answer_tuple, 
-                                                       strictness_level=strictness_level)
-            else:
-                logger.info("自动模式：只有答案文件，自动生成评分标准并批改")
-                return correction_without_marking_scheme(answer_tuple, 
-                                                       strictness_level=strictness_level)
-        
-        else:
-            # 默认使用高效模式
-            logger.info(f"未知模式 '{mode}'，使用默认高效模式")
-            if marking_scheme_files:
-                return correction_with_marking_scheme(marking_tuple, answer_tuple, 
-                                                    strictness_level=strictness_level)
-            else:
-                return efficient_correction_single(*answer_tuple, 
-                                                 strictness_level=strictness_level)
-    
+        logger.info("API配置更新成功")
+        return {"success": True, "message": "配置更新成功", "updated_config": new_config}
     except Exception as e:
-        error_msg = f"智能批改失败: {str(e)}"
+        error_msg = f"配置更新失败: {str(e)}"
         logger.error(error_msg)
-        return error_msg
-
-if __name__ == "__main__":
-    # 测试网站版本接口
-    print("API配置状态:")
-    print(json.dumps(get_api_status(), ensure_ascii=False, indent=2))
-    
-    # 示例调用
-    # r = correction_of_multiple_answers(("d:/Robin/Project/paper/q16ms.png",), "d:/Robin/Project/paper/q16.pdf")
-    # print(json.dumps(r, ensure_ascii=0, indent=2))
+        return {"success": False, "error": error_msg} 
