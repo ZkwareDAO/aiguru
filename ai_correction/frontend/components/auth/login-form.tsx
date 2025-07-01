@@ -31,17 +31,18 @@ export function LoginForm({ onSuccess, onToggleForm }: LoginFormProps) {
     try {
       const result = await apiService.login(formData)
       
-      if (result.success) {
+      if (result.access_token) {
         if (onSuccess) {
           onSuccess()
         } else {
           router.push('/grading')
         }
       } else {
-        setError(result.error || '登录失败')
+        setError('登录失败')
       }
     } catch (err) {
-      setError('网络错误，请重试')
+      const errorMessage = err instanceof Error ? err.message : '网络错误，请重试'
+      setError(errorMessage)
     } finally {
       setLoading(false)
     }
@@ -59,8 +60,8 @@ export function LoginForm({ onSuccess, onToggleForm }: LoginFormProps) {
   // 填充测试账户
   const fillTestAccount = () => {
     setFormData({
-      username: 'testuser',
-      password: '123456'
+      username: 'test_user_1',
+      password: 'password1'
     })
     setError(null)
   }

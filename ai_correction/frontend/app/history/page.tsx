@@ -90,21 +90,13 @@ export default function HistoryPage() {
       setLoading(true);
       const response = await apiService.getUserRecords(page, 9);
       
-      if (response.success && response.data) {
-        setRecords(response.data.records);
-        setCurrentPage(response.data.page);
-        setTotalPages(response.data.total_pages);
-      } else {
-        toast({
-          title: "加载失败",
-          description: response.error || "无法加载历史记录",
-          variant: "destructive",
-        });
-      }
+      setRecords(response.records);
+      setCurrentPage(response.page);
+      setTotalPages(response.total_pages);
     } catch (error) {
       toast({
         title: "加载错误",
-        description: "网络连接失败",
+        description: error instanceof Error ? error.message : "网络连接失败",
         variant: "destructive",
       });
     } finally {
@@ -116,10 +108,7 @@ export default function HistoryPage() {
   const loadStatistics = async () => {
     try {
       const response = await apiService.getUserStatistics();
-      
-      if (response.success && response.data) {
-        setStatistics(response.data);
-      }
+      setStatistics(response);
     } catch (error) {
       console.error('Failed to load statistics:', error);
     }
@@ -166,24 +155,16 @@ export default function HistoryPage() {
     try {
       const response = await apiService.deleteRecord(recordIndex);
       
-      if (response.success) {
-        toast({
-          title: "删除成功",
-          description: "记录已删除",
-        });
-        loadRecords(currentPage);
-        loadStatistics();
-      } else {
-        toast({
-          title: "删除失败",
-          description: response.error || "删除过程中发生错误",
-          variant: "destructive",
-        });
-      }
+      toast({
+        title: "删除成功",
+        description: response.message || "记录已删除",
+      });
+      loadRecords(currentPage);
+      loadStatistics();
     } catch (error) {
       toast({
         title: "删除错误",
-        description: "网络连接失败",
+        description: error instanceof Error ? error.message : "网络连接失败",
         variant: "destructive",
       });
     }
@@ -194,24 +175,16 @@ export default function HistoryPage() {
     try {
       const response = await apiService.clearAllRecords();
       
-      if (response.success) {
-        toast({
-          title: "清空成功",
-          description: "所有记录已清空",
-        });
-        loadRecords(0);
-        loadStatistics();
-      } else {
-        toast({
-          title: "清空失败",
-          description: response.error || "清空过程中发生错误",
-          variant: "destructive",
-        });
-      }
+      toast({
+        title: "清空成功",
+        description: response.message || "所有记录已清空",
+      });
+      loadRecords(0);
+      loadStatistics();
     } catch (error) {
       toast({
         title: "清空错误",
-        description: "网络连接失败",
+        description: error instanceof Error ? error.message : "网络连接失败",
         variant: "destructive",
       });
     }
@@ -222,20 +195,12 @@ export default function HistoryPage() {
     try {
       const response = await apiService.getRecordDetail(recordIndex);
       
-      if (response.success && response.data) {
-        setSelectedRecord(response.data);
-        setShowDetailDialog(true);
-      } else {
-        toast({
-          title: "加载失败",
-          description: "无法加载记录详情",
-          variant: "destructive",
-        });
-      }
+      setSelectedRecord(response.record);
+      setShowDetailDialog(true);
     } catch (error) {
       toast({
         title: "加载错误",
-        description: "网络连接失败",
+        description: error instanceof Error ? error.message : "网络连接失败",
         variant: "destructive",
       });
     }

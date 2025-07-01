@@ -45,7 +45,7 @@ export function RegisterForm({ onSuccess, onToggleForm }: RegisterFormProps) {
     try {
       const result = await apiService.register(formData)
       
-      if (result.success) {
+      if (result.message) {
         setSuccess(true)
         setTimeout(() => {
           if (onSuccess) {
@@ -55,10 +55,11 @@ export function RegisterForm({ onSuccess, onToggleForm }: RegisterFormProps) {
           }
         }, 1500)
       } else {
-        setError(result.error || '注册失败')
+        setError('注册失败')
       }
     } catch (err) {
-      setError('网络错误，请重试')
+      const errorMessage = err instanceof Error ? err.message : '网络错误，请重试'
+      setError(errorMessage)
     } finally {
       setLoading(false)
     }

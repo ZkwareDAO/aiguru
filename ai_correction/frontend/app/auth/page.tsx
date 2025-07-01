@@ -41,13 +41,13 @@ export default function AuthPage() {
     try {
       // 先检查后端连接
       const healthCheck = await apiService.healthCheck()
-      if (!healthCheck.success) {
+      if (healthCheck.status !== 'healthy') {
         throw new Error('无法连接到服务器，请确保后端服务正在运行')
       }
 
       const result = await apiService.login(loginData)
       
-      if (result.success) {
+      if (result.access_token) {
         setSuccess('登录成功！正在跳转...')
         
         // 跳转到批改页面
@@ -55,7 +55,7 @@ export default function AuthPage() {
           router.push('/grading')
         }, 1000)
       } else {
-        throw new Error(result.error || '登录失败')
+        throw new Error('登录失败')
       }
 
     } catch (error: any) {
@@ -85,7 +85,7 @@ export default function AuthPage() {
 
       // 先检查后端连接
       const healthCheck = await apiService.healthCheck()
-      if (!healthCheck.success) {
+      if (healthCheck.status !== 'healthy') {
         throw new Error('无法连接到服务器，请确保后端服务正在运行')
       }
 
@@ -96,7 +96,7 @@ export default function AuthPage() {
         confirm_password: registerData.confirmPassword
       })
 
-      if (result.success) {
+      if (result.message) {
         setSuccess('注册成功！请切换到登录标签页登录')
         
         // 清空注册表单
@@ -107,7 +107,7 @@ export default function AuthPage() {
           confirmPassword: ''
         })
       } else {
-        throw new Error(result.error || '注册失败')
+        throw new Error('注册失败')
       }
 
     } catch (error: any) {
@@ -121,8 +121,8 @@ export default function AuthPage() {
   // 快速登录测试账户
   const handleQuickLogin = async () => {
     setLoginData({
-      username: 'testuser',
-      password: '123456'
+      username: 'test_user_1',
+      password: 'password1'
     })
     
     setIsLoading(true)
@@ -132,16 +132,16 @@ export default function AuthPage() {
     try {
       // 先检查后端连接
       const healthCheck = await apiService.healthCheck()
-      if (!healthCheck.success) {
+      if (healthCheck.status !== 'healthy') {
         throw new Error('无法连接到服务器，请确保后端服务正在运行')
       }
 
       const result = await apiService.login({
-        username: 'testuser',
-        password: '123456'
+        username: 'test_user_1',
+        password: 'password1'
       })
 
-      if (result.success) {
+      if (result.access_token) {
         setSuccess('登录成功！正在跳转...')
         
         // 跳转到批改页面
@@ -149,7 +149,7 @@ export default function AuthPage() {
           router.push('/grading')
         }, 1000)
       } else {
-        throw new Error(result.error || '快速登录失败')
+        throw new Error('快速登录失败')
       }
 
     } catch (error: any) {
