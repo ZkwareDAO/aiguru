@@ -202,6 +202,60 @@ except ImportError as e:
     def correction_without_marking_scheme(*files, **kwargs):
         return correction_single_group(*files, **kwargs)
 
+# 新增：用于将LaTeX符号转换为Unicode的函数
+def convert_latex_to_unicode(text):
+    if not isinstance(text, str):
+        return text
+
+    # 定义一个内部函数来处理正则表达式匹配到的数学表达式
+    def replace_math_expression(match):
+        latex_content = match.group(1) # 获取$ $之间的内容
+
+        # 处理指数：例如 a^8, b^{-8}
+        # 将数字转换为上标，并处理负号
+        latex_content = re.sub(r'\\^(-?\d+)', lambda m: ''.join([
+            '⁻' if m.group(1).startswith('-') else '', # 添加负号上标
+            ''.join([
+                '⁰¹²³⁴⁵⁶⁷⁸⁹'[int(d)] for d in m.group(1).lstrip('-') # 转换数字为上标
+            ])
+        ]), latex_content)
+        
+        # 处理分数：\\frac{numerator}{denominator}
+        latex_content = re.sub(r'\\\\frac\\{([^}]+)\\}\\{(.*?)\\}', r'(\\1)/(\\2)', latex_content)
+
+        # 常用操作符和符号
+        latex_content = latex_content.replace('\\\\times', '×')
+        latex_content = latex_content.replace('\\\\div', '÷')
+        latex_content = latex_content.replace('\\\\pm', '±')
+        latex_content = latex_content.replace('\\\\sqrt', '√')
+        latex_content = latex_content.replace('\\\\pi', 'π')
+        latex_content = latex_content.replace('\\\\leq', '≤')
+        latex_content = latex_content.replace('\\\\geq', '≥')
+        latex_content = latex_content.replace('\\\\neq', '≠')
+        latex_content = latex_content.replace('\\\\approx', '≈')
+        latex_content = latex_content.replace('\\\\cdot', '·')
+
+        # 几何符号
+        latex_content = latex_content.replace('\\\\angle', '∠')
+        latex_content = latex_content.replace('\\\\triangle', '△')
+        latex_content = latex_content.replace('\\\\circ', '°')
+
+        # 希腊字母
+        latex_content = latex_content.replace('\\\\alpha', 'α')
+        latex_content = latex_content.replace('\\\\beta', 'β')
+        latex_content = latex_content.replace('\\\\gamma', 'γ')
+        latex_content = latex_content.replace('\\\\delta', 'δ')
+        latex_content = latex_content.replace('\\\\theta', 'θ')
+        latex_content = latex_content.replace('\\\\infty', '∞')
+        
+        return latex_content
+
+    # 使用正则表达式查找并替换所有 $...$ 包裹的数学表达式
+    # re.DOTALL 标志使得 . 可以匹配包括换行符在内的任何字符
+    converted_text = re.sub(r'\\$(.*?)\\$', replace_math_expression, text, flags=re.DOTALL)
+    
+    return converted_text
+
 # 导入图片处理库
 try:
     from PIL import Image
@@ -1301,10 +1355,16 @@ def show_result():
             display_content = marking_scheme if st.session_state.result_display_mode == 'scheme' else correction_content
             content_title = "评分标准" if st.session_state.result_display_mode == 'scheme' else "批改结果"
             
+            # 应用LaTeX到Unicode转换
+            display_content = convert_latex_to_unicode(display_content)
+        
         else:
             st.markdown("### 📝 批改结果")
             display_content = correction_content
             content_title = "批改结果"
+            
+            # 应用LaTeX到Unicode转换
+            display_content = convert_latex_to_unicode(display_content)
         
         # 创建结果HTML
         if html_content and st.session_state.get('result_display_mode', 'correction') == 'correction':
