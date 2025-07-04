@@ -1,8 +1,8 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-AI智能批改系统 - 简洁版
-整合calling_api.py和main.py的所有功能，去除无意义空行
+AI? - ?
+?calling_api.py?main.py??
 """
 
 import streamlit as st
@@ -18,45 +18,51 @@ import html
 from functions.api_correcting import (
     intelligent_correction_with_files, 
     img_to_base64,
-    api_config,  # 导入API配置
-    call_tongyiqianwen_api,  # 导入API调用函数
-    batch_correction_with_standard,  # 添加批改函数
-    batch_correction_without_standard,  # 添加批改函数
-    simplified_batch_correction  # 添加简化批改函数
+    api_config,  # ?API?
+    call_tongyiqianwen_api,  # ?API?
+    batch_correction_with_standard,  # ?
+    batch_correction_without_standard,  # ?
+    simplified_batch_correction  # ??
 )
-# 修复版批改函数已通过 functions.api_correcting 导入
+# ? functions.api_correcting ?
 FIXED_API_AVAILABLE = True
-print("正在使用修复版API调用模块")
+print("???API?")
 import logging
 import io
 from PIL import Image
-
-# 兼容性函数：处理不同版本的Streamlit
-def st_rerun():
-    """兼容不同版本的Streamlit重新运行函数"""
-    if hasattr(st, 'rerun'):
-        st.rerun()
-    elif hasattr(st, 'experimental_rerun'):
-        st.experimental_rerun()
-    else:
-        # 对于更老的版本，使用重新加载页面的方式
-        st.experimental_singleton.clear()
-        st._rerun()
 
 try:
     import fitz  # PyMuPDF
 except ImportError:
     fitz = None
 
-# 页面配置
+# Streamlit?
+def st_rerun():
+    """?Streamlit?"""
+    try:
+        # ?rerun
+        st.rerun()
+    except AttributeError:
+        # ?rerun?experimental_rerun
+        try:
+            st.experimental_rerun()
+        except AttributeError:
+            # ?
+            try:
+                st.legacy_caching.clear_cache()
+            except:
+                pass
+            st.stop()
+
+# ?
 st.set_page_config(
-    page_title="AI智能批改系统",
-    page_icon="🤖",
+    page_title="AI?",
+    page_icon="?",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# 导入额外API函数
+# ?API?
 try:
     from functions.api_correcting import (
         correction_single_group,
@@ -67,35 +73,21 @@ try:
         correction_without_marking_scheme
     )
     
-    # 检查API配置状态
+    # ?API??
     api_status = api_config.get_status()
     if api_config.is_valid():
         API_AVAILABLE = True
-        st.success(f"✅ AI批改引擎已就绪 ({api_status['api_key_source']})")
-        st.info(f"🤖 当前使用模型：{api_status['current_model']} (索引：{api_status['model_index']})")
-        
-        # 显示可用模型列表
-        with st.expander("🔧 可用模型列表", expanded=False):
-            for i, model in enumerate(api_status['available_models']):
-                status_icon = "🟢" if i == api_status['model_index'] else "⚪"
-                model_type = "免费" if ":free" in model else "付费"
-                st.write(f"{status_icon} {model} ({model_type})")
-            
-            # 添加模型重置按钮
-            if st.button("🔄 重置到主要模型", help="当遇到频率限制时，可以重置到主要模型"):
-                api_config.reset_model()
-                st.success("✅ 已重置到主要模型")
-                st.rerun()
+        st.success(f"??AI??({api_status['api_key_source']})")
     else:
         API_AVAILABLE = False
-        st.error("❌ API配置无效")
+        st.error("??API?")
         
-        # 显示配置指导
-        with st.expander("🔧 API配置指导", expanded=True):
+        # ?
+        with st.expander("? API?", expanded=True):
             st.markdown("""
-            ### 配置OpenRouter API密钥
+            ### ?OpenRouter API?
             
-            **方法1：环境变量(推荐)**
+            **?1??(?)**
             ```bash
             # Windows PowerShell
             $env:OPENROUTER_API_KEY="your_api_key_here"
@@ -107,120 +99,120 @@ try:
             export OPENROUTER_API_KEY=your_api_key_here
             ```
             
-            **方法2：.env文件**
-            1. 复制 `config_template.env` 为 `.env`
-            2. 编辑 `.env` 文件，填入您的API密钥
-            3. 重启应用程序
+            **?2??env?**
+            1. ? `config_template.env` ??`.env`
+            2. ? `.env` ?API?
+            3. ?
             
-            **获取API密钥：**
-            1. 访问 [OpenRouter](https://openrouter.ai)
-            2. 注册账户并登录
-            3. 前往 [API Keys](https://openrouter.ai/keys)
-            4. 生成新的API密钥
-            5. 复制密钥并按上述方法配置
+            **?API??*
+            1. ? [OpenRouter](https://openrouter.ai)
+            2. ??
+            3. ? [API Keys](https://openrouter.ai/keys)
+            4. ?API?
+            5. ?
             """)
             
-            st.info(f"**当前状态：** {json.dumps(api_status, ensure_ascii=False, indent=2)}")
+            st.info(f"**?** {json.dumps(api_status, ensure_ascii=False, indent=2)}")
             
 except ImportError as e:
     API_AVAILABLE = False
-    st.warning(f"⚠️ AI批改引擎未就绪：{str(e)}")
+    st.warning(f"? AI?{str(e)}")
     
-    # 演示函数
+    # ?
     def correction_single_group(*files, **kwargs):
-        return """# 📋 详细批改结果 (演示模式)
+        return """# ? ? (?)
 
-## 基本信息
-- 科目：数学
-- 得分：8/10 分
-- 等级：B+
+## ?
+- ??
+- ??/10 ??
+- ?B+
 
-## 详细分析
-### ✅ 优点
-- 解题思路清晰正确
-- 基础概念掌握扎实
-- 步骤表述较为规范
+## ?
+### ???
+- ?
+- ?
+- ?
 
-### ❌ 问题
-- 第二步计算有小错误
-- 最终答案格式需要改进
+### ???
+- ????
+- ??
 
-### 💡 改进建议
-1. 仔细检查计算过程
-2. 注意答案的规范性
-3. 可尝试多种解题方法
+### ? ?
+1. ??
+2. ??
+3. ??
 
-**注意：当前为演示模式，请配置API获得真实结果。**"""
+**?API??*"""
     
     def efficient_correction_single(*files, **kwargs):
-        return """📋 **高效批改结果** (演示模式)
+        return """? **?** (?)
 
-**得分：8/10** | **等级：B+**
+**??/10** | **?B+**
 
-🔍 **主要问题**
-• 计算步骤有错误
-• 答案格式不规范
+? **?**
+????
+????
 
-✅ **亮点**
-• 思路清晰
-• 基础扎实
+??**?**
+???
+???
 
-💡 **建议**
-• 检查计算
-• 规范格式
+? **?**
+????
+???
 
-*演示模式，请配置API*"""
+*?API*"""
     
     def batch_efficient_correction(*files, **kwargs):
-        return f"""📊 **批量批改完成** (演示模式)
+        return f"""? **?** (?)
 
-处理文件：{len(files)}个
-平均得分：7.5/10
-批改时间：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+?{len(files)}??
+??.5/10
+?{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 
-## 批改概览
-- 文件1：8/10 (B+)
-- 文件2：7/10 (B)
-- 文件3：8/10 (B+)
+## ?
+- ?1??/10 (B+)
+- ?2??/10 (B)
+- ?3??/10 (B+)
 
-## 总体建议
-注意计算精度，规范答题格式。
+## ?
+??
 
-*演示模式，请配置API获得真实结果*"""
+*?API?*"""
     
     def generate_marking_scheme(*files, **kwargs):
-        return """📋 **自动生成评分标准** (演示模式)
+        return """? **?** (?)
 
-## 题目分析
-- 科目：数学
-- 类型：解答题
-- 难度：中等
-- 总分：10分
+## ?
+- ??
+- ?
+- ??
+- ??0??
 
-## 评分细则
-1. **理解题意** (2分)
-   - 正确理解题目要求：2分
-   - 部分理解：1分
-   - 未理解：0分
+## ?
+1. **?** (2??
+   - ????
+   - ????
+   - ?0??
 
-2. **解题思路** (3分)
-   - 方法正确且优秀：3分
-   - 方法基本正确：2分
-   - 方法有缺陷：1分
-   - 方法错误：0分
+2. **?** (3??
+   - ????
+   - ????
+   - ?1??
+   - ????
 
-3. **计算过程** (3分)
-   - 计算准确无误：3分
-   - 有少量计算错误：2分
-   - 有较多计算错误：1分
-   - 计算错误严重：0分
+3. **?** (3??
+   - ????
+   - ?2??
+   - ?1??
+   - ????
 
-4. **答案格式** (2分)
-   - 格式规范完整：2分
-   - 格式基本规范：1分
-   - 格式不规范：0分
+4. **?** (2??
+   - ????
+   - ????
+   - ?0??
 
-*演示标准，请配置API*"""
+*?API*"""
     
     def correction_with_marking_scheme(scheme, *files, **kwargs):
         return correction_single_group(*files, **kwargs)
@@ -228,7 +220,42 @@ except ImportError as e:
     def correction_without_marking_scheme(*files, **kwargs):
         return correction_single_group(*files, **kwargs)
 
-# 导入图片处理库
+# ?LaTeX?Unicode?
+def convert_latex_to_unicode(text):
+    """?LaTeX?Unicode?"""
+    if not isinstance(text, str):
+        return text
+    
+    # ?LaTeX?
+    replacements = {
+        '\\times': '?',
+        '\\div': '?',
+        '\\pm': '?',
+        '\\sqrt': '?',
+        '\\pi': '?',
+        '\\leq': '?',
+        '\\geq': '?',
+        '\\neq': '?',
+        '\\approx': '?',
+        '\\cdot': '?',
+        '\\angle': '?',
+        '\\triangle': '?',
+        '\\circ': '?',
+        '\\alpha': '?',
+        '\\beta': '?',
+        '\\gamma': '?',
+        '\\delta': '?',
+        '\\theta': '?',
+        '\\infty': '?'
+    }
+    
+    result = text
+    for latex, unicode_char in replacements.items():
+        result = result.replace(latex, unicode_char)
+    
+    return result
+
+# ??
 try:
     from PIL import Image
     import base64
@@ -237,16 +264,16 @@ try:
 except ImportError:
     PREVIEW_AVAILABLE = False
 
-# 常量设置
+# ?
 DATA_FILE = Path("user_data.json")
 UPLOAD_DIR = Path("uploads")
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 ALLOWED_EXTENSIONS = ['txt', 'md', 'pdf', 'docx', 'jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp']
 
-# 确保目录存在
+# ?
 UPLOAD_DIR.mkdir(exist_ok=True)
 
-# 现代化CSS样式 - 增强版支持分栏布局
+# ?CSS? - ?
 st.markdown("""
 <style>
     .stApp {
@@ -292,7 +319,7 @@ st.markdown("""
         backdrop-filter: blur(15px);
     }
     
-    /* 分栏布局样式 - 增强版*/
+    /* ? - ??*/
     .split-container {
         display: flex;
         gap: 1.5rem;
@@ -334,7 +361,7 @@ st.markdown("""
         position: relative;
     }
     
-    /* 自定义滚动条样式 */
+    /* ? */
     .panel-content::-webkit-scrollbar {
         width: 8px;
     }
@@ -354,7 +381,7 @@ st.markdown("""
         background: linear-gradient(135deg, #2563eb, #7c3aed);
     }
     
-    /* 文件预览容器 */
+    /* ? */
     .file-preview-inner {
         background: rgba(0, 0, 0, 0.2);
         border: 1px solid rgba(96, 165, 250, 0.2);
@@ -363,7 +390,7 @@ st.markdown("""
         min-height: 200px;
     }
     
-    /* 批改结果容器 */
+    /* ? */
     .correction-result-inner {
         background: rgba(0, 0, 0, 0.2);
         border: 1px solid rgba(139, 92, 246, 0.2);
@@ -375,7 +402,7 @@ st.markdown("""
         color: #e2e8f0;
     }
     
-    /* 文件切换器增强样式*/
+    /* ??*/
     .file-selector-container {
         background: rgba(0, 0, 0, 0.3);
         border: 1px solid rgba(96, 165, 250, 0.2);
@@ -384,7 +411,7 @@ st.markdown("""
         margin-bottom: 1rem;
     }
     
-    /* 鼠标悬停效果 */
+    /* ? */
     .left-panel:hover, .right-panel:hover {
         border-color: rgba(96, 165, 250, 0.6);
         box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
@@ -392,7 +419,7 @@ st.markdown("""
         transition: all 0.3s ease;
     }
     
-    /* 确保容器可以正确滚动 */
+    /* ? */
     .stSelectbox > div > div,
     .stTextArea > div > div > textarea {
         background: rgba(255, 255, 255, 0.05) !important;
@@ -400,18 +427,18 @@ st.markdown("""
         color: #ffffff !important;
     }
     
-    /* 确保独立滚动 */
+    /* ? */
     .panel-content {
         scroll-behavior: smooth;
     }
     
-    /* 增强焦点效果 */
+    /* ? */
     .panel-content:focus-within {
         outline: 2px solid rgba(96, 165, 250, 0.5);
         outline-offset: -2px;
     }
     
-    /* 文件预览图片样式 */
+    /* ? */
     .file-preview-inner img {
         max-width: 100%;
         height: auto;
@@ -424,7 +451,7 @@ st.markdown("""
         transform: scale(1.02);
     }
     
-    /* 批改结果文本样式优化 */
+    /* ? */
     .correction-result-inner pre {
         font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
         font-size: 0.9rem;
@@ -438,7 +465,7 @@ st.markdown("""
         word-wrap: break-word;
     }
     
-    /* 响应式设计*/
+    /* ??*/
     @media (max-width: 768px) {
         .split-container {
             flex-direction: column;
@@ -493,9 +520,9 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 文件预览功能
+# ?
 def get_file_type(file_name):
-    """获取文件类型"""
+    """?"""
     ext = Path(file_name).suffix.lower()
     if ext in ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp']:
         return 'image'
@@ -510,20 +537,20 @@ def get_file_type(file_name):
 
 def safe_download_data(data):
     """
-    安全转换下载数据为字符串格式，防止Streamlit下载按钮错误
+    ?Streamlit?
     
     Args:
-        data: 任意类型的数据
+        data: ??
         
     Returns:
-        str: 字符串格式的数据
+        str: ?
     """
     if isinstance(data, dict):
-        # 如果是字典格式的批改结果
+        # ?
         if data.get('has_separate_scheme', False):
             marking_scheme = data.get('marking_scheme', '')
             correction_content = data.get('correction_result', '')
-            return f"=== 评分标准 ===\n\n{marking_scheme}\n\n=== 批改结果 ===\n\n{correction_content}"
+            return f"=== ? ===\n\n{marking_scheme}\n\n=== ? ===\n\n{correction_content}"
         else:
             return str(data.get('correction_result', data))
     elif data is None:
@@ -532,54 +559,54 @@ def safe_download_data(data):
         return str(data)
 
 def get_image_base64(image_path, max_size_mb=4):
-    """将图片转换为base64编码，如果超过限制则压缩"""
+    """?base64?"""
     try:
         import base64
         import os
         from PIL import Image
         import io
         
-        # 检查文件大小
+        # ??
         file_size_mb = os.path.getsize(image_path) / (1024 * 1024)
         
         if file_size_mb <= max_size_mb:
-            # 文件不大，直接转换
+            # ??
             with open(image_path, "rb") as img_file:
                 return base64.b64encode(img_file.read()).decode()
         else:
-            # 文件太大，需要压缩
-            print(f"图片文件过大 ({file_size_mb:.2f}MB)，正在压缩..")
+            # ??
+            print(f"? ({file_size_mb:.2f}MB)??..")
             
-            # 打开图片
+            # ?
             img = Image.open(image_path)
             
-            # 转换为RGB模式（如果是RGBA）
+            # ?RGB?RGBA??
             if img.mode in ('RGBA', 'LA', 'P'):
                 img = img.convert('RGB')
             
-            # 计算压缩比例
+            # ?
             quality = 85
-            max_dimension = 1920  # 最大尺寸
+            max_dimension = 1920  # ??
             
-            # 如果图片尺寸太大，先缩放
+            # ?
             if max(img.size) > max_dimension:
                 ratio = max_dimension / max(img.size)
                 new_size = (int(img.size[0] * ratio), int(img.size[1] * ratio))
                 img = img.resize(new_size, Image.Resampling.LANCZOS)
             
-            # 压缩图片直到满足大小要求
+            # ?
             while quality > 20:
                 buffer = io.BytesIO()
                 img.save(buffer, format='JPEG', quality=quality, optimize=True)
                 compressed_size_mb = len(buffer.getvalue()) / (1024 * 1024)
                 
                 if compressed_size_mb <= max_size_mb:
-                    print(f"压缩完成: {file_size_mb:.2f}MB -> {compressed_size_mb:.2f}MB (质量: {quality})")
+                    print(f"?: {file_size_mb:.2f}MB -> {compressed_size_mb:.2f}MB (?: {quality})")
                     return base64.b64encode(buffer.getvalue()).decode()
                 
                 quality -= 10
             
-            # 如果还是太大，进一步缩小尺寸
+            # ??
             while max_dimension > 800:
                 max_dimension -= 200
                 ratio = max_dimension / max(img.size)
@@ -591,22 +618,22 @@ def get_image_base64(image_path, max_size_mb=4):
                 compressed_size_mb = len(buffer.getvalue()) / (1024 * 1024)
                 
                 if compressed_size_mb <= max_size_mb:
-                    print(f"缩放压缩完成: {file_size_mb:.2f}MB -> {compressed_size_mb:.2f}MB (尺寸: {new_size})")
+                    print(f"?: {file_size_mb:.2f}MB -> {compressed_size_mb:.2f}MB (?: {new_size})")
                     return base64.b64encode(buffer.getvalue()).decode()
             
-            # 最后的尝试
+            # ?
             buffer = io.BytesIO()
             img.save(buffer, format='JPEG', quality=50, optimize=True)
             final_size_mb = len(buffer.getvalue()) / (1024 * 1024)
-            print(f"最终压缩: {file_size_mb:.2f}MB -> {final_size_mb:.2f}MB")
+            print(f"?? {file_size_mb:.2f}MB -> {final_size_mb:.2f}MB")
             return base64.b64encode(buffer.getvalue()).decode()
             
     except Exception as e:
-        print(f"图片转换失败: {e}")
+        print(f"?: {e}")
         return None
 
 def preview_file(file_path, file_name):
-    """预览文件内容"""
+    """?"""
     try:
         file_type = get_file_type(file_name)
         
@@ -615,41 +642,41 @@ def preview_file(file_path, file_name):
                 image = Image.open(file_path)
                 st.image(image, caption=file_name, use_column_width=True)
             except Exception as e:
-                st.error(f"图片预览失败: {e}")
+                st.error(f"?: {e}")
                 
         elif file_type == 'text':
             try:
                 with open(file_path, 'r', encoding='utf-8') as f:
                     content = f.read()
                 if len(content) > 5000:
-                    content = content[:5000] + "\n...(内容过长，已截断)"
-                st.text_area("文本内容", content, height=400, disabled=True)
+                    content = content[:5000] + "\n...(?)"
+                st.text_area("?", content, height=400, disabled=True)
             except Exception as e:
                 try:
                     with open(file_path, 'r', encoding='gbk') as f:
                         content = f.read()
                     if len(content) > 5000:
-                        content = content[:5000] + "\n...(内容过长，已截断)"
-                    st.text_area("文本内容", content, height=400, disabled=True)
+                        content = content[:5000] + "\n...(?)"
+                    st.text_area("?", content, height=400, disabled=True)
                 except Exception as e2:
-                    st.error(f"文本预览失败: {e2}")
+                    st.error(f"?: {e2}")
                     
         elif file_type == 'pdf':
-            st.info(f"📄 PDF文件: {file_name}")
-            st.write("PDF文件预览需要额外的库支持")
+            st.info(f"? PDF?: {file_name}")
+            st.write("PDF?")
             
         elif file_type == 'document':
-            st.info(f"📄 Word文档: {file_name}")
-            st.write("Word文档预览需要额外的库支持")
+            st.info(f"? Word?: {file_name}")
+            st.write("Word?")
             
         else:
-            st.info(f"📄 文件: {file_name}")
-            st.write("暂不支持此类型文件的预览")
+            st.info(f"? ?: {file_name}")
+            st.write("?")
             
     except Exception as e:
-        st.error(f"文件预览失败: {e}")
+        st.error(f"?: {e}")
 
-# 初始化session state
+# ?session state
 def init_session():
     if 'logged_in' not in st.session_state:
         st.session_state.logged_in = False
@@ -666,7 +693,7 @@ def init_session():
     if 'correction_settings' not in st.session_state:
         st.session_state.correction_settings = {}
 
-# 数据管理
+# ?
 def read_users():
     try:
         if DATA_FILE.exists():
@@ -675,7 +702,7 @@ def read_users():
         else:
             data = {}
         
-        # 确保demo用户存在
+        # ?demo?
         if "demo" not in data:
             data["demo"] = {
                 "password": hashlib.sha256("demo".encode()).hexdigest(),
@@ -694,34 +721,34 @@ def save_users(data):
         with open(DATA_FILE, 'w', encoding='utf-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
     except Exception as e:
-        st.error(f"保存失败: {e}")
+        st.error(f"?: {e}")
 
 def save_files(files, username, file_category=None):
     """
-    保存文件并根据类别添加前缀
+    ?
     
     Args:
-        files: 上传的文件列表
-        username: 用户名
-        file_category: 文件类别 ('question', 'answer', 'marking')
+        files: ??
+        username: ??
+        file_category: ? ('question', 'answer', 'marking')
     """
     user_dir = UPLOAD_DIR / username
     user_dir.mkdir(exist_ok=True)
     
-    # 定义文件类别前缀
+    # ?
     category_prefixes = {
         'question': 'QUESTION_',
         'answer': 'ANSWER_', 
         'marking': 'MARKING_'
     }
     
-    saved_files_info = []
+    saved_files = []
     for file in files:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         file_ext = Path(file.name).suffix
         safe_name = re.sub(r'[^\w\-_.]', '_', Path(file.name).stem)
         
-        # 根据文件类别添加前缀
+        # ?
         if file_category and file_category in category_prefixes:
             prefix = category_prefixes[file_category]
             filename = f"{prefix}{timestamp}_{safe_name}{file_ext}"
@@ -732,27 +759,25 @@ def save_files(files, username, file_category=None):
         with open(file_path, "wb") as f:
             f.write(file.getbuffer())
         
-        # 返回包含路径和名称的字典
-        saved_files_info.append({
+        # ?
+        saved_files.append({
             "path": str(file_path),
             "name": filename,
             "original_name": file.name,
-            "size": len(file.getbuffer()),
-            "category": file_category,
-            "display_name": f"{filename} ({file.name})"
+            "category": file_category or "unknown"
         })
     
-    return saved_files_info
+    return saved_files
 
-# 主页
+# ??
 def show_home():
-    st.markdown('<h1 class="main-title">🤖 AI智能批改系统</h1>', unsafe_allow_html=True)
-    st.markdown('<p style="text-align: center; color: #94a3b8; font-size: 1.1rem;">AI赋能教育，智能批改新纪元</p>', unsafe_allow_html=True)
+    st.markdown('<h1 class="main-title">? AI?</h1>', unsafe_allow_html=True)
+    st.markdown('<p style="text-align: center; color: #94a3b8; font-size: 1.1rem;">AI?</p>', unsafe_allow_html=True)
     
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        if st.button("🚀 立即批改", use_container_width=True, type="primary"):
+        if st.button("? ?", use_container_width=True, type="primary"):
             if st.session_state.logged_in:
                 st.session_state.page = "grading"
                 st_rerun()
@@ -761,7 +786,7 @@ def show_home():
                 st_rerun()
     
     with col2:
-        if st.button("📚 查看历史", use_container_width=True):
+        if st.button("? ?", use_container_width=True):
             if st.session_state.logged_in:
                 st.session_state.page = "history"
                 st_rerun()
@@ -770,50 +795,50 @@ def show_home():
                 st_rerun()
     
     with col3:
-        if st.button("👤 用户中心", use_container_width=True):
+        if st.button("? ?", use_container_width=True):
             st.session_state.page = "login"
             st_rerun()
     
-    # 功能介绍
+    # ?
     st.markdown("---")
-    st.markdown("### 💡 系统特色")
+    st.markdown("### ? ?")
     
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        st.markdown("**🎯 智能批改**")
-        st.write("支持多种文件格式")
-        st.write("智能识别内容")
-        st.write("详细错误分析")
+        st.markdown("**? ?**")
+        st.write("? ?")
+        st.write("? ?")
+        st.write("? ?")
     
     with col2:
-        st.markdown("**📊 多种模式**")
-        st.write("高效模式：快速批改")
-        st.write("详细模式：深度分析")
-        st.write("批量模式：批量处理")
+        st.markdown("**? ?**")
+        st.write("? ?")
+        st.write("? ?")
+        st.write("? ?")
     
     with col3:
-        st.markdown("**💎 增值功能**")
-        st.write("自动生成评分标准")
-        st.write("多语言支持")
-        st.write("历史记录管理")
+        st.markdown("**? ?**")
+        st.write("? ?")
+        st.write("? ?")
+        st.write("? ?")
 
-# 登录页面
+# ?
 def show_login():
-    st.markdown('<h2 class="main-title">🔐 用户中心</h2>', unsafe_allow_html=True)
+    st.markdown('<h2 class="main-title">? ?</h2>', unsafe_allow_html=True)
     
-    tab1, tab2 = st.tabs(["登录", "注册"])
+    tab1, tab2 = st.tabs(["?", "?"])
     
     with tab1:
         with st.form("login_form"):
-            username = st.text_input("用户名", placeholder="输入用户名")
-            password = st.text_input("密码", type="password", placeholder="输入密码")
+            username = st.text_input("?", placeholder="?")
+            password = st.text_input("?", type="password", placeholder="?")
             
             col1, col2 = st.columns(2)
             with col1:
-                login_btn = st.form_submit_button("登录", use_container_width=True)
+                login_btn = st.form_submit_button("?", use_container_width=True)
             with col2:
-                demo_btn = st.form_submit_button("演示登录", use_container_width=True)
+                demo_btn = st.form_submit_button("?", use_container_width=True)
             
             if login_btn or demo_btn:
                 if demo_btn:
@@ -828,23 +853,23 @@ def show_login():
                         st.session_state.logged_in = True
                         st.session_state.username = username
                         st.session_state.page = "grading"
-                        st.success(f"欢迎，{username}！")
+                        st.success(f"?{username}?")
                         st_rerun()
                     else:
-                        st.error("用户名或密码错误")
+                        st.error("?")
                 else:
-                    st.error("请输入用户名和密码")
+                    st.error("?")
         
-        st.info("💡 演示账户：demo/demo")
+        st.info("? ?demo/demo")
     
     with tab2:
         with st.form("register_form"):
-            new_username = st.text_input("用户名")
-            new_email = st.text_input("邮箱")
-            new_password = st.text_input("密码", type="password")
-            confirm_password = st.text_input("确认密码", type="password")
+            new_username = st.text_input("?")
+            new_email = st.text_input("?")
+            new_password = st.text_input("?", type="password")
+            confirm_password = st.text_input("?", type="password")
             
-            register_btn = st.form_submit_button("注册", use_container_width=True)
+            register_btn = st.form_submit_button("?", use_container_width=True)
             
             if register_btn:
                 if all([new_username, new_password, confirm_password]):
@@ -858,20 +883,20 @@ def show_login():
                                 "records": []
                             }
                             save_users(users)
-                            st.success("注册成功！请登录")
+                            st.success("?")
                         else:
-                            st.error("用户名已存在")
+                            st.error("?")
                     else:
-                        st.error("密码不一致")
+                        st.error("?")
                 else:
-                    st.error("请填写所有必填字段")
+                    st.error("?")
 
-# 批改页面
+# ?
 def show_grading():
-    """显示批改页面"""
-    st.header("📝 AI智能批改")
+    """?"""
+    st.header("? AI?")
     
-    # 获取批改设置
+    # ?
     batch_settings = st.session_state.get('batch_settings', {
         'enable_batch': True,
         'batch_size': 10,
@@ -881,99 +906,99 @@ def show_grading():
         'max_steps': 3
     })
     
-    # 显示当前设置状态
-    with st.expander("⚙️ 当前批改设置", expanded=False):
+    # ??
+    with st.expander("? ?", expanded=False):
         col1, col2 = st.columns(2)
         with col1:
-            st.write(f"🔄 分批处理: {'启用' if batch_settings['enable_batch'] else '禁用'}")
-            st.write(f"📊 每批数量: {batch_settings['batch_size']}个")
-            st.write(f"⏭️ 跳过缺失: {'是' if batch_settings['skip_missing'] else '否'}")
+            st.write(f"? ?: {'?' if batch_settings['enable_batch'] else '?'}")
+            st.write(f"? ?: {batch_settings['batch_size']}??)
+            st.write(f"? ?: {'?? if batch_settings['skip_missing'] else '??}")
         with col2:
-            st.write(f"📋 总结分离: {'是' if batch_settings['separate_summary'] else '否'}")
-            st.write(f"📈 生成总结: {'是' if batch_settings['generate_summary'] else '否'}")
-            st.write(f"🛑 最大步骤数: {batch_settings['max_steps']}")
+            st.write(f"? ?: {'?? if batch_settings['separate_summary'] else '??}")
+            st.write(f"? ?: {'?? if batch_settings['generate_summary'] else '??}")
+            st.write(f"? ?? {batch_settings['max_steps']}??)
     
-    # 分类文件上传区域
-    st.markdown("### 📤 文件上传")
+    # ?
+    st.markdown("### ? ?")
     
-    # 智能分类系统说明
-    with st.expander("🤖 智能文件分类说明", expanded=False):
+    # ?
+    with st.expander("? ?", expanded=False):
         st.markdown("""
-        ### 🆕 自动文件分类系统
+        ### ? ?
         
-        为了提高AI批改的准确性，系统现在会自动为上传的文件添加类别前缀。
+        ?AI??
         
-        - **📋 题目文件** 以`QUESTION_`开头：让AI准确识别题目内容
-        - **✏️ 学生答案** 以`ANSWER_`开头：让AI专注于学生的解题过程  
-        - **📊 批改标准** 以`MARKING_`开头：让AI准确识别评分标准
+        - **? ?** ??`QUESTION_?`?AI?
+        - **? ?** ??`ANSWER_?`?AI?  
+        - **? ?** ??`MARKING_?`?AI?
         
-        **优势**：
-        - �� **精确分类**：100%准确的文件类型识别
-        - 🚀 **快速处理**：无需内容分析即可分类
-        - 🛡️ **错误防护**：杜绝文件类型混淆
-        - 🤖 **智能批改**：AI能更准确地理解每个文件的作用
+        **?**??
+        - ? **?**??00%??
+        - ??**??*?
+        - ??**?**??
+        - ? **?**?AI?
         
-        您只需要按原来的方式上传文件，系统会自动处理文件命名！
+        ?
         """)
     
-    # 使用三列布局
+    # ?
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        st.markdown("**📋 题目文件**")
-        st.caption("🤖 系统会自动将文件名改成`QUESTION_`前缀")
+        st.markdown("**? ?**")
+        st.caption("? ??QUESTION_?")
         question_files = st.file_uploader(
-            "上传题目",
+            "?",
             type=ALLOWED_EXTENSIONS,
             accept_multiple_files=True,
-            help="上传题目文件（可选）- 系统将自动添加QUESTION_前缀",
+            help="?- ?QUESTION_?",
             key="question_upload"
         )
         if question_files:
-            st.success(f"🎉 {len(question_files)} 个题目文件")
-            with st.expander("📝 文件预览"):
+            st.success(f"??{len(question_files)} ??)
+            with st.expander("? ?"):
                 for f in question_files:
-                    st.text(f"原始文件名: {f.name}")
-                    st.text(f"保存为 QUESTION_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{f.name}")
+                    st.text(f"?: {f.name}")
+                    st.text(f"?? QUESTION_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{f.name}")
                     st.divider()
     
     with col2:
-        st.markdown("**✏️ 学生作答**")
-        st.caption("🤖 系统会自动将文件名改成`ANSWER_`前缀")
+        st.markdown("**? ?**")
+        st.caption("? ??ANSWER_?")
         answer_files = st.file_uploader(
-            "上传学生答案",
+            "?",
             type=ALLOWED_EXTENSIONS,
             accept_multiple_files=True,
-            help="上传学生作答文件（必填）- 系统将自动添加ANSWER_前缀",
+            help="?- ?ANSWER_?",
             key="answer_upload"
         )
         if answer_files:
-            st.success(f"🎉 {len(answer_files)} 个答案文件")
-            with st.expander("📝 文件预览"):
+            st.success(f"??{len(answer_files)} ??)
+            with st.expander("? ?"):
                 for f in answer_files:
-                    st.text(f"原始文件名: {f.name}")
-                    st.text(f"保存为 ANSWER_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{f.name}")
+                    st.text(f"?: {f.name}")
+                    st.text(f"?? ANSWER_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{f.name}")
                     st.divider()
     
     with col3:
-        st.markdown("**📊 批改标准**")
-        st.caption("🤖 系统会自动将文件名改成`MARKING_`前缀")
+        st.markdown("**? ?**")
+        st.caption("? ??MARKING_?")
         marking_files = st.file_uploader(
-            "上传评分标准",
+            "?",
             type=ALLOWED_EXTENSIONS,
             accept_multiple_files=True,
-            help="上传评分标准文件（可选）- 系统将自动添加MARKING_前缀",
+            help="?- ?MARKING_?",
             key="marking_upload"
         )
         if marking_files:
-            st.success(f"🎉 {len(marking_files)} 个标准文件")
-            with st.expander("📝 文件预览"):
+            st.success(f"??{len(marking_files)} ??)
+            with st.expander("? ?"):
                 for f in marking_files:
-                    st.text(f"原始文件名: {f.name}")
-                    st.text(f"保存为 MARKING_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{f.name}")
+                    st.text(f"?: {f.name}")
+                    st.text(f"?? MARKING_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{f.name}")
                     st.divider()
     
-    # 合并所有文件
+    # ??
     all_uploaded_files = []
     if question_files:
         all_uploaded_files.extend(question_files)
@@ -982,39 +1007,39 @@ def show_grading():
     if marking_files:
         all_uploaded_files.extend(marking_files)
     
-    # 修改批改按钮处理逻辑
-    if st.button("🚀 开始AI批改", type="primary", use_container_width=True):
+    # ?
+    if st.button("? ?AI?", type="primary", use_container_width=True):
         if not all_uploaded_files:
-            st.error("⚠️ 请先上传文件")
+            st.error("? ?")
             return
             
         if not API_AVAILABLE:
-            st.error("❌ AI批改引擎未就绪，请检查API配置")
+            st.error("??AI?API?")
             return
         
-        # 显示批改进度
+        # ?
         progress_bar = st.progress(0)
         status_text = st.empty()
         
         try:
-            # 文件分类和处理
-            status_text.text("🔍 正在分析上传的文件..")
+            # ??
+            status_text.text("? ??..")
             progress_bar.progress(10)
             
-            # 保存文件（分类保存）
+            # ?
             saved_files = []
             
-            # 保存题目文件
+            # ?
             if question_files:
                 saved_question_files = save_files(question_files, st.session_state.username, 'question')
                 saved_files.extend(saved_question_files)
             
-            # 保存答案文件
+            # ?
             if answer_files:
                 saved_answer_files = save_files(answer_files, st.session_state.username, 'answer')
                 saved_files.extend(saved_answer_files)
             
-            # 保存批改标准文件
+            # ?
             if marking_files:
                 saved_marking_files = save_files(marking_files, st.session_state.username, 'marking')
                 saved_files.extend(saved_marking_files)
@@ -1022,76 +1047,72 @@ def show_grading():
             file_paths = [f["path"] for f in saved_files]
             
             progress_bar.progress(30)
-            status_text.text("🤖 正在进行AI批改...")
+            status_text.text("? ?AI?...")
             
-            # 根据设置选择批改方式
+            # ?
             if batch_settings['enable_batch']:
-                # 使用智能批量批改系统
-                from functions.api_correcting.intelligent_batch_processor import intelligent_batch_correction_sync
-                
-                # 显示AI分析进度
-                status_text.text("🔍 AI正在智能分析文件内容...")
-                progress_bar.progress(20)
-                
-                # 获取所有文件路径
-                all_file_paths = [f["path"] for f in saved_files]
-                
-                # 执行智能批量批改
-                # - 自动识别题目和学生
-                # - 每批最多10道题
-                # - 支持并发处理
-                # - 为每个学生生成总结
-                result = intelligent_batch_correction_sync(
-                    all_file_paths,
-                    file_info_list=saved_files,
-                    batch_size=10,  # 每批最多10道题
-                    max_concurrent=3  # 最多3个并发批次
-                )
-                
-                # 更新进度
-                progress_bar.progress(80)
+                # ??
+                if any('MARKING' in f.name.upper() for f in all_uploaded_files):
+                    # ??
+                    from functions.api_correcting.calling_api import enhanced_batch_correction_with_standard
+                    
+                    # ?
+                    marking_files = [f["path"] for f in saved_files if 'MARKING' in f["name"].upper()]
+                    answer_files = [f["path"] for f in saved_files if 'ANSWER' in f["name"].upper()]
+                    
+                    result = enhanced_batch_correction_with_standard(
+                        answer_files,
+                        file_info_list=saved_files,
+                        batch_size=batch_settings['batch_size'],
+                        generate_summary=batch_settings['generate_summary']
+                    )
+                else:
+                    # ??
+                    from functions.api_correcting.calling_api import enhanced_batch_correction_without_standard
+                    
+                    answer_files = [f["path"] for f in saved_files if 'ANSWER' in f["name"].upper()]
+                    
+                    result = enhanced_batch_correction_without_standard(
+                        answer_files,
+                        file_info_list=saved_files,
+                        batch_size=batch_settings['batch_size'],
+                        generate_summary=batch_settings['generate_summary']
+                    )
             else:
-                # 使用传统批改方式
+                # ?
                 result = intelligent_correction_with_files(
                     answer_files=[f["path"] for f in saved_files if 'ANSWER' in f["name"].upper()],
                     marking_scheme_files=[f["path"] for f in saved_files if 'MARKING' in f["name"].upper()],
-                    strictness_level="严格"
+                    strictness_level="?"
                 )
             
             progress_bar.progress(90)
-            status_text.text("批改完成，正在整理结果..")
+            status_text.text("????..")
             
             if result:
-                # 处理不同格式的结果
-                if isinstance(result, dict):
-                    # 如果是字典格式，提取文本内容
-                    result_text = result.get('text', result.get('correction_result', str(result)))
-                    result_html = result.get('html', '')
-                else:
-                    # 如果是字符串格式
-                    result_text = str(result)
-                    result_html = ''
-                
-                # 保存结果
+                # ?
                 grading_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 
-                # 生成结果数据
+                # ?
                 result_data = {
                     "result": result,
-                    "result_text": result_text,
-                    "result_html": result_html,
                     "time": grading_time,
                     "files": [f["name"] for f in saved_files],
                     "settings": batch_settings,
                     "type": "enhanced_batch" if batch_settings['enable_batch'] else "traditional"
                 }
                 
-                # 保存到session state
+                # ?session
+                if "grading_results" not in st.session_state:
+                    st.session_state.grading_results = []
+                st.session_state.grading_results.append(result_data)
+                
+                # ?session state?
                 st.session_state.correction_result = result
                 st.session_state.uploaded_files_data = saved_files
-                st.session_state.current_file_index = 0
+                st.session_state.current_file_index = 0  # ??
                 
-                # 设置批改任务为已完成
+                # ?
                 st.session_state.correction_task = {
                     'status': 'completed',
                     'all_file_info': saved_files,
@@ -1100,137 +1121,202 @@ def show_grading():
                     'marking_files': [f["path"] for f in saved_files if 'MARKING' in f["name"].upper()]
                 }
                 
-                # 设置批改设置
+                # ?
                 st.session_state.correction_settings = {
-                    'has_marking_scheme': bool([f for f in saved_files if 'MARKING' in f["name"].upper()]),
-                    'strictness': '严格',
+                    'has_marking_scheme': bool(marking_files),
+                    'strictness': '?',
                     'use_batch_processing': batch_settings['enable_batch'],
                     'batch_size': batch_settings['batch_size']
                 }
                 
-                # 保存到用户记录
-                if "grading_results" not in st.session_state:
-                    st.session_state.grading_results = []
-                st.session_state.grading_results.append(result_data)
-                
                 progress_bar.progress(100)
-                status_text.text("🎉 批改完成")
+                status_text.text("? ??)
                 
-                st.success("✅ 批改完成！")
+                st.success("???...")
                 st.balloons()
                 
-                # 显示结果预览
-                with st.expander("📊 批改结果预览", expanded=True):
-                    preview_text = result_text[:1000] + "..." if len(result_text) > 1000 else result_text
-                    st.text_area("", value=preview_text, height=300, disabled=True)
-                
-                # 设置批改任务为待处理，准备跳转到结果页面
-                st.session_state.correction_task['status'] = 'pending'
-                
-                # 自动跳转到结果页面
-                time.sleep(1)  # 短暂延迟让用户看到成功消息
+                # ?
+                time.sleep(1)
                 st.session_state.page = "result"
                 st_rerun()
                 
             else:
-                st.error("批改失败，请检查文件格式或重试")
-                # 添加调试信息
-                with st.expander("🔍 调试信息", expanded=False):
-                    st.write("批改设置:", batch_settings)
-                    st.write("文件数量:", len(all_uploaded_files))
-                    st.write("保存的文件：", len(saved_files) if 'saved_files' in locals() else "未确定")
+                st.error("???")
                 
         except Exception as e:
-            st.error(f"批改过程中出现错误：{str(e)}")
-            # 添加详细错误信息
-            with st.expander("🔍 错误详情", expanded=True):
-                import traceback
+            import traceback
+            st.error(f"???{str(e)}")
+            # ?
+            with st.expander("? ?", expanded=True):
                 st.code(traceback.format_exc())
             
         finally:
             progress_bar.empty()
             status_text.empty()
 
-# 新的简化结果页面
+# ??
 def show_result():
-    """使用iframe实现完全隔离的滚动区域，支持评分标准和批改结果的切换显示"""
+    """?iframe?"""
     
     if not st.session_state.logged_in:
-        st.warning("请先登录")
+        st.warning("?")
         st.session_state.page = "login"
         st_rerun()
         return
     
-    # 如果有待处理的批改任务，标记为已完成（批改已在grading页面完成）
+    # ?
     if 'correction_task' in st.session_state and st.session_state.correction_task.get('status') == 'pending':
-        st.session_state.correction_task['status'] = 'completed'
+        # ?
+        st.markdown('<h2 class="main-title">? AI??..</h2>', unsafe_allow_html=True)
+        
+        # ??
+        progress_container = st.container()
+        with progress_container:
+            col1, col2, col3 = st.columns([1, 2, 1])
+            with col2:
+                st.markdown("""
+                <div style="text-align: center; padding: 50px;">
+                    <div class="spinner"></div>
+                    <h3 style="color: #3b82f6; margin-top: 30px;">? AI?...</h3>
+                    <p style="color: #94a3b8; margin-top: 10px;">??/p>
+                    <p style="color: #64748b; font-size: 0.9em; margin-top: 15px;">????| ? ? | ? ?</p>
+                </div>
+                <style>
+                .spinner {
+                    margin: 0 auto;
+                    width: 60px;
+                    height: 60px;
+                    border: 5px solid rgba(59, 130, 246, 0.1);
+                    border-radius: 50%;
+                    border-top-color: #3b82f6;
+                    animation: spin 1s ease-in-out infinite;
+                }
+                @keyframes spin {
+                    to { transform: rotate(360deg); }
+                }
+                </style>
+                """, unsafe_allow_html=True)
+        
+        # ?
+        with st.spinner(""):
+            try:
+                task = st.session_state.correction_task
+                settings = st.session_state.correction_settings
+                
+                # ?AI? - ?API
+                from functions.api_correcting.calling_api import enhanced_batch_correction_with_standard, enhanced_batch_correction_without_standard
+                
+                if settings.get('has_marking_scheme') and task['marking_files']:
+                    # ??- ??
+                    result = enhanced_batch_correction_with_standard(
+                        content_list=task['answer_files'],
+                        file_info_list=task['all_file_info'],
+                        batch_size=settings.get('batch_size', 10),
+                        generate_summary=True
+                    )
+                else:
+                    # ??- ??
+                    result = enhanced_batch_correction_without_standard(
+                        content_list=task['answer_files'],
+                        file_info_list=task['all_file_info'],
+                        batch_size=settings.get('batch_size', 10),
+                        generate_summary=True
+                    )
+                
+                # ?
+                users = read_users()
+                if st.session_state.username in users:
+                    record = {
+                        'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        'files': [f['display_name'] for f in task['all_file_info']],
+                        'file_data': task['all_file_info'],
+                        'settings': settings,
+                        'result': result,
+                        'files_count': len(task['all_file_info'])
+                    }
+                    users[st.session_state.username]['records'].append(record)
+                    save_users(users)
+                
+                # ??
+                st.session_state.correction_result = result
+                st.session_state.correction_task['status'] = 'completed'
+                
+                # ?
+                st_rerun()
+                
+            except Exception as e:
+                st.error(f"?{str(e)}")
+                st.session_state.correction_task['status'] = 'failed'
+                if st.button("?"):
+                    st.session_state.page = "grading"
+                    st_rerun()
+                return
     
-    st.markdown('<h2 class="main-title">📊 批改结果</h2>', unsafe_allow_html=True)
+    st.markdown('<h2 class="main-title">? ?</h2>', unsafe_allow_html=True)
     
-    # 检查批改结果和文件数据
+    # ?
     if not st.session_state.get('correction_result') or not st.session_state.get('uploaded_files_data'):
-        st.warning("暂无批改结果或文件数")
-        if st.button("返回批改", use_container_width=True):
+        st.warning("??)
+        if st.button("?", use_container_width=True):
             st.session_state.page = "grading"
             st_rerun()
         return
     
-    # 获取文件数据和批改结果
+    # ??
     files_data = st.session_state.get('uploaded_files_data', [])
     current_index = st.session_state.get('current_file_index', 0)
     correction_result = st.session_state.get('correction_result')
     
-    # 确保索引在有效范围内
+    # ?
     if current_index >= len(files_data):
         st.session_state.current_file_index = 0
         current_index = 0
     
-    # 处理新的返回格式（字典格式）
+    # ?
     has_separate_scheme = False
     marking_scheme = None
     correction_content = correction_result
-    result_format = 'text'  # 默认文本格式
+    html_content = None
     
     if isinstance(correction_result, dict):
-        has_separate_scheme = correction_result.get('has_separate_scheme', False)
-        result_format = correction_result.get('format', 'text')  # 检查格式类型
-        
-        if has_separate_scheme:
-            marking_scheme = correction_result.get('marking_scheme', '')
-            correction_content = correction_result.get('correction_result', '')
+        # ?HTML??
+        if correction_result.get('format') == 'enhanced':
+            correction_content = correction_result.get('text', '')
+            html_content = correction_result.get('html', '')
         else:
-            correction_content = correction_result.get('correction_result', str(correction_result))
-        
-        # 如果是智能批量格式，使用HTML内容
-        if result_format == 'intelligent_batch':
-            correction_content = correction_result.get('html', correction_result.get('text', ''))
+            has_separate_scheme = correction_result.get('has_separate_scheme', False)
+            if has_separate_scheme:
+                marking_scheme = correction_result.get('marking_scheme', '')
+                correction_content = correction_result.get('correction_result', '')
+            else:
+                correction_content = correction_result.get('correction_result', str(correction_result))
     elif isinstance(correction_result, str):
         correction_content = correction_result
     else:
         correction_content = str(correction_result)
     
-    # 创建两列布局
+    # ?
     col_left, col_right = st.columns(2)
     
-    # 左侧：文件预览
+    # ??
     with col_left:
-        st.markdown("### 📁 文件预览")
+        st.markdown("### ? ?")
         
-        # 创建一个包含所有内容的HTML字符串
+        # ?HTML??
         if files_data and current_index < len(files_data):
             current_file = files_data[current_index]
             
-            # 生成预览内容
+            # ?
             preview_html = generate_file_preview_html(current_file)
             
-            # 使用components.html显示
+            # ?components.html?
             st.components.v1.html(preview_html, height=520, scrolling=True)
             
-            # 文件切换
+            # ?
             if len(files_data) > 1:
                 st.markdown("---")
                 new_index = st.selectbox(
-                    "切换文件",
+                    "?",
                     range(len(files_data)),
                     format_func=lambda i: f"{i+1}. {files_data[i]['name']}",
                     index=current_index,
@@ -1240,51 +1326,51 @@ def show_result():
                     st.session_state.current_file_index = new_index
                     st_rerun()
     
-    # 右侧：批改结果（支持切换显示）
+    # ??
     with col_right:
-        # 如果有分离的评分标准，显示切换选项
+        # ?
         if has_separate_scheme and marking_scheme:
-            st.markdown("### 📝 批改内容")
+            st.markdown("### ? ?")
             
-            # 初始化显示模式
+            # ??
             if 'result_display_mode' not in st.session_state:
                 st.session_state.result_display_mode = 'correction'
             
-            # 切换按钮
+            # ?
             col_r1, col_r2 = st.columns(2)
             with col_r1:
-                if st.button("📊 批改结果", use_container_width=True, 
+                if st.button("? ?", use_container_width=True, 
                            type="primary" if st.session_state.result_display_mode == 'correction' else "secondary"):
                     st.session_state.result_display_mode = 'correction'
                     st_rerun()
             
             with col_r2:
-                if st.button("📋 评分标准", use_container_width=True,
+                if st.button("? ?", use_container_width=True,
                            type="primary" if st.session_state.result_display_mode == 'scheme' else "secondary"):
                     st.session_state.result_display_mode = 'scheme'
                     st_rerun()
             
-            # 根据选择显示内容
+            # ?
             display_content = marking_scheme if st.session_state.result_display_mode == 'scheme' else correction_content
-            content_title = "评分标准" if st.session_state.result_display_mode == 'scheme' else "批改结果"
+            content_title = "?" if st.session_state.result_display_mode == 'scheme' else "?"
             
+            # ?LaTeX?Unicode?
+            display_content = convert_latex_to_unicode(display_content)
+        
         else:
-            st.markdown("### 📝 批改结果")
+            st.markdown("### ? ?")
             display_content = correction_content
-            content_title = "批改结果"
+            content_title = "?"
+            
+            # ?LaTeX?Unicode?
+            display_content = convert_latex_to_unicode(display_content)
         
-        # 创建结果HTML
-        # 检查是否是智能批量格式的HTML内容
-        is_html_content = (result_format == 'intelligent_batch' and 
-                          isinstance(display_content, str) and 
-                          '<div' in display_content and 
-                          'style=' in display_content)
-        
-        if is_html_content:
-            # 如果是HTML格式，直接显示
-            result_html = display_content
+        # ?HTML
+        if html_content and st.session_state.get('result_display_mode', 'correction') == 'correction':
+            # ?HTML?
+            result_html = html_content
         else:
-            # 否则使用预格式化文本显示
+            # ?
             result_html = f"""
             <!DOCTYPE html>
             <html>
@@ -1294,9 +1380,9 @@ def show_result():
                     body {{
                         margin: 0;
                         padding: 20px;
-                        background: #1a1a1a;
-                        color: #ffffff;
-                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+                        background: #ffffff;
+                        color: #333333;
+                        font-family: 'SF Mono', Monaco, monospace;
                         min-height: 100vh;
                         box-sizing: border-box;
                     }}
@@ -1304,37 +1390,8 @@ def show_result():
                         white-space: pre-wrap;
                         word-wrap: break-word;
                         margin: 0;
-                        line-height: 1.8;
-                        font-size: 15px;
-                        color: #ffffff;
-                    }}
-                    /* 美化样式 */
-                    strong {{
-                        color: #60a5fa;
-                        font-weight: 600;
-                    }}
-                    /* 题目标题 */
-                    h2, h3 {{
-                        color: #60a5fa;
-                        margin: 20px 0 10px 0;
-                    }}
-                    /* 满分标记 */
-                    .full-score {{
-                        color: #10b981;
-                    }}
-                    /* 部分得分 */
-                    .partial-score {{
-                        color: #f59e0b;
-                    }}
-                    /* 零分 */
-                    .zero-score {{
-                        color: #ef4444;
-                    }}
-                    /* 分隔线 */
-                    hr {{
-                        border: none;
-                        border-top: 1px solid #374151;
-                        margin: 20px 0;
+                        line-height: 1.6;
+                        font-size: 14px;
                     }}
                     ::-webkit-scrollbar {{
                         width: 12px;
@@ -1358,25 +1415,21 @@ def show_result():
             </html>
             """
         
-        # 使用components.html显示
+        # ?components.html?
         st.components.v1.html(result_html, height=480, scrolling=True)
     
-    # 操作按钮
+    # ?
     st.markdown("---")
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
-        # 下载批改结果
+        # ?
         download_content = correction_content
-        
-        # 如果是智能批量格式，使用文本内容下载
-        if result_format == 'intelligent_batch' and isinstance(correction_result, dict):
-            download_content = correction_result.get('text', str(correction_content))
-        elif has_separate_scheme and marking_scheme:
-            download_content = f"=== 评分标准 ===\n\n{marking_scheme}\n\n=== 批改结果 ===\n\n{correction_content}"
+        if has_separate_scheme and marking_scheme:
+            download_content = f"=== ? ===\n\n{marking_scheme}\n\n=== ? ===\n\n{correction_content}"
         
         st.download_button(
-            "📥 下载结果",
+            "? ?",
             str(download_content),
             file_name="correction_result.txt",
             mime="text/plain",
@@ -1384,32 +1437,32 @@ def show_result():
         )
     
     with col2:
-        # 单独下载评分标准（如果有）
+        # ??
         if has_separate_scheme and marking_scheme:
             st.download_button(
-                "📋 下载标准",
+                "? ?",
                 str(marking_scheme),
                 file_name="marking_scheme.txt",
                 mime="text/plain",
                 use_container_width=True
             )
         else:
-            st.write("")  # 占位
+            st.write("")  # ?
     
     with col3:
-        if st.button("🔄 重新批改", use_container_width=True):
+        if st.button("? ?", use_container_width=True):
             st.session_state.page = "grading"
             st_rerun()
     
     with col4:
-        if st.button("📚 查看历史", use_container_width=True):
+        if st.button("? ?", use_container_width=True):
             st.session_state.page = "history"
             st_rerun()
 
 def generate_file_preview_html(file_data):
-    """生成文件预览的完整HTML"""
+    """?HTML"""
     
-    # 基础HTML模板
+    # ?HTML?
     base_template = """
     <!DOCTYPE html>
     <html>
@@ -1419,8 +1472,8 @@ def generate_file_preview_html(file_data):
             body {{
                 margin: 0;
                 padding: 20px;
-                background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
-                color: #e2e8f0;
+                background: #ffffff;
+                color: #333333;
                 font-family: Arial, sans-serif;
                 box-sizing: border-box;
             }}
@@ -1473,82 +1526,82 @@ def generate_file_preview_html(file_data):
     </html>
     """
     
-    # 检查文件是否存在
+    # ??
     if not file_data.get('path') or not Path(file_data['path']).exists():
-        content = '<div class="error"><h3>⚠️ 文件不可用</h3><p>原始文件可能已被移动或删除</p></div>'
+        content = '<div class="error"><h3>? ??/h3><p>??/p></div>'
         return base_template.format(content=content)
     
     file_type = get_file_type(file_data['name'])
     
     if file_type == 'image':
-        # 图片预览
+        # ?
         try:
             image_base64 = get_image_base64(file_data['path'])
             if image_base64:
-                content = f'<h3>🖼️ {html.escape(file_data["name"])}</h3><img src="data:image/png;base64,{image_base64}" alt="Preview" />'
+                content = f'<h3>??{html.escape(file_data["name"])}</h3><img src="data:image/png;base64,{image_base64}" alt="Preview" />'
             else:
-                content = '<div class="error"><p>图片加载失败</p></div>'
+                content = '<div class="error"><p>?</p></div>'
         except Exception as e:
-            content = f'<div class="error"><p>错误: {html.escape(str(e))}</p></div>'
+            content = f'<div class="error"><p>?: {html.escape(str(e))}</p></div>'
     
     elif file_type == 'text':
-        # 文本预览
+        # ?
         try:
             with open(file_data['path'], 'r', encoding='utf-8') as f:
                 text_content = f.read()
-            content = f'<h3>📄 {html.escape(file_data["name"])}</h3><pre>{html.escape(text_content)}</pre>'
+            content = f'<h3>? {html.escape(file_data["name"])}</h3><pre>{html.escape(text_content)}</pre>'
         except Exception as e:
-            content = f'<div class="error"><p>错误: {html.escape(str(e))}</p></div>'
+            content = f'<div class="error"><p>?: {html.escape(str(e))}</p></div>'
     
     elif file_type == 'pdf':
-        # PDF预览功能
+        # PDF?
         try:
             from functions.api_correcting.calling_api import pdf_pages_to_base64_images
             pdf_images = pdf_pages_to_base64_images(file_data['path'], zoom=1.5)
             
             if pdf_images:
-                # 构建PDF预览HTML
+                # ?PDF?HTML
                 pdf_pages_html = ""
                 total_pages = len(pdf_images)
                 
                 for i, img_base64 in enumerate(pdf_images):
-                    # 页面指示器
-                    page_indicator = f'<div style="position: sticky; top: 0; z-index: 5; background: rgba(74, 85, 104, 0.95); backdrop-filter: blur(8px); color: #e2e8f0; font-size: 0.85rem; margin: 0 -20px 20px -20px; padding: 12px 20px; font-weight: 600; text-align: center; border-bottom: 2px solid rgba(96, 165, 250, 0.3); box-shadow: 0 2px 8px rgba(0,0,0,0.3);">📄 {i+1} / {total_pages} /div>'
+                    # ??
+                    page_indicator = f'<div style="position: sticky; top: 0; z-index: 5; background: rgba(74, 85, 104, 0.95); backdrop-filter: blur(8px); color: #e2e8f0; font-size: 0.85rem; margin: 0 -20px 20px -20px; padding: 12px 20px; font-weight: 600; text-align: center; border-bottom: 2px solid rgba(96, 165, 250, 0.3); box-shadow: 0 2px 8px rgba(0,0,0,0.3);">? ??{i+1} ??/ ??{total_pages} ??/div>'
                     
-                    # PDF页面图片
-                    page_content = f'<div style="margin-bottom: 40px; width: 100%; text-align: center;"><img src="data:image/png;base64,{img_base64}" style="width: 100%; height: auto; max-width: 100%; border: 3px solid #4a5568; border-radius: 12px; box-shadow: 0 8px 16px rgba(0,0,0,0.3); background-color: white; object-fit: contain; display: block; margin: 0 auto; transition: transform 0.3s ease, box-shadow 0.3s ease;" onmouseover="this.style.transform=\'scale(1.02)\'; this.style.boxShadow=\'0 12px 24px rgba(0,0,0,0.4)\'" onmouseout="this.style.transform=\'scale(1)\'; this.style.boxShadow=\'0 8px 16px rgba(0,0,0,0.3)\'" alt="PDF 第{i+1}页 /></div>'
+                    # PDF?
+                    page_content = f'<div style="margin-bottom: 40px; width: 100%; text-align: center;"><img src="data:image/png;base64,{img_base64}" style="width: 100%; height: auto; max-width: 100%; border: 3px solid #4a5568; border-radius: 12px; box-shadow: 0 8px 16px rgba(0,0,0,0.3); background-color: white; object-fit: contain; display: block; margin: 0 auto; transition: transform 0.3s ease, box-shadow 0.3s ease;" onmouseover="this.style.transform=\'scale(1.02)\'; this.style.boxShadow=\'0 12px 24px rgba(0,0,0,0.4)\'" onmouseout="this.style.transform=\'scale(1)\'; this.style.boxShadow=\'0 8px 16px rgba(0,0,0,0.3)\'" alt="PDF ?{i+1}?? /></div>'
                     
                     pdf_pages_html += page_indicator + page_content
                 
-                # 添加底部导航提示
-                navigation_hint = '<div style="text-align: center; padding: 20px; color: #94a3b8; font-size: 0.9rem; border-top: 1px solid rgba(74, 85, 104, 0.3); margin-top: 20px; background: rgba(45, 55, 72, 0.5); border-radius: 8px;"><span style="background: rgba(96, 165, 250, 0.1); padding: 6px 12px; border-radius: 20px; border: 1px solid rgba(96, 165, 250, 0.3);">💡 使用鼠标滚轮浏览多页PDF内容</span></div>'
+                # ?
+                navigation_hint = '<div style="text-align: center; padding: 20px; color: #94a3b8; font-size: 0.9rem; border-top: 1px solid rgba(74, 85, 104, 0.3); margin-top: 20px; background: rgba(45, 55, 72, 0.5); border-radius: 8px;"><span style="background: rgba(96, 165, 250, 0.1); padding: 6px 12px; border-radius: 20px; border: 1px solid rgba(96, 165, 250, 0.3);">? ?PDF?</span></div>'
                 
-                content = f'<h3>📄 {html.escape(file_data["name"])}</h3>{pdf_pages_html}{navigation_hint}'
+                content = f'<h3>? {html.escape(file_data["name"])}</h3>{pdf_pages_html}{navigation_hint}'
             else:
-                content = f'<div class="error"><h3>📄 PDF文件</h3><p>{html.escape(file_data["name"])}</p><p>PDF转换失败，请检查文件格式</p></div>'
+                content = f'<div class="error"><h3>? PDF?</h3><p>{html.escape(file_data["name"])}</p><p>PDF??/p></div>'
         except Exception as e:
-            content = f'<div class="error"><h3>📄 PDF文件</h3><p>{html.escape(file_data["name"])}</p><p>PDF预览失败: {html.escape(str(e))}</p><p>请确保PyMuPDF库已正确安装</p></div>'
+            content = f'<div class="error"><h3>? PDF?</h3><p>{html.escape(file_data["name"])}</p><p>PDF?: {html.escape(str(e))}</p><p>?PyMuPDF?</p></div>'
     
     else:
-        # 其他文件类型
-        content = f'<div class="error"><h3>📄 {html.escape(file_data["name"])}</h3><p>文件类型: {file_type}</p><p>此类型暂不支持预览</p></div>'
+        # ?
+        content = f'<div class="error"><h3>? {html.escape(file_data["name"])}</h3><p>?: {file_type}</p><p>??/p></div>'
     
     return base_template.format(content=content)
 
-# 批改结果展示页面 - 左右对照布局（原始版本，备份）
+# ? - ??
 def show_result_original():
     if not st.session_state.logged_in:
-        st.warning("请先登录")
+        st.warning("?")
         st.session_state.page = "login"
         st_rerun()
         return
     
-    # 检查是否有待处理的批改任务
+    # ?
     if 'correction_task' in st.session_state and st.session_state.correction_task.get('status') == 'pending':
-        # 执行批改任务
-        st.markdown('<h2 class="main-title">🤖 AI批改进行中..</h2>', unsafe_allow_html=True)
+        # ?
+        st.markdown('<h2 class="main-title">? AI??..</h2>', unsafe_allow_html=True)
         
-        # 显示加载动画
+        # ?
         progress_container = st.container()
         with progress_container:
             col1, col2, col3 = st.columns([1, 2, 1])
@@ -1556,8 +1609,8 @@ def show_result_original():
                 st.markdown("""
                 <div style="text-align: center; padding: 50px;">
                     <div class="spinner"></div>
-                    <h3 style="color: #3b82f6; margin-top: 30px;">🤖 AI正在分析文件...</h3>
-                    <p style="color: #94a3b8; margin-top: 10px;">请稍候，这可能需要几秒钟</p>
+                    <h3 style="color: #3b82f6; margin-top: 30px;">? AI?...</h3>
+                    <p style="color: #94a3b8; margin-top: 10px;">?</p>
                 </div>
                 <style>
                 .spinner {
@@ -1575,29 +1628,29 @@ def show_result_original():
                 </style>
                 """, unsafe_allow_html=True)
         
-        # 执行批改
+        # ?
         with st.spinner(""):
             try:
                 task = st.session_state.correction_task
                 settings = st.session_state.correction_settings
                 
-                # 调用AI批改 - 使用新的简化API
+                # ?AI? - ?API
                 if settings.get('has_marking_scheme') and task['marking_files']:
-                    # 有批改标准模版
+                    # ??
                     result = batch_correction_with_standard(
                     marking_scheme_files=task['marking_files'],
                         student_answer_files=task['answer_files'],
                         strictness_level=settings['strictness']
                     )
                 else:
-                    # 无批改标准模版
+                    # ??
                     result = batch_correction_without_standard(
                         question_files=task['question_files'],
                         student_answer_files=task['answer_files'],
                         strictness_level=settings['strictness']
                 )
                 
-                # 保存记录
+                # ?
                 users = read_users()
                 if st.session_state.username in users:
                     record = {
@@ -1611,70 +1664,70 @@ def show_result_original():
                     users[st.session_state.username]['records'].append(record)
                     save_users(users)
                 
-                # 保存结果并更新状态
+                # ??
                 st.session_state.correction_result = result
                 st.session_state.correction_task['status'] = 'completed'
                 
-                # 刷新页面显示结果
+                # ?
                 st_rerun()
                 
             except Exception as e:
-                st.error(f"批改失败：{str(e)}")
+                st.error(f"?{str(e)}")
                 st.session_state.correction_task['status'] = 'failed'
-                if st.button("返回重试"):
+                if st.button("?"):
                     st.session_state.page = "grading"
                     st_rerun()
                 return
     
-    # 检查是否有批改结果
+    # ?
     if not st.session_state.correction_result or not st.session_state.uploaded_files_data:
-        st.warning("没有批改结果数据")
+        st.warning("?")
         st.session_state.page = "grading"
         st_rerun()
         return
     
-    st.markdown('<h2 class="main-title">📊 批改结果对照</h2>', unsafe_allow_html=True)
+    st.markdown('<h2 class="main-title">? ?</h2>', unsafe_allow_html=True)
     
-    # 顶部操作按钮
+    # ??
     col1, col2, col3, col4 = st.columns([2, 1, 1, 1])
     
     with col1:
         settings = st.session_state.correction_settings
-        mode_text = "有批改标准" if settings.get('has_marking_scheme') else "自动生成标准"
-        st.markdown(f"**设置：{mode_text} | {settings.get('strictness', 'N/A')}")
+        mode_text = "?? if settings.get('has_marking_scheme') else "?"
+        st.markdown(f"**??* {mode_text} | {settings.get('strictness', 'N/A')}")
     
     with col2:
-        if st.button("🔄 重新批改"):
+        if st.button("? ?"):
             st.session_state.page = "grading"
             st_rerun()
     
     with col3:
         filename = f"correction_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
-        # 处理下载数据，确保是字符串格式
+        # ??
         result_data = st.session_state.correction_result
         if isinstance(result_data, dict):
             if result_data.get('has_separate_scheme', False):
                 marking_scheme = result_data.get('marking_scheme', '')
                 correction_content = result_data.get('correction_result', '')
-                download_content = f"=== 评分标准 ===\n\n{marking_scheme}\n\n=== 批改结果 ===\n\n{correction_content}"
+                download_content = f"=== ? ===\n\n{marking_scheme}\n\n=== ? ===\n\n{correction_content}"
             else:
                 download_content = str(result_data.get('correction_result', result_data))
         else:
             download_content = str(result_data)
         
-        st.download_button("💾 下载结果", 
+        st.download_button("? ?", 
                          data=download_content, 
                          file_name=filename, 
                          mime="text/plain")
     
     with col4:
-        if st.button("🏠 返回首页"):
+        if st.button("? ?"):
             st.session_state.page = "home"
             st_rerun()
     
     st.markdown("---")
     
-    # 添加CSS样式确保完美对齐
+    # ?CSS?
     st.markdown("""
     <style>
     .stColumn > div {
@@ -1686,24 +1739,24 @@ def show_result_original():
     </style>
     """, unsafe_allow_html=True)
     
-    # 创建左右两列，完全等宽
+    # ??
     col_left, col_right = st.columns([1, 1])
     
     with col_left:
-        st.markdown("### 📁 文件预览")
+        st.markdown("### ? ?")
         
-        # 文件预览容器
+        # ?
         preview_container = st.container()
         
         with preview_container:
             if st.session_state.uploaded_files_data:
-                # 确保索引在有效范围内
+                # ?
                 if st.session_state.current_file_index >= len(st.session_state.uploaded_files_data):
                     st.session_state.current_file_index = 0
                 
                 current_file = st.session_state.uploaded_files_data[st.session_state.current_file_index]
                 
-                # 创建统一的文件预览容器 - 强制限制在框内
+                # ??- ??
                 st.markdown("""
                 <style>
                 .file-preview-frame {
@@ -1826,7 +1879,7 @@ def show_result_original():
                     font-size: 1.1rem;
                     margin-bottom: 10px;
                 }
-                /* 强制覆盖Streamlit默认样式 */
+                /* ?Streamlit? */
                 .file-preview-frame * {
                     max-width: 100% !important;
                     box-sizing: border-box !important;
@@ -1836,7 +1889,7 @@ def show_result_original():
                     max-height: 450px !important;
                     object-fit: contain !important;
                 }
-                /* 隐藏Streamlit的图片容器溢出 */
+                /* ?Streamlit??*/
                 .file-preview-frame .stImage {
                     max-width: 100% !important;
                     overflow: hidden !important;
@@ -1845,7 +1898,7 @@ def show_result_original():
                     max-width: 100% !important;
                     overflow: hidden !important;
                 }
-                /* 终极强制限制 - 不计一切代入 */
+                /* ? - ??*/
                 .file-preview-frame,
                 .file-preview-frame *,
                 .file-preview-frame img,
@@ -1865,12 +1918,12 @@ def show_result_original():
                     object-fit: contain !important;
                     object-position: center !important;
                 }
-                /* 强制所有子元素都不能超出父容器 */
+                /* ? */
                 .file-preview-frame > * {
                     contain: layout size !important;
                 }
                 
-                /* 自定义滚动条样式 - 针对预览 */
+                /* ? - ??*/
                 .file-preview-frame .preview-content-wrapper::-webkit-scrollbar {
                     width: 14px;
                     height: 14px;
@@ -1900,7 +1953,7 @@ def show_result_original():
                     border-radius: 8px;
                 }
                 
-                /* 确保预览框可以正确响应滚轮事件 */
+                /* ??*/
                 .file-preview-frame {
                     position: relative;
                     z-index: 1;
@@ -1914,25 +1967,25 @@ def show_result_original():
                     z-index: 2;
                     cursor: default;
                     scroll-behavior: smooth;
-                    overflow-scrolling: touch; /* iOS平滑滚动 */
+                    overflow-scrolling: touch; /* iOS? */
                 }
                 
-                /* 增强滚轮响应 */
+                /* ??*/
                 .file-preview-frame .preview-content-wrapper {
                     overscroll-behavior: contain;
                     scroll-snap-type: none;
                 }
                 
-                /* 鼠标悬停时的视觉反馈 */
+                /* ? */
                 .file-preview-frame:hover {
                     border-color: #60a5fa;
                     box-shadow: 0 12px 24px rgba(0,0,0,0.4), 0 0 0 1px rgba(96, 165, 250, 0.3);
                     transition: all 0.3s ease;
                 }
                 
-                /* 滚动指示器 */
+                /* ??*/
                 .file-preview-frame::before {
-                    content: "可滚动预览";
+                    content: "????;
                     position: absolute;
                     top: 8px;
                     right: 12px;
@@ -1951,7 +2004,7 @@ def show_result_original():
                     opacity: 1;
                 }
                 
-                /* 键盘导航支持 */
+                /* ? */
                 .file-preview-frame {
                     outline: none;
                 }
@@ -1962,46 +2015,46 @@ def show_result_original():
                 </style>
                 
                 <script>
-                // 增强滚轮响应性和键盘导航 - 修复页面滚动问题
+                // ? - ?
                 (function() {
-                    // 立即执行的函数，不等待DOMContentLoaded
+                    // ?DOMContentLoaded
                     function setupPreviewScrolling() {
                         console.log('Setting up preview scrolling...');
                         
-                        // 获取所有预览框和批改结果框
+                        // ?
                         const previewFrames = document.querySelectorAll('.file-preview-frame');
                         const resultFrames = document.querySelectorAll('.correction-result-frame');
                         
                         console.log('Found preview frames:', previewFrames.length);
                         console.log('Found result frames:', resultFrames.length);
                         
-                        // 处理预览框
+                        // ??
                         previewFrames.forEach((previewFrame, index) => {
                             const contentWrapper = previewFrame.querySelector('.preview-content-wrapper');
                             
                             if (contentWrapper) {
                                 console.log('Setting up preview frame', index);
                                 
-                                // 移除可能存在的旧事件监听器
+                                // ??
                                 const newFrame = previewFrame.cloneNode(true);
                                 previewFrame.parentNode.replaceChild(newFrame, previewFrame);
                                 
                                 const newContentWrapper = newFrame.querySelector('.preview-content-wrapper');
                                 
-                                // 预览框滚轮事件 - 完全阻止冒泡
+                                // ??- ?
                                 newFrame.addEventListener('wheel', function(e) {
-                                    // 完全阻止事件传播
+                                    // ?
                                     e.preventDefault();
                                     e.stopPropagation();
                                     e.stopImmediatePropagation();
                                     
-                                    // 检查是否可以滚动
+                                    // ??
                                     const canScrollDown = newContentWrapper.scrollTop < (newContentWrapper.scrollHeight - newContentWrapper.clientHeight - 1);
                                     const canScrollUp = newContentWrapper.scrollTop > 0;
                                     
-                                    // 只有在可以滚动时才处理滚轮事件
+                                    // ??
                                     if ((e.deltaY > 0 && canScrollDown) || (e.deltaY < 0 && canScrollUp)) {
-                                        // 自定义滚动行数
+                                        // ??
                                         const scrollAmount = e.deltaY;
                                         newContentWrapper.scrollTop += scrollAmount;
                                     }
@@ -2009,25 +2062,25 @@ def show_result_original():
                                     return false;
                                 }, { passive: false, capture: true });
                                 
-                                // 鼠标进入预览框时的处理
+                                // ??
                                 newFrame.addEventListener('mouseenter', function(e) {
-                                    // 添加视觉反馈
+                                    // ?
                                     newFrame.style.borderColor = '#60a5fa';
                                     newFrame.style.boxShadow = '0 12px 24px rgba(0,0,0,0.4), 0 0 0 1px rgba(96, 165, 250, 0.3)';
                                     
-                                    // 设置焦点以支持键盘导航
+                                    // ??
                                     newFrame.setAttribute('tabindex', '0');
                                     newFrame.focus();
                                 });
                                 
-                                // 鼠标离开预览框时的处理
+                                // ??
                                 newFrame.addEventListener('mouseleave', function(e) {
-                                    // 恢复原始样式
+                                    // ?
                                     newFrame.style.borderColor = '#4a5568';
                                     newFrame.style.boxShadow = '0 8px 16px rgba(0,0,0,0.3)';
                                 });
                                 
-                                // 键盘导航支持
+                                // ?
                                 newFrame.addEventListener('keydown', function(e) {
                                     switch(e.key) {
                                         case 'ArrowUp':
@@ -2065,33 +2118,33 @@ def show_result_original():
                             }
                         });
                          
-                         // 处理批改结果框
+                         // ??
                          resultFrames.forEach((resultFrame, index) => {
                              const contentWrapper = resultFrame.querySelector('.result-content-wrapper');
                              
                              if (contentWrapper) {
                                  console.log('Setting up result frame', index);
                                  
-                                 // 移除可能存在的旧事件监听器
+                                 // ??
                                  const newFrame = resultFrame.cloneNode(true);
                                  resultFrame.parentNode.replaceChild(newFrame, resultFrame);
                                  
                                  const newContentWrapper = newFrame.querySelector('.result-content-wrapper');
                                  
-                                 // 批改结果框滚轮事件 - 完全阻止冒泡
+                                 // ??- ?
                                  newFrame.addEventListener('wheel', function(e) {
-                                     // 完全阻止事件传播
+                                     // ?
                                      e.preventDefault();
                                      e.stopPropagation();
                                      e.stopImmediatePropagation();
                                      
-                                     // 检查是否可以滚动
+                                     // ??
                                      const canScrollDown = newContentWrapper.scrollTop < (newContentWrapper.scrollHeight - newContentWrapper.clientHeight - 1);
                                      const canScrollUp = newContentWrapper.scrollTop > 0;
                                      
-                                     // 只有在可以滚动时才处理滚轮事件
+                                     // ??
                                      if ((e.deltaY > 0 && canScrollDown) || (e.deltaY < 0 && canScrollUp)) {
-                                         // 自定义滚动行数
+                                         // ??
                                          const scrollAmount = e.deltaY;
                                          newContentWrapper.scrollTop += scrollAmount;
                                      }
@@ -2099,25 +2152,25 @@ def show_result_original():
                                      return false;
                                  }, { passive: false, capture: true });
                                  
-                                 // 鼠标进入批改结果框时的处理
+                                 // ??
                                  newFrame.addEventListener('mouseenter', function(e) {
-                                     // 添加视觉反馈
+                                     // ?
                                      newFrame.style.borderColor = '#60a5fa';
                                      newFrame.style.boxShadow = '0 12px 24px rgba(0,0,0,0.4), 0 0 0 1px rgba(96, 165, 250, 0.3)';
                                      
-                                     // 设置焦点以支持键盘导航
+                                     // ??
                                      newFrame.setAttribute('tabindex', '0');
                                      newFrame.focus();
                                  });
                                  
-                                 // 鼠标离开批改结果框时的处理
+                                 // ??
                                  newFrame.addEventListener('mouseleave', function(e) {
-                                     // 恢复原始样式
+                                     // ?
                                      newFrame.style.borderColor = '#4a5568';
                                      newFrame.style.boxShadow = '0 8px 16px rgba(0,0,0,0.3)';
                                  });
                                  
-                                 // 键盘导航支持
+                                 // ?
                                  newFrame.addEventListener('keydown', function(e) {
                                      switch(e.key) {
                                          case 'ArrowUp':
@@ -2156,12 +2209,12 @@ def show_result_original():
                          });
                      }
                      
-                     // 延迟初始化，确保DOM完全加载
+                     // ?DOM?
                      setTimeout(setupPreviewScrolling, 100);
                      setTimeout(setupPreviewScrolling, 500);
                      setTimeout(setupPreviewScrolling, 1000);
                     
-                    // 监听DOM变化，重新初始化滚动
+                    // ?DOM?
                     const observer = new MutationObserver(function(mutations) {
                         mutations.forEach(function(mutation) {
                             if (mutation.type === 'childList') {
@@ -2176,7 +2229,7 @@ def show_result_original():
                         });
                     });
                     
-                    // 开始观察DOM变化
+                    // ?DOM?
                     if (document.body) {
                         observer.observe(document.body, {
                             childList: true,
@@ -2184,7 +2237,7 @@ def show_result_original():
                         });
                     }
                     
-                    // 确保在DOM加载完成后也执行
+                    // ?DOM?
                     if (document.readyState === 'loading') {
                         document.addEventListener('DOMContentLoaded', setupPreviewScrolling);
                     } else {
@@ -2193,7 +2246,7 @@ def show_result_original():
                 })();
                 </script>
                 
-                /* 图片和内容的悬停效果 */
+                /* ? */
                 .file-preview-frame img:hover {
                     transform: scale(1.02);
                     transition: transform 0.3s ease;
@@ -2202,7 +2255,7 @@ def show_result_original():
                 </style>
                 """, unsafe_allow_html=True)
                 
-                # 完全自定义的文件预览容器 - 强制HTML内嵌
+                # ? - ?HTML?
                 preview_html = ""
                 
                 if current_file['path'] and Path(current_file['path']).exists():
@@ -2210,10 +2263,10 @@ def show_result_original():
                     
                     if file_type == 'image':
                         try:
-                            # 获取图片的base64编码
+                            # ?base64?
                             image_base64 = get_image_base64(current_file['path'])
                             if not image_base64:
-                                # 尝试重新获取base64
+                                # ?base64
                                 import base64
                                 with open(current_file['path'], "rb") as img_file:
                                     image_base64 = base64.b64encode(img_file.read()).decode()
@@ -2222,47 +2275,47 @@ def show_result_original():
                                 file_ext = current_file['path'].split('.')[-1].lower()
                                 mime_type = f"image/{file_ext}" if file_ext in ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'] else "image/jpeg"
                                 
-                                # 图片预览HTML - 优化滚动和缩放体
-                                image_info = f'<div class="image-info-bar" style="position: sticky; top: 0; z-index: 5; background: rgba(74, 85, 104, 0.95); backdrop-filter: blur(8px); color: #e2e8f0; font-size: 0.85rem; margin: 0 -10px 20px -10px; padding: 12px 20px; font-weight: 600; text-align: center; border-bottom: 2px solid rgba(96, 165, 250, 0.3); box-shadow: 0 2px 8px rgba(0,0,0,0.3);">🖼️ 图片预览: {current_file["name"]}</div>'
+                                # ?HTML - ??
+                                image_info = f'<div class="image-info-bar" style="position: sticky; top: 0; z-index: 5; background: rgba(74, 85, 104, 0.95); backdrop-filter: blur(8px); color: #e2e8f0; font-size: 0.85rem; margin: 0 -10px 20px -10px; padding: 12px 20px; font-weight: 600; text-align: center; border-bottom: 2px solid rgba(96, 165, 250, 0.3); box-shadow: 0 2px 8px rgba(0,0,0,0.3);">???: {current_file["name"]}</div>'
                                 
                                 image_content = f'<div class="image-container" style="text-align: center; width: 100%; position: relative; margin-bottom: 20px;"><img src="data:{mime_type};base64,{image_base64}" style="max-width: 100%; height: auto; max-height: 600px; border: 3px solid #4a5568; border-radius: 12px; box-shadow: 0 8px 16px rgba(0,0,0,0.3); background-color: white; object-fit: contain; display: block; margin: 0 auto; transition: transform 0.3s ease, box-shadow 0.3s ease; cursor: zoom-in;" onmouseover="this.style.transform=\'scale(1.05)\'; this.style.boxShadow=\'0 12px 24px rgba(0,0,0,0.4)\'" onmouseout="this.style.transform=\'scale(1)\'; this.style.boxShadow=\'0 8px 16px rgba(0,0,0,0.3)\'" alt="{current_file["name"]}" /></div>'
                                 
-                                navigation_hint = '<div style="text-align: center; padding: 20px; color: #94a3b8; font-size: 0.9rem; border-top: 1px solid rgba(74, 85, 104, 0.3); margin-top: 20px; background: rgba(45, 55, 72, 0.5); border-radius: 8px;"><span style="background: rgba(96, 165, 250, 0.1); padding: 6px 12px; border-radius: 20px; border: 1px solid rgba(96, 165, 250, 0.3);">💡 鼠标悬停可放大预览，滚轮可上下滚动</span></div>'
+                                navigation_hint = '<div style="text-align: center; padding: 20px; color: #94a3b8; font-size: 0.9rem; border-top: 1px solid rgba(74, 85, 104, 0.3); margin-top: 20px; background: rgba(45, 55, 72, 0.5); border-radius: 8px;"><span style="background: rgba(96, 165, 250, 0.1); padding: 6px 12px; border-radius: 20px; border: 1px solid rgba(96, 165, 250, 0.3);">? ??/span></div>'
                                 
                                 preview_html = f'<div class="file-preview-frame" onwheel="event.preventDefault(); event.stopPropagation(); var wrapper = this.querySelector(\'.preview-content-wrapper\'); if(wrapper) {{ var canScrollDown = wrapper.scrollTop < (wrapper.scrollHeight - wrapper.clientHeight - 1); var canScrollUp = wrapper.scrollTop > 0; if ((event.deltaY > 0 && canScrollDown) || (event.deltaY < 0 && canScrollUp)) {{ wrapper.scrollTop += event.deltaY; }} }} return false;" style="overscroll-behavior: contain;"><div class="preview-content-wrapper" style="height: 520px; overflow-y: auto; overflow-x: hidden; padding: 10px; background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%); scroll-behavior: smooth; position: relative; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;">{image_info}{image_content}{navigation_hint}</div></div>'
                             else:
-                                raise Exception("图片base64转换失败")
+                                raise Exception("?base64?")
                         except Exception as e:
-                            preview_html = f'<div class="file-preview-frame" style="overscroll-behavior: contain;"><div class="preview-content-wrapper" style="height: 520px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: #a0aec0; padding: 15px; background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%); overscroll-behavior: contain;"><h3 style="color: #f6ad55; margin-bottom: 20px; font-size: 1.5rem;">📷 图片预览失败</h3><p style="font-size: 1.1rem; margin-bottom: 10px;">错误信息: {str(e)}</p></div></div>'
+                            preview_html = f'<div class="file-preview-frame" style="overscroll-behavior: contain;"><div class="preview-content-wrapper" style="height: 520px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: #a0aec0; padding: 15px; background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%); overscroll-behavior: contain;"><h3 style="color: #f6ad55; margin-bottom: 20px; font-size: 1.5rem;">? ?</h3><p style="font-size: 1.1rem; margin-bottom: 10px;">?: {str(e)}</p></div></div>'
                     
                     elif file_type == 'pdf':
                         try:
-                            # PDF文件转换为图片预览
+                            # PDF??
                             from functions.api_correcting.calling_api import pdf_pages_to_base64_images
                             pdf_images = pdf_pages_to_base64_images(current_file['path'], zoom=1.5)
                             
                             if pdf_images:
-                                # 构建PDF预览HTML - 优化滚动体验
+                                # ?PDF?HTML - ?
                                 pdf_pages_html = ""
                                 total_pages = len(pdf_images)
                                 
                                 for i, img_base64 in enumerate(pdf_images):
-                                    # 页面分隔和页码指示器
-                                    page_indicator = f'<div class="pdf-page-indicator" style="position: sticky; top: 0; z-index: 5; background: rgba(74, 85, 104, 0.95); backdrop-filter: blur(8px); color: #e2e8f0; font-size: 0.85rem; margin: 0 -10px 20px -10px; padding: 12px 20px; font-weight: 600; text-align: center; border-bottom: 2px solid rgba(96, 165, 250, 0.3); box-shadow: 0 2px 8px rgba(0,0,0,0.3);">📄 第{i+1}页 / 共{total_pages}页</div>'
+                                    # ?
+                                    page_indicator = f'<div class="pdf-page-indicator" style="position: sticky; top: 0; z-index: 5; background: rgba(74, 85, 104, 0.95); backdrop-filter: blur(8px); color: #e2e8f0; font-size: 0.85rem; margin: 0 -10px 20px -10px; padding: 12px 20px; font-weight: 600; text-align: center; border-bottom: 2px solid rgba(96, 165, 250, 0.3); box-shadow: 0 2px 8px rgba(0,0,0,0.3);">? ??{i+1} ??/ ??{total_pages} ??/div>'
                                     
-                                    # PDF页面图片
-                                    page_content = f'<div class="pdf-page-container" style="margin-bottom: 40px; width: 100%; position: relative;"><img src="data:image/png;base64,{img_base64}" style="width: 100%; height: auto; max-width: 100%; border: 3px solid #4a5568; border-radius: 12px; box-shadow: 0 8px 16px rgba(0,0,0,0.3); background-color: white; object-fit: contain; display: block; transition: transform 0.3s ease, box-shadow 0.3s ease;" onmouseover="this.style.transform=\'scale(1.02)\'; this.style.boxShadow=\'0 12px 24px rgba(0,0,0,0.4)\'" onmouseout="this.style.transform=\'scale(1)\'; this.style.boxShadow=\'0 8px 16px rgba(0,0,0,0.3)\'" alt="PDF 第{i+1}页 /></div>'
+                                    # PDF?
+                                    page_content = f'<div class="pdf-page-container" style="margin-bottom: 40px; width: 100%; position: relative;"><img src="data:image/png;base64,{img_base64}" style="width: 100%; height: auto; max-width: 100%; border: 3px solid #4a5568; border-radius: 12px; box-shadow: 0 8px 16px rgba(0,0,0,0.3); background-color: white; object-fit: contain; display: block; transition: transform 0.3s ease, box-shadow 0.3s ease;" onmouseover="this.style.transform=\'scale(1.02)\'; this.style.boxShadow=\'0 12px 24px rgba(0,0,0,0.4)\'" onmouseout="this.style.transform=\'scale(1)\'; this.style.boxShadow=\'0 8px 16px rgba(0,0,0,0.3)\'" alt="PDF ?{i+1}?? /></div>'
                                     
                                     pdf_pages_html += page_indicator + page_content
                                 
-                                # 添加底部导航提示
-                                navigation_hint = '<div style="text-align: center; padding: 20px; color: #94a3b8; font-size: 0.9rem; border-top: 1px solid rgba(74, 85, 104, 0.3); margin-top: 20px; background: rgba(45, 55, 72, 0.5); border-radius: 8px;"><span style="background: rgba(96, 165, 250, 0.1); padding: 6px 12px; border-radius: 20px; border: 1px solid rgba(96, 165, 250, 0.3);">💡 使用鼠标滚轮或拖拽滚动条浏览多页内容</span></div>'
+                                # ?
+                                navigation_hint = '<div style="text-align: center; padding: 20px; color: #94a3b8; font-size: 0.9rem; border-top: 1px solid rgba(74, 85, 104, 0.3); margin-top: 20px; background: rgba(45, 55, 72, 0.5); border-radius: 8px;"><span style="background: rgba(96, 165, 250, 0.1); padding: 6px 12px; border-radius: 20px; border: 1px solid rgba(96, 165, 250, 0.3);">? ?</span></div>'
                                 
                                 preview_html = f'<div class="file-preview-frame" onwheel="event.preventDefault(); event.stopPropagation(); var wrapper = this.querySelector(\'.preview-content-wrapper\'); if(wrapper) {{ var canScrollDown = wrapper.scrollTop < (wrapper.scrollHeight - wrapper.clientHeight - 1); var canScrollUp = wrapper.scrollTop > 0; if ((event.deltaY > 0 && canScrollDown) || (event.deltaY < 0 && canScrollUp)) {{ wrapper.scrollTop += event.deltaY; }} }} return false;" style="overscroll-behavior: contain;"><div class="preview-content-wrapper" style="height: 520px; overflow-y: auto; overflow-x: hidden; padding: 10px; background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%); scroll-behavior: smooth; position: relative; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;">{pdf_pages_html}{navigation_hint}</div></div>'
                             else:
-                                raise Exception("PDF转换为图片失败")
+                                raise Exception("PDF??)
                         except Exception as e:
-                            preview_html = f'<div class="file-preview-frame"><div class="preview-content-wrapper" style="height: 520px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: #a0aec0; padding: 15px; background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);"><h3 style="color: #f6ad55; margin-bottom: 20px; font-size: 1.5rem;">📄 PDF 预览失败</h3><p style="font-size: 1.1rem; margin-bottom: 10px;">错误信息: {str(e)}</p><p style="font-size: 0.9rem;">请确保PyMuPDF库已正确安装</p></div></div>'
+                            preview_html = f'<div class="file-preview-frame"><div class="preview-content-wrapper" style="height: 520px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: #a0aec0; padding: 15px; background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);"><h3 style="color: #f6ad55; margin-bottom: 20px; font-size: 1.5rem;">? PDF ?</h3><p style="font-size: 1.1rem; margin-bottom: 10px;">?: {str(e)}</p><p style="font-size: 0.9rem;">?PyMuPDF?</p></div></div>'
                     
                     elif file_type == 'text':
                         try:
@@ -2270,80 +2323,80 @@ def show_result_original():
                                 content = f.read()
                             
                             if len(content) > 5000:
-                                content = content[:5000] + "\n\n...(内容已截断，可滚动查看)"
+                                content = content[:5000] + "\n\n...(??"
                             
-                            # HTML转义处理
+                            # HTML?
                             import html
                             content_escaped = html.escape(content)
                             
-                            # 文本文件预览HTML - 优化滚动和阅读体验
-                            file_info = f'<div class="text-info-bar" style="position: sticky; top: 0; z-index: 5; background: rgba(74, 85, 104, 0.95); backdrop-filter: blur(8px); color: #e2e8f0; font-size: 0.85rem; margin: 0 -10px 20px -10px; padding: 12px 20px; font-weight: 600; text-align: center; border-bottom: 2px solid rgba(96, 165, 250, 0.3); box-shadow: 0 2px 8px rgba(0,0,0,0.3);">📄 文本预览: {current_file["name"]} ({len(content)} 字符)</div>'
+                            # ?HTML - ??
+                            file_info = f'<div class="text-info-bar" style="position: sticky; top: 0; z-index: 5; background: rgba(74, 85, 104, 0.95); backdrop-filter: blur(8px); color: #e2e8f0; font-size: 0.85rem; margin: 0 -10px 20px -10px; padding: 12px 20px; font-weight: 600; text-align: center; border-bottom: 2px solid rgba(96, 165, 250, 0.3); box-shadow: 0 2px 8px rgba(0,0,0,0.3);">? ?: {current_file["name"]} ({len(content)} ?)</div>'
                             
                             text_content = f'<div class="text-content-area" style="width: 100%; min-height: 400px; background-color: #2d3748; border: 3px solid #4a5568; border-radius: 12px; padding: 25px; color: #e2e8f0; font-family: \'SF Mono\', \'Monaco\', \'Inconsolata\', \'Roboto Mono\', \'Source Code Pro\', monospace; font-size: 0.95rem; line-height: 1.7; white-space: pre-wrap; word-wrap: break-word; box-shadow: 0 8px 16px rgba(0,0,0,0.3), inset 0 2px 4px rgba(0,0,0,0.1); box-sizing: border-box; transition: all 0.3s ease; position: relative;">{content_escaped}</div>'
                             
-                            navigation_hint = '<div style="text-align: center; padding: 20px; color: #94a3b8; font-size: 0.9rem; border-top: 1px solid rgba(74, 85, 104, 0.3); margin-top: 20px; background: rgba(45, 55, 72, 0.5); border-radius: 8px;"><span style="background: rgba(96, 165, 250, 0.1); padding: 6px 12px; border-radius: 20px; border: 1px solid rgba(96, 165, 250, 0.3);">💡 使用滚轮浏览文本内容，支持全文搜索</span></div>'
+                            navigation_hint = '<div style="text-align: center; padding: 20px; color: #94a3b8; font-size: 0.9rem; border-top: 1px solid rgba(74, 85, 104, 0.3); margin-top: 20px; background: rgba(45, 55, 72, 0.5); border-radius: 8px;"><span style="background: rgba(96, 165, 250, 0.1); padding: 6px 12px; border-radius: 20px; border: 1px solid rgba(96, 165, 250, 0.3);">? ??/span></div>'
                             
                             preview_html = f'<div class="file-preview-frame" onwheel="event.preventDefault(); event.stopPropagation(); var wrapper = this.querySelector(\'.preview-content-wrapper\'); if(wrapper) {{ var canScrollDown = wrapper.scrollTop < (wrapper.scrollHeight - wrapper.clientHeight - 1); var canScrollUp = wrapper.scrollTop > 0; if ((event.deltaY > 0 && canScrollDown) || (event.deltaY < 0 && canScrollUp)) {{ wrapper.scrollTop += event.deltaY; }} }} return false;" style="overscroll-behavior: contain;"><div class="preview-content-wrapper" style="height: 520px; overflow-y: auto; overflow-x: hidden; padding: 10px; background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%); scroll-behavior: smooth; position: relative; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;">{file_info}{text_content}{navigation_hint}</div></div>'
                             
                         except Exception as e:
-                            preview_html = f'<div class="file-preview-frame"><div class="preview-content-wrapper" style="height: 520px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: #a0aec0; padding: 15px; background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);"><h3 style="color: #f6ad55; margin-bottom: 20px; font-size: 1.5rem;">📄 文本预览失败</h3><p style="font-size: 1.1rem; margin-bottom: 10px;">错误信息: {str(e)}</p></div></div>'
+                            preview_html = f'<div class="file-preview-frame"><div class="preview-content-wrapper" style="height: 520px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: #a0aec0; padding: 15px; background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);"><h3 style="color: #f6ad55; margin-bottom: 20px; font-size: 1.5rem;">? ?</h3><p style="font-size: 1.1rem; margin-bottom: 10px;">?: {str(e)}</p></div></div>'
                     
                     else:
-                        preview_html = f'<div class="file-preview-frame"><div class="preview-content-wrapper" style="height: 520px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: #a0aec0; padding: 15px; background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);"><h3 style="color: #f6ad55; margin-bottom: 20px; font-size: 1.5rem;">📄 {file_type.upper()} 文件</h3><p style="font-size: 1.1rem; margin-bottom: 10px;">此文件类型暂不支持预览</p></div></div>'
+                        preview_html = f'<div class="file-preview-frame"><div class="preview-content-wrapper" style="height: 520px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: #a0aec0; padding: 15px; background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);"><h3 style="color: #f6ad55; margin-bottom: 20px; font-size: 1.5rem;">? {file_type.upper()} ?</h3><p style="font-size: 1.1rem; margin-bottom: 10px;">??/p></div></div>'
                 else:
-                    # 文件不存在的情况
-                    warning_msg = "💡 历史记录，原始文件可能已被清空" if not current_file['path'] else "⚠️ 原始文件不存在"
-                    preview_html = f'<div class="file-preview-frame"><div class="preview-content-wrapper" style="height: 520px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: #a0aec0; padding: 15px; background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);"><h3 style="color: #f6ad55; margin-bottom: 20px; font-size: 1.5rem;">⚠️ 文件预览不可用</h3><p style="font-size: 1.1rem; margin-bottom: 10px;">{warning_msg}</p></div></div>'
+                    # ?
+                    warning_msg = "? ?? if not current_file['path'] else "? ??
+                    preview_html = f'<div class="file-preview-frame"><div class="preview-content-wrapper" style="height: 520px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: #a0aec0; padding: 15px; background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);"><h3 style="color: #f6ad55; margin-bottom: 20px; font-size: 1.5rem;">? ??/h3><p style="font-size: 1.1rem; margin-bottom: 10px;">{warning_msg}</p></div></div>'
                 
-                # 显示完整的预览HTML
+                # ?HTML
                 st.markdown(preview_html, unsafe_allow_html=True)
                 
-                # 文件信息和切换器放在预览框下
+                # ??
                 st.markdown("---")
                 
-                # 当前文件信息
+                # ?
                 category = current_file.get('category', 'other')
                 category_icons = {
-                    'question': '📋',
-                    'answer': '✏️', 
-                    'marking': '📊',
-                    'other': '📄'
+                    'question': '?',
+                    'answer': '?', 
+                    'marking': '?',
+                    'other': '?'
                 }
                 category_names = {
-                    'question': '题目文件',
-                    'answer': '学生作答',
-                    'marking': '批改标准',
-                    'other': '其他文件'
+                    'question': '?',
+                    'answer': '?',
+                    'marking': '?',
+                    'other': '?'
                 }
                 
-                icon = category_icons.get(category, '📄')
-                name = category_names.get(category, '其他文件')
+                icon = category_icons.get(category, '?')
+                name = category_names.get(category, '?')
                 file_type_display = current_file.get('type', get_file_type(current_file['name']))
                 
                 st.info(f"{icon} **{name}**: {current_file['name']} ({file_type_display})")
                 
             else:
-                # 没有文件时的显示
-                preview_html = '<div class="file-preview-frame"><div class="preview-content-wrapper" style="height: 520px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: #a0aec0; padding: 15px; background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);"><h3 style="color: #f6ad55; margin-bottom: 20px; font-size: 1.5rem;">📁 没有可预览的文件</h3><p style="font-size: 1.1rem; margin-bottom: 10px;">请先上传文件进行批改</p></div></div>'
+                # ?
+                preview_html = '<div class="file-preview-frame"><div class="preview-content-wrapper" style="height: 520px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: #a0aec0; padding: 15px; background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);"><h3 style="color: #f6ad55; margin-bottom: 20px; font-size: 1.5rem;">? ?</h3><p style="font-size: 1.1rem; margin-bottom: 10px;">?</p></div></div>'
                 st.markdown(preview_html, unsafe_allow_html=True)
     
     with col_right:
-        st.markdown("### 📝 批改结果")
+        st.markdown("### ? ?")
                 
-        # 批改结果容器 - 与左侧预览框对齐，支持独立滚动条控制
+        # ? - ??
         if st.session_state.correction_result:
-            # 创建与左侧相同样式的容器，使用相同的class名称
+            # ?class?
             import html
             result_html = f'''
             <div class="correction-result-frame" onwheel="event.preventDefault(); event.stopPropagation(); var wrapper = this.querySelector('.result-content-wrapper'); if(wrapper) {{ var canScrollDown = wrapper.scrollTop < (wrapper.scrollHeight - wrapper.clientHeight - 1); var canScrollUp = wrapper.scrollTop > 0; if ((event.deltaY > 0 && canScrollDown) || (event.deltaY < 0 && canScrollUp)) {{ wrapper.scrollTop += event.deltaY; }} }} return false;" style="height: 520px; border: 3px solid #4a5568; border-radius: 12px; background-color: #1a202c; box-shadow: 0 8px 16px rgba(0,0,0,0.3); overflow: hidden; position: relative; z-index: 1; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; overscroll-behavior: contain;">
                 <div class="result-content-wrapper" style="height: 100%; overflow-y: auto; overflow-x: hidden; padding: 20px; background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%); scroll-behavior: smooth; position: relative; z-index: 2; cursor: default; overflow-scrolling: touch; overscroll-behavior: contain; scroll-snap-type: none; -webkit-overflow-scrolling: touch;">
-                    <div class="result-info-bar" style="position: sticky; top: 0; z-index: 5; background: rgba(74, 85, 104, 0.95); backdrop-filter: blur(8px); color: #e2e8f0; font-size: 0.85rem; margin: 0 -20px 20px -20px; padding: 12px 20px; font-weight: 600; text-align: center; border-bottom: 2px solid rgba(96, 165, 250, 0.3); box-shadow: 0 2px 8px rgba(0,0,0,0.3);">📝 批改结果 ({len(st.session_state.correction_result)} 字符)</div>
-                    <pre style="margin: 0; padding: 0; color: #e2e8f0; font-family: \'SF Mono\', \'Monaco\', \'Inconsolata\', \'Roboto Mono\', \'Source Code Pro\', monospace; font-size: 0.95rem; line-height: 1.7; white-space: pre-wrap; word-wrap: break-word; background: rgba(45, 55, 72, 0.3); padding: 20px; border-radius: 8px; border: 1px solid rgba(74, 85, 104, 0.3);">{html.escape(st.session_state.correction_result)}</pre>
-                    <div style="text-align: center; padding: 20px; color: #94a3b8; font-size: 0.9rem; border-top: 1px solid rgba(74, 85, 104, 0.3); margin-top: 20px; background: rgba(45, 55, 72, 0.5); border-radius: 8px;"><span style="background: rgba(96, 165, 250, 0.1); padding: 6px 12px; border-radius: 20px; border: 1px solid rgba(96, 165, 250, 0.3);">💡 使用滚轮浏览批改结果，支持复制内容</span></div>
+                    <div class="result-info-bar" style="position: sticky; top: 0; z-index: 5; background: rgba(74, 85, 104, 0.95); backdrop-filter: blur(8px); color: #e2e8f0; font-size: 0.85rem; margin: 0 -20px 20px -20px; padding: 12px 20px; font-weight: 600; text-align: center; border-bottom: 2px solid rgba(96, 165, 250, 0.3); box-shadow: 0 2px 8px rgba(0,0,0,0.3);">? ? ({len(st.session_state.correction_result)} ?)</div>
+                    <pre style="margin: 0; padding: 0; color: #e2e8f0; font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Source Code Pro', monospace; font-size: 0.95rem; line-height: 1.7; white-space: pre-wrap; word-wrap: break-word; background: rgba(45, 55, 72, 0.3); padding: 20px; border-radius: 8px; border: 1px solid rgba(74, 85, 104, 0.3);">{html.escape(st.session_state.correction_result)}</pre>
+                    <div style="text-align: center; padding: 20px; color: #94a3b8; font-size: 0.9rem; border-top: 1px solid rgba(74, 85, 104, 0.3); margin-top: 20px; background: rgba(45, 55, 72, 0.5); border-radius: 8px;"><span style="background: rgba(96, 165, 250, 0.1); padding: 6px 12px; border-radius: 20px; border: 1px solid rgba(96, 165, 250, 0.3);">? ??/span></div>
                 </div>
             </div>
             <style>
-            /* 批改结果滚动条样式 - 与预览框保持一致 */
+            /* ??- ??*/
             .correction-result-frame .result-content-wrapper::-webkit-scrollbar {{
                 width: 14px;
                 height: 14px;
@@ -2373,23 +2426,23 @@ def show_result_original():
                 border-radius: 8px;
             }}
             
-            /* 批改结果框悬停效果 */
+            /* ??*/
             .correction-result-frame:hover {{
                 border-color: #60a5fa;
                 box-shadow: 0 12px 24px rgba(0,0,0,0.4), 0 0 0 1px rgba(96, 165, 250, 0.3);
                 transition: all 0.3s ease;
             }}
             
-            /* 批改结果框焦点效果 */
+            /* ??*/
             .correction-result-frame:focus {{
                 border-color: #60a5fa;
                 box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
                 outline: none;
             }}
             
-            /* 滚动指示器 */
+            /* ??*/
             .correction-result-frame::before {{
-                content: "可滚动预览";
+                content: "????;
                 position: absolute;
                 top: 8px;
                 right: 12px;
@@ -2411,130 +2464,130 @@ def show_result_original():
             '''
             st.markdown(result_html, unsafe_allow_html=True)
         else:
-            # 空结果时的占位容器
+            # ??
             empty_html = '''
             <div class="correction-result-frame" style="height: 520px; border: 3px solid #4a5568; border-radius: 12px; background-color: #1a202c; box-shadow: 0 8px 16px rgba(0,0,0,0.3); display: flex; justify-content: center; align-items: center;">
                 <div style="text-align: center; color: #a0aec0;">
-                    <h3 style="color: #f6ad55; margin-bottom: 20px; font-size: 1.5rem;">📝 暂无批改结果</h3>
-                    <p style="font-size: 1.1rem;">请先上传文件并执行批改</p>
+                    <h3 style="color: #f6ad55; margin-bottom: 20px; font-size: 1.5rem;">? ?</h3>
+                    <p style="font-size: 1.1rem;">??/p>
                 </div>
             </div>
             '''
             st.markdown(empty_html, unsafe_allow_html=True)
     
-    # 文件切换功能 (放在左侧预览区域)
+    # ? (??
     if len(st.session_state.uploaded_files_data) > 1:
             file_options = []
             for i, file_data in enumerate(st.session_state.uploaded_files_data):
                 file_name = file_data['name']
-                category = file_data.get('category', 'other')
-                
-                # 优先使用保存的category信息
-                if category == 'question':
-                    label = f"📋 题目: {file_name}"
-                elif category == 'answer':
-                    label = f"✏️ 学生作答: {file_name}"
-                elif category == 'marking':
-                    label = f"📊 评分标准: {file_name}"
+            category = file_data.get('category', 'other')
+            
+            # ?category?
+            if category == 'question':
+                label = f"? ?: {file_name}"
+            elif category == 'answer':
+                label = f"? ?: {file_name}"
+            elif category == 'marking':
+                label = f"? ?: {file_name}"
+            else:
+                # ??
+                if 'question' in file_name.lower() or '?' in file_name:
+                    label = f"? ?: {file_name}"
+                elif 'answer' in file_name.lower() or '?' in file_name or '?' in file_name:
+                    label = f"? ?: {file_name}"
+                elif 'scheme' in file_name.lower() or 'marking' in file_name.lower() or '?' in file_name:
+                    label = f"? ?: {file_name}"
                 else:
-                    # 兼容旧记录，通过文件名判断
-                    if 'question' in file_name.lower() or '题目' in file_name:
-                        label = f"📋 题目: {file_name}"
-                    elif 'answer' in file_name.lower() or '答案' in file_name or '作答' in file_name:
-                        label = f"✏️ 学生作答: {file_name}"
-                    elif 'scheme' in file_name.lower() or 'marking' in file_name.lower() or '标准' in file_name:
-                        label = f"📊 评分标准: {file_name}"
-                    else:
-                        label = f"📄 文件{i+1}: {file_name}"
-                    file_options.append(label)
-                
-                new_selection = st.selectbox(
-                "🔄 切换文件:",
-                    options=range(len(file_options)),
-                    format_func=lambda x: file_options[x],
-                    index=st.session_state.current_file_index,
-                    key="file_switcher"
-                )
-                
-                if new_selection != st.session_state.current_file_index:
-                    st.session_state.current_file_index = new_selection
-                    st_rerun()
+                    label = f"? ?{i+1}: {file_name}"
+                file_options.append(label)
+            
+            new_selection = st.selectbox(
+            "? ?:",
+                options=range(len(file_options)),
+                format_func=lambda x: file_options[x],
+                index=st.session_state.current_file_index,
+                key="file_switcher"
+            )
+            
+            if new_selection != st.session_state.current_file_index:
+                st.session_state.current_file_index = new_selection
+                st_rerun()
 
-# 历史页面
+# ?
 def show_history():
     if not st.session_state.logged_in:
-        st.warning("请先登录")
+        st.warning("?")
         st.session_state.page = "login"
         st_rerun()
         return
     
-    st.markdown('<h2 class="main-title">📚 批改历史</h2>', unsafe_allow_html=True)
+    st.markdown('<h2 class="main-title">? ?</h2>', unsafe_allow_html=True)
     
     users = read_users()
     records = users.get(st.session_state.username, {}).get('records', [])
     
     if not records:
-        st.info("暂无批改记录")
-        if st.button("🚀 开始批改", use_container_width=True):
+        st.info("?")
+        if st.button("? ??, use_container_width=True):
             st.session_state.page = "grading"
             st_rerun()
         return
     
-    # 统计信息
+    # ?
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.metric("总批改次数", len(records))
+        st.metric("??, len(records))
     with col2:
         total_files = sum(r.get('files_count', 0) for r in records)
-        st.metric("处理文件数量", total_files)
+        st.metric("??, total_files)
     with col3:
-        if st.button("🗑️ 清空历史"):
+        if st.button("???"):
             if 'confirm_delete' not in st.session_state:
                 st.session_state.confirm_delete = True
             else:
                 users[st.session_state.username]['records'] = []
                 save_users(users)
                 del st.session_state.confirm_delete
-                st.success('历史记录已清空')
+                st.success('??)
                 st_rerun()
 
     if 'confirm_delete' in st.session_state and st.session_state.confirm_delete:
-        st.warning("确定要清空所有历史记录吗？此操作无法撤销")
+        st.warning("??)
         col_confirm, col_cancel = st.columns(2)
         with col_confirm:
-            if st.button("是，清空", use_container_width=True):
+            if st.button("???", use_container_width=True):
                 users[st.session_state.username]['records'] = []
                 save_users(users)
                 del st.session_state.confirm_delete
-                st.success("历史记录已清空")
+                st.success("??)
                 st_rerun()
         with col_cancel:
-            if st.button("否，取消", use_container_width=True):
+            if st.button("???", use_container_width=True):
                 del st.session_state.confirm_delete
                 st_rerun()
     
     st.markdown("---")
     
-    # 记录列表
+    # ?
     for i, record in enumerate(reversed(records), 1):
-        with st.expander(f"📋 记录 {i} - {record['timestamp']}"):
+        with st.expander(f"? ? {i} - {record['timestamp']}"):
             col1, col2 = st.columns([3, 1])
             
             with col1:
-                st.write(f"**文件**: {', '.join(record.get('files', ['无文件信息']))}")
+                st.write(f"**??* {', '.join(record.get('files', ['??]))}")
                 settings = record.get('settings', {})
-                mode_text = "有批改标准" if settings.get('has_marking_scheme') else "自动生成标准"
-                st.write(f"**设置**: {mode_text} | {settings.get('strictness', 'N/A')}")
+                mode_text = "?? if settings.get('has_marking_scheme') else "?"
+                st.write(f"**??* {mode_text} | {settings.get('strictness', 'N/A')}")
             
             with col2:
-                if st.button("👁️ 查看详情", key=f"view_{i}", use_container_width=True):
-                    # 设置批改结果到session state
+                if st.button("???", key=f"view_{i}", use_container_width=True):
+                    # ?session state
                     st.session_state.correction_result = record.get('result', '')
                     
-                    # 重建文件数据用于结果页面展示
+                    # ?
                     file_data = record.get('file_data', [])
                     if file_data:
-                        # 使用保存的文件路径信息
+                        # ??
                         st.session_state.uploaded_files_data = [
                             {
                                 'name': f['name'],
@@ -2544,7 +2597,7 @@ def show_history():
                             for f in file_data
                         ]
                     else:
-                        # 兼容旧记录（没有file_data字段）
+                        # ?file_data??
                         file_names = record.get('files', [])
                         st.session_state.uploaded_files_data = [
                             {'name': name, 'path': None, 'type': get_file_type(name)} 
@@ -2552,27 +2605,28 @@ def show_history():
                         ]
                     
                     st.session_state.correction_settings = record.get('settings', {})
-                    # 重置文件索引到第一个文件
+                    # ??
                     st.session_state.current_file_index = 0
                     st.session_state.page = "result"
                     st_rerun()
+                    st_rerun()
                 
                 if record.get('result'):
-                    # 处理结果数据，确保是字符串格式
+                    # ??
                     result_data = record.get('result', '')
                     if isinstance(result_data, dict):
-                        # 如果是字典格式，转换为字符串
+                        # ?
                         if result_data.get('has_separate_scheme', False):
                             marking_scheme = result_data.get('marking_scheme', '')
                             correction_content = result_data.get('correction_result', '')
-                            download_content = f"=== 评分标准 ===\n\n{marking_scheme}\n\n=== 批改结果 ===\n\n{correction_content}"
+                            download_content = f"=== ? ===\n\n{marking_scheme}\n\n=== ? ===\n\n{correction_content}"
                         else:
                             download_content = str(result_data.get('correction_result', result_data))
                     else:
                         download_content = str(result_data)
                     
                     st.download_button(
-                        "💾 下载",
+                        "? ?",
                         data=download_content,
                         file_name=f"record_{record['timestamp'].replace(':', '-').replace(' ', '_')}.txt",
                         mime="text/plain",
@@ -2580,68 +2634,67 @@ def show_history():
                         use_container_width=True
                     )
 
-# 侧边栏
+# ??
 def show_sidebar():
-    """显示侧边栏"""
+    """??""
     with st.sidebar:
-        st.markdown('<h3 style="color: #3b82f6;">🤖 AI批改系统</h3>', unsafe_allow_html=True)
+        st.markdown('<h3 style="color: #3b82f6;">? AI?</h3>', unsafe_allow_html=True)
         
         if st.session_state.logged_in:
-            st.markdown(f"👋 **{st.session_state.username}**")
+            st.markdown(f"? **{st.session_state.username}**")
             st.markdown("---")
             
-            # 导航菜单
-            if st.button("🏠 首页", use_container_width=True):
+            # ?
+            if st.button("? ?", use_container_width=True):
                 st.session_state.page = "home"
                 st_rerun()
             
-            if st.button("📝 批改", use_container_width=True):
+            if st.button("? ?", use_container_width=True):
                 st.session_state.page = "grading"
                 st_rerun()
             
-            if st.button("📚 历史", use_container_width=True):
+            if st.button("? ?", use_container_width=True):
                 st.session_state.page = "history"
                 st_rerun()
             
-            # 结果页面导航 (只在有结果时显示)
+            # ? (?)
             if st.session_state.correction_result:
-                if st.button("📊 查看结果", use_container_width=True):
+                if st.button("? ?", use_container_width=True):
                     st.session_state.page = "result"
                     st_rerun()
             
             st.markdown("---")
             
-            # 批改控制设置
-            st.header("🛠️ 批改控制")
+            # ?
+            st.header("???")
             
-            # 分批处理设置
-            enable_batch = st.checkbox("启用智能批改系统", value=True, 
-                                     help="🎯 AI智能识别题目和学生 | 🚀 并发批改提升速度 | 📊 自动生成学生总结")
+            # ?
+            enable_batch = st.checkbox("?", value=True, help="??)
             
             if enable_batch:
-                batch_size = st.slider("每批题目数量", min_value=5, max_value=15, value=10, 
-                                     help="每批处理的题目数量，较小的批次更稳定")
+                batch_size = st.slider("?", min_value=5, max_value=15, value=10, 
+                                     help="?")
             else:
                 batch_size = None
                 
-            # 新增功能控制
-            st.subheader("🔧 高级设置")
+            # ?
+            st.subheader("? ?")
             
-            skip_missing = st.checkbox("跳过缺失文件的题目", value=True, 
-                                     help="如果未找到作答文件，不计入总分")
+            skip_missing = st.checkbox("??, value=True, 
+                                     help="?")
             
-            separate_summary = st.checkbox("总结分离模式", value=True,
-                                         help="避免分批中出现总结，最后单独生成")
+            separate_summary = st.checkbox("?", value=True,
+                                         help="??)
             
-            generate_summary = st.checkbox("生成批改总结", value=True,
-                                         help="完成批改后生成整体总结")
+            generate_summary = st.checkbox("?", value=True,
+                                         help="?")
             
-            # 循环控制设置
-            st.subheader("🛑 循环防护")
-            max_steps = st.selectbox("每题最大步骤数", [3, 5, 7], index=0,
-                                   help="限制每题的最大步骤数，防止循环")
+            # ?
+            st.subheader("? ?")
+            max_steps = st.selectbox("?", [3, 5, 7], index=0,
+                                   help="??)
             
-            # 在session_state中保存设置
+            # ?session_state??
             st.session_state.batch_settings = {
                 'enable_batch': enable_batch,
                 'batch_size': batch_size if enable_batch else 10,
@@ -2653,93 +2706,93 @@ def show_sidebar():
             
             st.markdown("---")
             
-            # 统计信息
+            # ?
             users = read_users()
             count = len(users.get(st.session_state.username, {}).get('records', []))
-            st.metric("批改次数", count)
+            st.metric("?", count)
             
             st.markdown("---")
             
-            # 系统状态
+            # ??
             if API_AVAILABLE:
-                st.success("🚀 AI引擎正常")
+                st.success("??AI?")
             else:
-                st.warning("⚠️ 演示模式")
+                st.warning("? ?")
             
             st.markdown("---")
             
-            # 退出登录
-            if st.button("🚪 退出登录", use_container_width=True):
+            # ??
+            if st.button("? ??, use_container_width=True):
                 st.session_state.logged_in = False
                 st.session_state.username = ""
                 st.session_state.correction_result = None
                 st.session_state.page = "home"
                 st_rerun()
         else:
-            # 未登录状态
-            if st.button("👤 登录", use_container_width=True):
+            # ??
+            if st.button("? ?", use_container_width=True):
                 st.session_state.page = "login"
                 st_rerun()
             
             st.markdown("---")
-            st.markdown("### 💡 功能特色")
+            st.markdown("### ? ?")
             st.markdown("""
-            - 🎯 智能批改
-            - 📊 两种模式（有标准/无标准）
-            - 📚 历史管理
-            - 💾 结果导出
+            - ? ?
+            - ? ?/?
+            - ? ?
+            - ? ?
             """)
             
             st.markdown("---")
             
-            # 系统状态
+            # ??
             if API_AVAILABLE:
-                st.success("🚀 系统就绪")
+                st.success("???")
             else:
-                st.warning("⚠️ 演示模式")
+                st.warning("? ?")
         
-        # 设置信息部分（无论登录与否都显示）
+        # ??
         st.markdown("---")
-        st.header("⚙️ 设置")
+        st.header("? ?")
         
-        # API状态显示
-        st.subheader("🤖 AI模型")
-        st.info(f"**模型**: {api_config.model}")
-        st.info(f"**提供者**: OpenRouter (Google)")
+        # API??
+        st.subheader("? AI?")
+        st.info(f"**?**: {api_config.model}")
+        st.info(f"**??*: OpenRouter (Google)")
         
         if API_AVAILABLE:
-            st.success("🚀 AI引擎已就绪")
+            st.success("??AI??)
         else:
-            st.warning("⚠️ 演示模式运行中")
+            st.warning("? ??)
         
         st.markdown("---")
         
-        # 使用说明
-        st.subheader("📖 使用说明")
+        # ?
+        st.subheader("? ?")
         st.markdown("""
-        1. **上传文件**：支持图片、PDF、Word、文本等格式
-        2. **选择批改方式**：有批改标准或自动生成标准
-        3. **设置严格程度**：调整批改的严格程度
-        4. **开始批改**：点击"开始AI批改"按钮
-        5. **查看结果**：在结果页面查看详细批改
+        1. **?**?PDF?Word?
+        2. **?**??
+        3. **??*?
+        4. **??*???AI?"?
+        5. **?**?
         """)
         
-        # 技术信息
+        # ??
         st.markdown("---")
-        st.subheader("🔧 技术信息")
+        st.subheader("? ??)
         st.markdown(f"""
-        - **AI模型**: Google Gemini 2.5 Flash Lite Preview
-        - **API提供者**: OpenRouter
-        - **支持格式**: 图片、PDF、Word、文本
-        - **最大文件大小**: 4MB (自动压缩)
+        - **AI?**: Google Gemini 2.5 Flash Lite Preview
+        - **API??*: OpenRouter
+        - **?**: ?PDF?Word??
+        - **??*: 4MB (?)
         """)
 
-# 主函数
+# ??
 def main():
     init_session()
     show_sidebar()
     
-    # 页面路由
+    # ?
     if st.session_state.page == "home":
         show_home()
     elif st.session_state.page == "login":
@@ -2755,3 +2808,4 @@ def main():
 
 if __name__ == "__main__":
     main() 
+

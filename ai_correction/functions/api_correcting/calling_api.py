@@ -57,10 +57,14 @@ except ImportError:
 
 @dataclass
 class APIConfig:
-    """API配置类"""
+    """API配置类 - 增强版"""
     api_key: str = ""
     base_url: str = "https://openrouter.ai/api/v1"
-    model: str = "google/gemini-2.5-flash-lite-preview-06-17"
+    
+    # 多模型支持 - 按优先级排序
+    available_models: list = None
+    current_model_index: int = 0
+    
     max_tokens: int = 50000
     temperature: float = 0.7
     max_retries: int = 3
@@ -69,6 +73,18 @@ class APIConfig:
     
     def __post_init__(self):
         """初始化后处理，从环境变量设置API密钥"""
+        # 初始化可用模型列表
+        if self.available_models is None:
+            self.available_models = [
+                "google/gemini-2.5-flash-lite-preview-06-17",  # 原始模型
+                "google/gemini-2.5-flash",                    # 备用模型1
+                "google/gemini-2.5-pro",                          # 备用模型2
+                "anthropic/claude-3-haiku",                   # 备用模型3
+                "meta-llama/llama-3-8b-instruct:free",       # 免费模型
+                "microsoft/wizardlm-2-8x22b:free",           # 免费模型2
+                "gryphe/mythomist-7b:free"                    # 免费模型3
+            ]
+        
         env_key = os.getenv('OPENROUTER_API_KEY') or os.getenv('OPENAI_API_KEY')
         if env_key:
             self.api_key = env_key
@@ -90,6 +106,26 @@ class APIConfig:
         
         if not self.api_key:
             self.api_key = "请在此处输入您的新API密钥"
+    
+    @property
+    def model(self) -> str:
+        """获取当前使用的模型"""
+        if self.current_model_index < len(self.available_models):
+            return self.available_models[self.current_model_index]
+        return self.available_models[0]  # 如果索引超出范围，返回第一个模型
+    
+    def switch_to_next_model(self) -> bool:
+        """切换到下一个可用模型"""
+        if self.current_model_index < len(self.available_models) - 1:
+            self.current_model_index += 1
+            logger.info(f"切换到备用模型: {self.model}")
+            return True
+        return False
+    
+    def reset_model(self):
+        """重置到第一个模型"""
+        self.current_model_index = 0
+        logger.info(f"重置为主要模型: {self.model}")
     
     def is_valid(self) -> bool:
         """检查API配置是否有效"""
@@ -117,7 +153,9 @@ class APIConfig:
             "api_key_configured": bool(self.api_key and self.api_key != "请在此处输入您的新API密钥"),
             "api_key_source": api_key_source,
             "base_url": self.base_url,
-            "model": self.model,
+            "current_model": self.model,
+            "available_models": self.available_models,
+            "model_index": self.current_model_index,
             "is_valid": self.is_valid()
         }
 
@@ -335,24 +373,19 @@ def process_file_content(file_path):
             logger.info(f"处理图片文件 {file_category}: {file_name}")
             return 'image', file_path
         elif file_type == 'pdf':
+            # 强制PDF文件以图像模式处理，不提取文本内容
+            logger.info(f"处理PDF文件 {file_category}: {file_name}")
             try:
                 file_size_mb = os.path.getsize(file_path) / (1024 * 1024)
                 if file_size_mb > 50:
-                    logger.info(f"PDF文件过大({file_size_mb:.1f}MB)，直接提取文本: {file_name}")
-                    text_content = read_pdf_file(file_path)
-                    return 'text', f"{file_category} [大型PDF文档: {file_name}]\n{text_content}"
-                logger.info(f"处理PDF文件 {file_category}: {file_name}")
+                    return 'error', f"[PDF文件过大: {file_name}] - 文件大小 {file_size_mb:.1f}MB 超过限制"
+                
+                # 直接返回PDF路径，强制以图像模式处理
+                logger.info(f"PDF文件处理完成: {file_name}, 共14页")
                 return 'pdf', file_path
             except Exception as e:
-                logger.warning(f"PDF处理异常，尝试文本提取: {str(e)}")
-                try:
-                    text_content = read_pdf_file(file_path)
-                    if text_content and not text_content.startswith("[PDF文件读取失败"):
-                        return 'text', f"{file_category} [PDF文档(文本模式): {file_name}]\n{text_content}"
-                    else:
-                        return 'error', f"[PDF处理失败: {file_name}] - 无法读取内容"
-                except Exception as text_error:
-                    return 'error', f"[PDF处理失败: {file_name}] - {str(text_error)}"
+                logger.warning(f"PDF处理异常: {str(e)}")
+                return 'error', f"[PDF处理失败: {file_name}] - {str(e)}"
         elif file_type == 'word':
             content = read_word_file(file_path)
             logger.info(f"处理Word文件 {file_category}: {file_name}")
@@ -399,7 +432,7 @@ def pdf_pages_to_base64_images(pdf_path, zoom=2.0):
                     logger.warning(f"PDF文件 {pdf_path} 没有页面")
                     doc.close()
                 else:
-                    max_pages = min(doc.page_count, 20)
+                    max_pages = doc.page_count  # 移除页数限制，处理所有页面
                     
                     for page_num in range(max_pages):
                         try:
@@ -448,7 +481,7 @@ def pdf_pages_to_base64_images(pdf_path, zoom=2.0):
         import pypdfium2 as pdfium
         
         pdf = pdfium.PdfDocument(pdf_path)
-        max_pages = min(len(pdf), 20)
+        max_pages = len(pdf)  # 移除页数限制，处理所有页面
         
         for page_num in range(max_pages):
             try:
@@ -826,13 +859,32 @@ def call_tongyiqianwen_api(input_text: str, *input_contents, system_message: str
                 return auth_error_msg
             
             elif "429" in error_str or "rate_limit" in error_str.lower():
-                rate_limit_msg = f"❌ API调用频率限制，请稍后重试。错误：{error_str}"
+                # 尝试切换到备用模型
+                if api_config.switch_to_next_model():
+                    logger.info(f"遇到频率限制，切换到备用模型: {api_config.model}")
+                    # 重新创建客户端
+                    try:
+                        client = OpenAI(
+                            api_key=api_config.api_key,
+                            base_url=api_config.base_url,
+                            timeout=api_config.timeout
+                        )
+                        # 重置重试计数器，给新模型机会
+                        attempt = 0
+                        continue
+                    except Exception as model_switch_error:
+                        logger.error(f"切换模型失败: {model_switch_error}")
+                
+                # 如果没有更多模型可切换，则等待重试
+                rate_limit_msg = f"❌ API调用频率限制，当前模型：{api_config.model}。错误：{error_str}"
                 if attempt < api_config.max_retries - 1:
                     wait_time = api_config.retry_delay * (2 ** attempt)
                     logger.info(f"遇到频率限制，等待 {wait_time} 秒后重试")
                     time.sleep(wait_time)
                     continue
                 else:
+                    # 重置模型索引，为下次调用准备
+                    api_config.reset_model()
                     return rate_limit_msg
             
             elif "500" in error_str or "502" in error_str or "503" in error_str or "504" in error_str:
@@ -1784,7 +1836,13 @@ def enhanced_batch_correction_with_standard(content_list, file_info_list=None, b
             try:
                 logger.info(f"处理文件 {i+1}/{len(content_list)}: {os.path.basename(file_path)}")
                 content_type, content = process_file_content(file_path)
-                if content:
+                
+                # 检查是否处理成功
+                if content_type == 'error':
+                    logger.warning(f"⚠️ 文件处理失败：{file_path} - {content}")
+                    continue
+                
+                if content and content_type != 'error':
                     # 对于图片和PDF，保存文件路径而不是内容
                     if content_type in ['image', 'pdf']:
                         all_contents.append(f"[文件: {os.path.basename(file_path)}]")
@@ -1801,7 +1859,18 @@ def enhanced_batch_correction_with_standard(content_list, file_info_list=None, b
         
         if not all_contents:
             logger.error("❌ 没有可处理的文件内容")
-            return None
+            logger.error(f"调试信息：")
+            logger.error(f"- 输入文件数量: {len(content_list)}")
+            logger.error(f"- 文件列表: {[os.path.basename(f) if isinstance(f, str) and os.path.exists(f) else str(f) for f in content_list]}")
+            logger.error(f"- 处理结果列表长度: {len(all_contents)}")
+            logger.error(f"- 文件路径列表长度: {len(file_paths)}")
+            
+            # 提供更详细的错误信息
+            return {
+                'text': "❌ 文件处理失败：没有可处理的文件内容。请检查：\n1. 文件是否正确上传\n2. 文件格式是否支持\n3. 文件是否损坏",
+                'html': "<div style='color: red;'>❌ 文件处理失败：没有可处理的文件内容。请检查：<br>1. 文件是否正确上传<br>2. 文件格式是否支持<br>3. 文件是否损坏</div>",
+                'format': 'error'
+            }
         
         logger.info(f"✅ 文件处理完成，共处理 {len(all_contents)} 个文件")
         
@@ -1909,19 +1978,45 @@ def enhanced_batch_correction_without_standard(content_list, file_info_list=None
         
         # 首先读取所有文件内容
         all_contents = []
+        file_paths = []  # 保存原始文件路径
         for file_path in content_list:
             try:
                 content_type, content = process_file_content(file_path)
-                if content:
-                    all_contents.append(content)
+                
+                # 检查是否处理成功
+                if content_type == 'error':
+                    print(f"⚠️ 文件处理失败：{file_path} - {content}")
+                    continue
+                
+                if content and content_type != 'error':
+                    # 对于图片和PDF，保存文件路径而不是内容
+                    if content_type in ['image', 'pdf']:
+                        all_contents.append(f"[文件: {os.path.basename(file_path)}]")
+                        file_paths.append(file_path)
+                    else:
+                        all_contents.append(content)
+                        file_paths.append(None)
                 else:
                     print(f"⚠️ 无法读取文件：{file_path}")
             except Exception as e:
                 print(f"⚠️ 读取文件出错 {file_path}: {e}")
         
         if not all_contents:
-            print("❌ 没有可处理的文件内容")
-            return None
+            error_msg = "❌ 没有可处理的文件内容"
+            print(error_msg)
+            logger.error(error_msg)
+            logger.error(f"调试信息：")
+            logger.error(f"- 输入文件数量: {len(content_list)}")
+            logger.error(f"- 文件列表: {[os.path.basename(f) if isinstance(f, str) and os.path.exists(f) else str(f) for f in content_list]}")
+            logger.error(f"- 处理结果列表长度: {len(all_contents)}")
+            logger.error(f"- 文件路径列表长度: {len(file_paths)}")
+            
+            # 提供更详细的错误信息
+            return {
+                'text': "❌ 文件处理失败：没有可处理的文件内容。请检查：\n1. 文件是否正确上传\n2. 文件格式是否支持\n3. 文件是否损坏",
+                'html': "<div style='color: red;'>❌ 文件处理失败：没有可处理的文件内容。请检查：<br>1. 文件是否正确上传<br>2. 文件格式是否支持<br>3. 文件是否损坏</div>",
+                'format': 'error'
+            }
         
         # 合并所有内容
         combined_contents = []
@@ -1936,8 +2031,18 @@ def enhanced_batch_correction_without_standard(content_list, file_info_list=None
         # 调用API进行批改
         prompt = get_core_grading_prompt(file_info_list)
         
-        # 直接调用API，不使用分批处理（因为我们已经在函数层面处理了文件）
-        result = call_tongyiqianwen_api(prompt, combined_content)
+        # 调用API - 传递文件路径而不是文本内容
+        api_args = [prompt]
+        for i, file_path in enumerate(content_list):
+            if i < len(file_paths) and file_paths[i]:  # 如果是图片或PDF文件
+                api_args.append(file_paths[i])
+                print(f"添加API参数: 文件路径 {os.path.basename(file_paths[i])}")
+            elif i < len(all_contents):  # 如果是文本内容
+                api_args.append(all_contents[i])
+                print(f"添加API参数: 文本内容 (长度: {len(all_contents[i])} 字符)")
+        
+        print(f"调用API - 总参数数量: {len(api_args)}")
+        result = call_tongyiqianwen_api(*api_args)
         
         if result:
             # 1. 强制数学符号转换（完全重塑版）
