@@ -1,0 +1,296 @@
+# AI功能提示词优化与调用功能完善 - 配置文件
+
+# AI优化核心配置
+ai_optimization:
+  # 提示词引擎配置
+  prompt_engine:
+    # 缓存配置
+    cache_size: 1000
+    cache_ttl: 3600  # 1小时
+    
+    # 模板配置
+    template_path: "templates/prompts"
+    default_language: "zh-CN"
+    
+    # 性能配置
+    max_prompt_length: 50000
+    token_estimation_enabled: true
+    
+    # A/B测试配置
+    ab_testing_enabled: true
+    ab_test_ratio: 0.1  # 10%的请求用于A/B测试
+  
+  # API管理配置
+  api_manager:
+    # 默认超时设置
+    default_timeout: 30
+    max_retries: 3
+    
+    # 重试策略
+    retry_strategy:
+      type: "exponential"  # exponential, linear, immediate
+      base_delay: 1.0
+      max_delay: 60.0
+      backoff_multiplier: 2.0
+      jitter: true
+    
+    # 并发控制
+    max_concurrent_requests: 10
+    rate_limit_per_minute: 100
+  
+  # 内容处理配置
+  content_processor:
+    # 文件大小限制
+    max_file_size: 20971520  # 20MB
+    max_image_size: 5242880   # 5MB
+    max_text_length: 50000
+    
+    # 支持的文件格式
+    supported_formats:
+      - "txt"
+      - "pdf"
+      - "jpg"
+      - "jpeg"
+      - "png"
+      - "gif"
+    
+    # OCR配置
+    ocr_enabled: true
+    ocr_language: "chi_sim+eng"
+  
+  # 质量控制配置
+  quality_control:
+    # 启用的检查类型
+    enabled_checks:
+      - "score_range"
+      - "format_check"
+      - "logic_check"
+      - "consistency"
+    
+    # 质量阈值
+    quality_threshold: 0.8
+    consistency_threshold: 0.85
+    
+    # 自动修复
+    auto_fix_enabled: false
+  
+  # 缓存配置
+  cache:
+    # 缓存类型
+    cache_type: "memory"  # memory, redis, file
+    
+    # 内存缓存配置
+    memory_cache:
+      max_size: 1000
+      ttl: 3600
+    
+    # 文件缓存配置
+    file_cache:
+      cache_dir: "cache/ai_optimization"
+      max_size: 104857600  # 100MB
+    
+    # Redis缓存配置（如果使用）
+    redis_cache:
+      host: "localhost"
+      port: 6379
+      db: 0
+      password: null
+
+# 模型配置
+models:
+  # 默认模型
+  default_model: "gpt-4"
+  
+  # 模型列表
+  available_models:
+    gpt-4:
+      provider: "openai"
+      endpoint: "https://api.openai.com/v1/chat/completions"
+      max_tokens: 4096
+      max_content_size: 100000
+      cost_per_token: 0.00003
+      supported_tasks:
+        - "grading"
+        - "analysis"
+        - "summary"
+      rate_limits:
+        requests_per_minute: 60
+        tokens_per_minute: 150000
+    
+    gpt-3.5-turbo:
+      provider: "openai"
+      endpoint: "https://api.openai.com/v1/chat/completions"
+      max_tokens: 4096
+      max_content_size: 50000
+      cost_per_token: 0.000002
+      supported_tasks:
+        - "grading"
+        - "analysis"
+        - "summary"
+      rate_limits:
+        requests_per_minute: 100
+        tokens_per_minute: 300000
+    
+    claude-3:
+      provider: "anthropic"
+      endpoint: "https://api.anthropic.com/v1/messages"
+      max_tokens: 4096
+      max_content_size: 200000
+      cost_per_token: 0.000015
+      supported_tasks:
+        - "grading"
+        - "analysis"
+      rate_limits:
+        requests_per_minute: 50
+        tokens_per_minute: 100000
+  
+  # 模型选择策略
+  selection_strategy:
+    type: "cost_optimized"  # cost_optimized, performance_optimized, balanced
+    fallback_enabled: true
+    fallback_order:
+      - "gpt-4"
+      - "gpt-3.5-turbo"
+      - "claude-3"
+
+# 质量控制规则
+quality_control:
+  # 规则定义
+  rules:
+    score_range_check:
+      id: "score_range_001"
+      name: "分数范围检查"
+      description: "检查分数是否在有效范围内"
+      type: "score_range"
+      severity: "high"
+      weight: 1.0
+      threshold: 1.0
+      parameters:
+        min_score: 0
+        max_score: 100
+      is_active: true
+    
+    format_check:
+      id: "format_001"
+      name: "格式检查"
+      description: "检查输出格式是否符合要求"
+      type: "format_check"
+      severity: "medium"
+      weight: 0.8
+      threshold: 0.9
+      parameters:
+        required_fields:
+          - "score"
+          - "feedback"
+          - "suggestions"
+      is_active: true
+    
+    logic_consistency:
+      id: "logic_001"
+      name: "逻辑一致性检查"
+      description: "检查分数和反馈的逻辑一致性"
+      type: "logic_check"
+      severity: "high"
+      weight: 1.2
+      threshold: 0.8
+      parameters:
+        check_score_feedback_alignment: true
+      is_active: true
+    
+    content_completeness:
+      id: "completeness_001"
+      name: "内容完整性检查"
+      description: "检查批改内容是否完整"
+      type: "completeness"
+      severity: "medium"
+      weight: 0.9
+      threshold: 0.85
+      parameters:
+        required_components:
+          - "评分依据"
+          - "改进建议"
+          - "总体评价"
+      is_active: true
+
+# 性能监控配置
+monitoring:
+  # 启用监控
+  enabled: true
+  
+  # 指标收集
+  metrics:
+    response_time: true
+    token_usage: true
+    cost_tracking: true
+    quality_scores: true
+    error_rates: true
+  
+  # 告警配置
+  alerts:
+    slow_response_threshold: 30  # 秒
+    high_error_rate_threshold: 0.1  # 10%
+    cost_threshold_per_hour: 10.0  # 美元
+    
+    # 通知方式
+    notification_methods:
+      - "log"
+      # - "email"
+      # - "webhook"
+
+# 日志配置
+logging:
+  # 日志级别
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+  
+  # 日志格式
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  
+  # 日志文件
+  file:
+    enabled: true
+    path: "logs/ai_optimization.log"
+    max_size: 10485760  # 10MB
+    backup_count: 5
+  
+  # 控制台输出
+  console:
+    enabled: true
+    level: "INFO"
+  
+  # 特定模块日志级别
+  loggers:
+    "ai_optimization.prompt_engine": "DEBUG"
+    "ai_optimization.api_manager": "INFO"
+    "ai_optimization.quality_control": "INFO"
+
+# 安全配置
+security:
+  # API密钥管理
+  api_keys:
+    encryption_enabled: true
+    key_rotation_days: 90
+  
+  # 访问控制
+  access_control:
+    rate_limiting: true
+    ip_whitelist: []
+    
+  # 数据保护
+  data_protection:
+    sensitive_data_masking: true
+    audit_logging: true
+
+# 开发和调试配置
+development:
+  # 调试模式
+  debug_mode: false
+  
+  # 测试配置
+  testing:
+    mock_api_calls: false
+    test_data_path: "test_data/"
+    
+  # 性能分析
+  profiling:
+    enabled: false
+    output_path: "profiling/"

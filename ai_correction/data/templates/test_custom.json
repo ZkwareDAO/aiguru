@@ -1,0 +1,43 @@
+{
+  "id": "test_custom",
+  "name": "测试自定义模板",
+  "category": "test",
+  "layers": {
+    "system": "你是一个测试助手",
+    "task": "执行测试任务: {task}",
+    "format": "输出格式: {format}"
+  },
+  "parameters": [
+    {
+      "name": "task",
+      "type": "str",
+      "default_value": "默认任务",
+      "description": "任务描述",
+      "validation_rules": [],
+      "is_required": true
+    },
+    {
+      "name": "format",
+      "type": "str",
+      "default_value": "文本",
+      "description": "输出格式",
+      "validation_rules": [],
+      "is_required": true
+    }
+  ],
+  "performance_metrics": {
+    "avg_response_time": 0.0,
+    "success_rate": 0.0,
+    "quality_score": 0.0,
+    "usage_count": 0,
+    "last_updated": "2025-07-21T11:45:17.860087"
+  },
+  "version": "1.0.0",
+  "created_at": "2025-07-21T11:45:17.860088",
+  "updated_at": "2025-07-21T11:45:17.860088",
+  "is_active": true,
+  "tags": [
+    "test",
+    "custom"
+  ]
+}

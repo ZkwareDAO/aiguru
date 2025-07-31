@@ -1,7 +1,12 @@
 # 修复版本的API调用模块 - 完整版
 import base64
 import requests  
-import openai
+try:
+    import openai
+    OPENAI_AVAILABLE = True
+except ImportError:
+    OPENAI_AVAILABLE = False
+    openai = None
 import re
 from pathlib import Path
 import json
@@ -373,8 +378,21 @@ def process_file_content(file_path):
             logger.info(f"处理图片文件 {file_category}: {file_name}")
             return 'image', file_path
         elif file_type == 'pdf':
-            # 强制PDF文件以图像模式处理，不提取文本内容
             logger.info(f"处理PDF文件 {file_category}: {file_name}")
+            
+            # 1. 尝试文本提取
+            try:
+                pdf_text = read_pdf_file(file_path)
+                # Check if text extraction was successful and content is substantial
+                if pdf_text and not pdf_text.startswith("[PDF文件读取失败") and len(pdf_text) > 100:
+                    logger.info(f"PDF文本提取成功: {file_name}")
+                    return 'text', f"{file_category} [PDF文本内容: {file_name}]\n{pdf_text}"
+                else:
+                    logger.warning(f"PDF文本提取失败或内容过少，将尝试图像转换: {file_name}")
+            except Exception as e:
+                logger.error(f"PDF文本提取时发生异常: {e}")
+
+            # 2. 如果文本提取失败或内容不足，则进行图像转换
             try:
                 file_size_mb = os.path.getsize(file_path) / (1024 * 1024)
                 if file_size_mb > 50:
@@ -404,129 +422,380 @@ def process_file_content(file_path):
     except Exception as e:
         return 'error', f"[文件处理错误: {file_name}] - {str(e)}"
 
+def validate_pdf_file(pdf_path):
+    """验证PDF文件的有效性和可读性"""
+    validation_result = {
+        'is_valid': False,
+        'error_message': '',
+        'file_info': {},
+        'suggestions': []
+    }
+    
+    try:
+        # 检查文件是否存在
+        if not os.path.exists(pdf_path):
+            validation_result['error_message'] = f"文件不存在: {pdf_path}"
+            validation_result['suggestions'].append("请检查文件路径是否正确")
+            return validation_result
+        
+        # 检查文件大小
+        file_size = os.path.getsize(pdf_path)
+        validation_result['file_info']['size_bytes'] = file_size
+        validation_result['file_info']['size_mb'] = file_size / (1024 * 1024)
+        
+        if file_size == 0:
+            validation_result['error_message'] = "PDF文件为空"
+            validation_result['suggestions'].append("请检查文件是否正确上传")
+            return validation_result
+        
+        if file_size > 100 * 1024 * 1024:  # 100MB
+            validation_result['error_message'] = f"PDF文件过大 ({file_size / (1024*1024):.1f}MB)"
+            validation_result['suggestions'].append("请尝试压缩PDF文件或分割成多个小文件")
+            return validation_result
+        
+        # 检查文件扩展名
+        if not pdf_path.lower().endswith('.pdf'):
+            validation_result['error_message'] = "文件扩展名不是.pdf"
+            validation_result['suggestions'].append("请确保文件是PDF格式")
+            return validation_result
+        
+        # 检查文件头部（PDF魔数）
+        try:
+            with open(pdf_path, 'rb') as f:
+                header = f.read(8)
+                if not header.startswith(b'%PDF-'):
+                    validation_result['error_message'] = "文件不是有效的PDF格式（缺少PDF头部标识）"
+                    validation_result['suggestions'].append("文件可能已损坏或不是真正的PDF文件")
+                    return validation_result
+                
+                # 提取PDF版本
+                try:
+                    version_line = header.decode('ascii', errors='ignore')
+                    if '%PDF-' in version_line:
+                        version = version_line.split('%PDF-')[1][:3]
+                        validation_result['file_info']['pdf_version'] = version
+                except:
+                    pass
+        except Exception as e:
+            validation_result['error_message'] = f"无法读取文件头部: {str(e)}"
+            validation_result['suggestions'].append("文件可能已损坏或被其他程序占用")
+            return validation_result
+        
+        # 尝试用PDF库验证文件结构
+        pdf_library_results = []
+        
+        # 测试PyMuPDF
+        try:
+            import fitz
+            doc = fitz.open(pdf_path)
+            page_count = doc.page_count
+            is_encrypted = doc.is_encrypted
+            doc.close()
+            
+            pdf_library_results.append({
+                'library': 'PyMuPDF',
+                'success': True,
+                'page_count': page_count,
+                'is_encrypted': is_encrypted
+            })
+            
+            validation_result['file_info']['page_count'] = page_count
+            validation_result['file_info']['is_encrypted'] = is_encrypted
+            
+            if is_encrypted:
+                validation_result['error_message'] = "PDF文件已加密"
+                validation_result['suggestions'].append("请提供未加密的PDF文件或提供密码")
+                return validation_result
+            
+            if page_count == 0:
+                validation_result['error_message'] = "PDF文件没有页面"
+                validation_result['suggestions'].append("文件可能已损坏")
+                return validation_result
+                
+        except ImportError:
+            pdf_library_results.append({
+                'library': 'PyMuPDF',
+                'success': False,
+                'error': 'Library not installed'
+            })
+        except Exception as e:
+            pdf_library_results.append({
+                'library': 'PyMuPDF',
+                'success': False,
+                'error': str(e)
+            })
+        
+        # 测试pypdfium2
+        try:
+            import pypdfium2 as pdfium
+            pdf = pdfium.PdfDocument(pdf_path)
+            page_count = len(pdf)
+            pdf.close()
+            
+            pdf_library_results.append({
+                'library': 'pypdfium2',
+                'success': True,
+                'page_count': page_count
+            })
+            
+            if not validation_result['file_info'].get('page_count'):
+                validation_result['file_info']['page_count'] = page_count
+                
+        except ImportError:
+            pdf_library_results.append({
+                'library': 'pypdfium2',
+                'success': False,
+                'error': 'Library not installed'
+            })
+        except Exception as e:
+            pdf_library_results.append({
+                'library': 'pypdfium2',
+                'success': False,
+                'error': str(e)
+            })
+        
+        validation_result['file_info']['library_tests'] = pdf_library_results
+        
+        # 检查是否至少有一个库能成功处理
+        successful_libraries = [r for r in pdf_library_results if r['success']]
+        if not successful_libraries:
+            validation_result['error_message'] = "所有PDF处理库都无法打开此文件"
+            validation_result['suggestions'].extend([
+                "文件可能已损坏",
+                "请尝试用其他PDF阅读器打开文件验证",
+                "如果文件正常，请检查是否安装了PyMuPDF或pypdfium2库"
+            ])
+            return validation_result
+        
+        # 如果所有检查都通过
+        validation_result['is_valid'] = True
+        validation_result['error_message'] = ''
+        
+        return validation_result
+        
+    except Exception as e:
+        validation_result['error_message'] = f"PDF验证过程中发生错误: {str(e)}"
+        validation_result['suggestions'].append("请联系技术支持")
+        return validation_result
+
 def pdf_pages_to_base64_images(pdf_path, zoom=2.0):
-    """将 PDF 每页转换为 Base64 编码的图像数据列表，支持多种方法"""
+    """将 PDF 每页转换为 Base64 编码的图像数据列表，支持多种方法 - 增强错误诊断版"""
     
     base64_images = []
+    error_details = []
+    
+    # 首先进行PDF文件验证
+    logger.info(f"开始验证PDF文件: {os.path.basename(pdf_path)}")
+    validation_result = validate_pdf_file(pdf_path)
+    
+    if not validation_result['is_valid']:
+        error_msg = f"PDF文件验证失败: {validation_result['error_message']}"
+        logger.error(error_msg)
+        logger.error("建议解决方案:")
+        for suggestion in validation_result['suggestions']:
+            logger.error(f"  - {suggestion}")
+        
+        # 记录文件信息用于调试
+        if validation_result['file_info']:
+            logger.error("文件信息:")
+            for key, value in validation_result['file_info'].items():
+                logger.error(f"  {key}: {value}")
+        
+        return []
+    
+    # 记录验证成功的文件信息
+    file_info = validation_result['file_info']
+    logger.info(f"PDF文件验证成功: {os.path.basename(pdf_path)}")
+    logger.info(f"  - 文件大小: {file_info.get('size_mb', 0):.1f}MB")
+    logger.info(f"  - 页面数量: {file_info.get('page_count', 'unknown')}")
+    logger.info(f"  - PDF版本: {file_info.get('pdf_version', 'unknown')}")
+    logger.info(f"  - 是否加密: {file_info.get('is_encrypted', 'unknown')}")
     
     # 方法1: 尝试使用 PyMuPDF (fitz)
+    fitz_available = False
     try:
         import fitz
+        fitz_available = True
+        logger.info(f"PyMuPDF可用，版本: {fitz.version}")
+        
         suppress_context = SuppressOutput() if PDF_UTILS_AVAILABLE else contextlib.nullcontext()
         
         with suppress_context:
-            doc = fitz.open(pdf_path)
-            
-            if doc.is_encrypted:
-                logger.warning(f"PDF文件 {pdf_path} 已加密，尝试解密")
-                if not doc.authenticate(""):
-                    logger.error(f"PDF文件 {pdf_path} 无法解密")
-                    doc.close()
-                    # 继续尝试其他方法
-                else:
-                    # 成功解密，继续处理
-                    pass
-            
-            if not doc.is_encrypted or doc.authenticate(""):
-                if doc.page_count == 0:
-                    logger.warning(f"PDF文件 {pdf_path} 没有页面")
-                    doc.close()
-                else:
-                    max_pages = doc.page_count  # 移除页数限制，处理所有页面
-                    
-                    for page_num in range(max_pages):
-                        try:
-                            with contextlib.redirect_stderr(open(os.devnull, 'w')):
-                                page = doc.load_page(page_num)
-                                matrix = fitz.Matrix(zoom, zoom)
-                                pix = page.get_pixmap(matrix=matrix, alpha=False)
-                                img_data = pix.tobytes("png")
-                                
-                                if len(img_data) > 3 * 1024 * 1024:
-                                    img = Image.open(io.BytesIO(img_data))
-                                    if img.mode in ('RGBA', 'LA', 'P'):
-                                        img = img.convert('RGB')
+            try:
+                doc = fitz.open(pdf_path)
+                logger.info(f"PDF文件打开成功: {pdf_path}")
+                
+                if doc.is_encrypted:
+                    logger.warning(f"PDF文件 {pdf_path} 已加密，尝试解密")
+                    if not doc.authenticate(""):
+                        error_msg = f"PDF文件已加密且无法解密: {pdf_path}"
+                        logger.error(error_msg)
+                        error_details.append(error_msg)
+                        doc.close()
+                    else:
+                        logger.info("PDF解密成功")
+                
+                if not doc.is_encrypted or doc.authenticate(""):
+                    if doc.page_count == 0:
+                        error_msg = f"PDF文件没有页面: {pdf_path}"
+                        logger.warning(error_msg)
+                        error_details.append(error_msg)
+                        doc.close()
+                    else:
+                        max_pages = min(doc.page_count, 20)  # 限制最多处理20页
+                        logger.info(f"开始处理PDF，共{doc.page_count}页，处理前{max_pages}页")
+                        
+                        for page_num in range(max_pages):
+                            try:
+                                with contextlib.redirect_stderr(open(os.devnull, 'w')):
+                                    page = doc.load_page(page_num)
+                                    matrix = fitz.Matrix(zoom, zoom)
+                                    pix = page.get_pixmap(matrix=matrix, alpha=False)
+                                    img_data = pix.tobytes("png")
                                     
-                                    max_size = 1600
-                                    if max(img.size) > max_size:
-                                        ratio = max_size / max(img.size)
-                                        new_size = (int(img.size[0] * ratio), int(img.size[1] * ratio))
-                                        img = img.resize(new_size, Image.Resampling.LANCZOS)
+                                    # 检查图像数据大小
+                                    if len(img_data) > 5 * 1024 * 1024:  # 5MB
+                                        logger.info(f"第{page_num + 1}页图像过大({len(img_data)/(1024*1024):.1f}MB)，进行压缩")
+                                        img = Image.open(io.BytesIO(img_data))
+                                        if img.mode in ('RGBA', 'LA', 'P'):
+                                            img = img.convert('RGB')
+                                        
+                                        max_size = 1600
+                                        if max(img.size) > max_size:
+                                            ratio = max_size / max(img.size)
+                                            new_size = (int(img.size[0] * ratio), int(img.size[1] * ratio))
+                                            img = img.resize(new_size, Image.Resampling.LANCZOS)
+                                        
+                                        buffer = io.BytesIO()
+                                        img.save(buffer, format='JPEG', quality=80, optimize=True)
+                                        img_data = buffer.getvalue()
+                                        logger.info(f"压缩后大小: {len(img_data)/(1024*1024):.1f}MB")
                                     
-                                    buffer = io.BytesIO()
-                                    img.save(buffer, format='JPEG', quality=80, optimize=True)
-                                    img_data = buffer.getvalue()
-                                
-                                base64_str = base64.b64encode(img_data).decode("utf-8")
-                                base64_images.append(base64_str)
-                                pix = None
-                                
-                        except Exception as e:
-                            logger.warning(f"PyMuPDF处理PDF第{page_num + 1}页时出错: {str(e)}")
-                            continue
-                    
-                    doc.close()
-                    
-                    if base64_images:
-                        logger.info(f"PyMuPDF成功处理PDF文件 {pdf_path}，共{len(base64_images)}页")
-                        return base64_images
+                                    base64_str = base64.b64encode(img_data).decode("utf-8")
+                                    base64_images.append(base64_str)
+                                    pix = None
+                                    
+                                    logger.debug(f"成功处理第{page_num + 1}页")
+                                    
+                            except Exception as e:
+                                error_msg = f"PyMuPDF处理PDF第{page_num + 1}页时出错: {str(e)}"
+                                logger.warning(error_msg)
+                                error_details.append(error_msg)
+                                continue
+                        
+                        doc.close()
+                        
+                        if base64_images:
+                            logger.info(f"PyMuPDF成功处理PDF文件 {pdf_path}，共{len(base64_images)}页")
+                            return base64_images
+                        else:
+                            error_msg = "PyMuPDF处理完成但未生成任何图像"
+                            logger.warning(error_msg)
+                            error_details.append(error_msg)
+                            
+            except Exception as doc_error:
+                error_msg = f"PyMuPDF打开PDF文件失败: {str(doc_error)}"
+                logger.warning(error_msg)
+                error_details.append(error_msg)
             
     except ImportError:
-        logger.warning("PyMuPDF未安装，尝试使用其他方法")
+        error_msg = "PyMuPDF未安装"
+        logger.warning(error_msg)
+        error_details.append(error_msg)
     except Exception as e:
-        logger.warning(f"PyMuPDF处理PDF失败: {str(e)}，尝试使用其他方法")
+        error_msg = f"PyMuPDF处理PDF失败: {str(e)}"
+        logger.warning(error_msg)
+        error_details.append(error_msg)
     
     # 方法2: 使用 pypdfium2 (通过 pdfplumber 依赖安装)
+    pypdfium2_available = False
     try:
         import pypdfium2 as pdfium
+        pypdfium2_available = True
+        logger.info("pypdfium2可用")
         
-        pdf = pdfium.PdfDocument(pdf_path)
-        max_pages = len(pdf)  # 移除页数限制，处理所有页面
-        
-        for page_num in range(max_pages):
-            try:
-                page = pdf.get_page(page_num)
-                # 渲染页面为图像
-                bitmap = page.render(scale=zoom, rotation=0)
-                pil_image = bitmap.to_pil()
+        try:
+            pdf = pdfium.PdfDocument(pdf_path)
+            max_pages = min(len(pdf), 20)  # 限制最多处理20页
+            logger.info(f"pypdfium2打开PDF成功，共{len(pdf)}页，处理前{max_pages}页")
+            
+            for page_num in range(max_pages):
+                try:
+                    page = pdf.get_page(page_num)
+                    # 渲染页面为图像
+                    bitmap = page.render(scale=zoom, rotation=0)
+                    pil_image = bitmap.to_pil()
+                    
+                    # 转换为RGB格式
+                    if pil_image.mode != 'RGB':
+                        pil_image = pil_image.convert('RGB')
+                    
+                    # 压缩图像如果太大
+                    if max(pil_image.size) > 1600:
+                        ratio = 1600 / max(pil_image.size)
+                        new_size = (int(pil_image.size[0] * ratio), int(pil_image.size[1] * ratio))
+                        pil_image = pil_image.resize(new_size, Image.Resampling.LANCZOS)
+                    
+                    # 转换为base64
+                    buffer = io.BytesIO()
+                    pil_image.save(buffer, format='JPEG', quality=80, optimize=True)
+                    img_data = buffer.getvalue()
+                    base64_str = base64.b64encode(img_data).decode("utf-8")
+                    base64_images.append(base64_str)
+                    
+                    page.close()
+                    logger.debug(f"pypdfium2成功处理第{page_num + 1}页")
+                    
+                except Exception as e:
+                    error_msg = f"pypdfium2处理PDF第{page_num + 1}页时出错: {str(e)}"
+                    logger.warning(error_msg)
+                    error_details.append(error_msg)
+                    continue
+            
+            pdf.close()
+            
+            if base64_images:
+                logger.info(f"pypdfium2成功处理PDF文件 {pdf_path}，共{len(base64_images)}页")
+                return base64_images
+            else:
+                error_msg = "pypdfium2处理完成但未生成任何图像"
+                logger.warning(error_msg)
+                error_details.append(error_msg)
                 
-                # 转换为RGB格式
-                if pil_image.mode != 'RGB':
-                    pil_image = pil_image.convert('RGB')
-                
-                # 压缩图像如果太大
-                if max(pil_image.size) > 1600:
-                    ratio = 1600 / max(pil_image.size)
-                    new_size = (int(pil_image.size[0] * ratio), int(pil_image.size[1] * ratio))
-                    pil_image = pil_image.resize(new_size, Image.Resampling.LANCZOS)
-                
-                # 转换为base64
-                buffer = io.BytesIO()
-                pil_image.save(buffer, format='JPEG', quality=80, optimize=True)
-                img_data = buffer.getvalue()
-                base64_str = base64.b64encode(img_data).decode("utf-8")
-                base64_images.append(base64_str)
-                
-                page.close()
-                
-            except Exception as e:
-                logger.warning(f"pypdfium2处理PDF第{page_num + 1}页时出错: {str(e)}")
-                continue
-        
-        pdf.close()
-        
-        if base64_images:
-            logger.info(f"pypdfium2成功处理PDF文件 {pdf_path}，共{len(base64_images)}页")
-            return base64_images
+        except Exception as pdf_error:
+            error_msg = f"pypdfium2打开PDF文件失败: {str(pdf_error)}"
+            logger.warning(error_msg)
+            error_details.append(error_msg)
             
     except ImportError:
-        logger.warning("pypdfium2未安装，无法进行PDF预览")
+        error_msg = "pypdfium2未安装"
+        logger.warning(error_msg)
+        error_details.append(error_msg)
     except Exception as e:
-        logger.warning(f"pypdfium2处理PDF失败: {str(e)}")
+        error_msg = f"pypdfium2处理PDF失败: {str(e)}"
+        logger.warning(error_msg)
+        error_details.append(error_msg)
     
-    # 如果所有方法都失败
+    # 如果所有方法都失败，提供详细的错误信息
     if not base64_images:
         logger.error(f"所有PDF处理方法都失败，无法生成预览: {pdf_path}")
+        logger.error("错误详情:")
+        for i, error in enumerate(error_details, 1):
+            logger.error(f"  {i}. {error}")
+        
+        # 提供诊断信息
+        diagnostic_info = []
+        diagnostic_info.append(f"文件路径: {pdf_path}")
+        diagnostic_info.append(f"文件存在: {os.path.exists(pdf_path)}")
+        if os.path.exists(pdf_path):
+            diagnostic_info.append(f"文件大小: {os.path.getsize(pdf_path)} 字节")
+        diagnostic_info.append(f"PyMuPDF可用: {fitz_available}")
+        diagnostic_info.append(f"pypdfium2可用: {pypdfium2_available}")
+        
+        logger.error("诊断信息:")
+        for info in diagnostic_info:
+            logger.error(f"  - {info}")
+        
         return []
     
     return base64_images
@@ -1460,62 +1729,74 @@ def update_api_config(new_config: Dict[str, Any]) -> Dict[str, Any]:
 
 # ===================== 增强版批改函数 =====================
 def detect_loop_and_cleanup(result):
-    """终极循环检测和清理 - 强制截断"""
+    """智能重复内容检测和清理 - 重新设计版"""
     if not result:
         return result
     
     lines = result.split('\n')
     cleaned_lines = []
-    step_count = 0
-    current_question = None
-    question_complete = False
+    seen_patterns = set()  # 用于检测重复模式
+    recent_lines = []  # 最近的10行，用于检测立即重复
+    
+    # 计算行的简化特征（用于重复检测）
+    def get_line_signature(line):
+        # 移除变化的部分（数字、符号），只保留结构
+        import re
+        simplified = re.sub(r'[0-9\+\-\*\/\=\(\)\[\]]+', 'X', line.strip())
+        simplified = re.sub(r'[αβγδεζηθιπ×÷±≤≥≠≈]+', 'Y', simplified)
+        return simplified
     
     for line in lines:
         line = line.strip()
         if not line:
+            cleaned_lines.append("")
             continue
             
-        # 检测题目标题
-        if line.startswith('### 题目'):
-            if question_complete:
-                # 如果上一题已完成，开始新题
-                cleaned_lines.append(line)
-                current_question = line
-                step_count = 0
-                question_complete = False
-            else:
-                # 第一题
-                cleaned_lines.append(line)
-                current_question = line
-                step_count = 0
+        # 获取行的特征签名
+        signature = get_line_signature(line)
+        
+        # 检测立即重复（连续相同行）
+        if line in recent_lines[-5:]:  # 检查最近5行
+            print(f"⚠️ 检测到立即重复，跳过: {line[:50]}...")
             continue
             
-        # 检测步骤
-        if '关键步骤' in line and current_question and not question_complete:
-            step_count += 1
-            
-            # 🚨 终极限制：超过3步立即终止
-            if step_count > 3:
-                cleaned_lines.append("🛑 LOOP DETECTED - TERMINATING (超过3步限制)")
-                question_complete = True
+        # 检测模式重复（相同结构的行出现过多次）
+        if signature in seen_patterns and len(signature) > 10:  # 忽略太短的模式
+            pattern_count = sum(1 for existing_sig in seen_patterns if existing_sig == signature)
+            if pattern_count > 3:  # 同样的模式超过3次
+                print(f"⚠️ 检测到模式重复，跳过: {signature[:30]}...")
                 continue
                 
-            cleaned_lines.append(line)
+        # 检测大段重复（整个计算过程重复）
+        if ('的体积' in line or '的半径' in line) and any(similar_content in prev for prev in cleaned_lines[-20:] for similar_content in ['的体积', '的半径']):
+            # 计算最近20行中数学计算的密度
+            math_density = sum(1 for prev in cleaned_lines[-20:] if ('的体积' in prev or '的半径' in prev or '=' in prev))
+            if math_density > 15:  # 如果数学计算过于密集
+                print("⚠️ 检测到大段计算重复，终止处理")
+                break
             
-            # 达到3步自动完成当前题目
-            if step_count == 3:
-                cleaned_lines.append("🛑 LOOP DETECTED - TERMINATING (达到3步限制)")
-                question_complete = True
-                
-        elif not question_complete:
-            # 其他内容（满分、得分等）
+        # 检测数学公式的过度重复
+        if ('体积' in line or '半径' in line) and line.count('=') > 0:
+            similar_count = sum(1 for prev in cleaned_lines[-50:] 
+                              if ('体积' in prev or '半径' in prev) and prev.count('=') > 0)
+            if similar_count > 10:  # 数学公式行超过10行
+                print("⚠️ 检测到数学公式过度重复，停止添加")
+                break
+        
+        # 记录模式和最近行
+        seen_patterns.add(signature)
+        recent_lines.append(line)
+        if len(recent_lines) > 10:
+            recent_lines.pop(0)
+            
             cleaned_lines.append(line)
     
-    # 强制截断：如果结果太长，只保留前100行
-    if len(cleaned_lines) > 100:
-        cleaned_lines = cleaned_lines[:100]
-        cleaned_lines.append("🛑 OUTPUT TRUNCATED - TOO LONG")
+        # 安全截断：防止输出过长
+        if len(cleaned_lines) > 200:
+            cleaned_lines.append("🛑 内容过长，已自动截断")
+            break
     
+    print(f"✅ 循环清理完成: {len(lines)} → {len(cleaned_lines)} 行")
     return '\n'.join(cleaned_lines)
 
 def check_question_exists(content, question_number):
@@ -1820,6 +2101,102 @@ def analyze_questions(content_list, file_info_list=None):
             'analysis': f"分析出错: {e}"
         }
 
+def quick_analyze_files(content_list, file_paths, file_info_list=None):
+    """
+    轻量级文件分析 - 第一次API调用
+    只识别题目数量、学生信息等基本信息，不输出详细内容
+    """
+    try:
+        logger.info("🔍 开始轻量级文件分析...")
+        
+        # 构建简洁的分析提示词
+        analysis_prompt = """你是一个文件分析助手。请分析提供的文件，但只输出以下信息：
+
+【重要】：你的任务是分析识别，不是批改作业，所以不要输出任何题目的详细内容或答案。
+
+请按以下格式输出：
+
+## 📊 文件分析结果
+
+### 题目数量
+总题目数：[数字]
+
+### 学生信息
+学生姓名/ID：[从文件名或内容中识别，如果有多个学生请列出]
+班级信息：[从文件名、目录名或内容中识别班级信息]
+学生数量：[如果是多个学生的作业]
+
+### 文件类型
+- 题目文件：[数量]个
+- 答案文件：[数量]个  
+- 批改标准：[数量]个
+
+### 分析总结
+[简短总结：这批文件包含什么内容，预计批改时间等]
+
+【严格要求】：
+1. 不要输出任何题目的具体内容
+2. 不要输出任何答案或解题过程
+3. 只输出文件的基本信息和结构分析
+4. 输出要简洁明了，不超过200字"""
+
+        # 准备API参数
+        api_args = [analysis_prompt]
+        
+        # 添加文件（优先使用前几个文件进行快速分析）
+        files_to_analyze = min(3, len(content_list))  # 最多分析前3个文件
+        for i in range(files_to_analyze):
+            if i < len(file_paths) and file_paths[i]:
+                api_args.append(file_paths[i])
+                logger.info(f"添加分析文件: {os.path.basename(file_paths[i])}")
+        
+        logger.info(f"执行轻量级分析 - 分析文件数: {files_to_analyze}")
+        analysis_result = call_tongyiqianwen_api(*api_args)
+        
+        if analysis_result:
+            logger.info("✅ 文件分析完成")
+            logger.info(f"分析结果长度: {len(analysis_result)} 字符")
+            
+            # 提取关键信息
+            import re
+            total_questions_match = re.search(r'总题目数[：:]\s*(\d+)', analysis_result)
+            student_info_match = re.search(r'学生姓名/ID[：:]\s*([^\n]+)', analysis_result)
+            class_info_match = re.search(r'班级信息[：:]\s*([^\n]+)', analysis_result)
+            student_count_match = re.search(r'学生数量[：:]\s*([^\n]+)', analysis_result)
+            
+            extracted_info = {
+                'total_questions': int(total_questions_match.group(1)) if total_questions_match else 0,
+                'student_info': student_info_match.group(1).strip() if student_info_match else "未识别",
+                'class_info': class_info_match.group(1).strip() if class_info_match else "未识别",
+                'student_count': student_count_match.group(1).strip() if student_count_match else "1",
+                'analysis_text': analysis_result,
+                'files_analyzed': files_to_analyze
+            }
+            
+            logger.info(f"提取信息: 题目数={extracted_info['total_questions']}, 学生={extracted_info['student_info']}, 班级={extracted_info['class_info']}")
+            return extracted_info
+        else:
+            logger.warning("⚠️ 文件分析失败，使用默认信息")
+            return {
+                'total_questions': len(content_list),
+                'student_info': "未识别",
+                'class_info': "未识别",
+                'student_count': "1",
+                'analysis_text': "分析失败",
+                'files_analyzed': 0
+            }
+            
+    except Exception as e:
+        logger.error(f"❌ 文件分析出错: {e}")
+        return {
+            'total_questions': len(content_list),
+            'student_info': "分析出错",
+            'class_info': "分析出错",
+            'student_count': "1",
+            'analysis_text': f"分析出错: {e}",
+            'files_analyzed': 0
+        }
+
 def enhanced_batch_correction_with_standard(content_list, file_info_list=None, batch_size=10, generate_summary=True):
     """增强版分批批改（有标准答案）- 超级严格版"""
     try:
@@ -1884,9 +2261,12 @@ def enhanced_batch_correction_with_standard(content_list, file_info_list=None, b
                 combined_contents.append(str(content))
         combined_content = "\n\n".join(combined_contents)
         
-        # 直接进入批改环节，不进行题目分析API调用
-        logger.info("📝 开始构建批改提示词...")
-        prompt = get_core_grading_prompt(file_info_list)
+        # 第一步：识别题目数量和学生信息（轻量级API调用）
+        logger.info("🔍 第一步：识别题目数量和学生信息...")
+        analysis_result = quick_analyze_files(content_list, file_paths, file_info_list)
+        
+        logger.info("📝 第二步：开始构建批改提示词...")
+        prompt = get_core_grading_prompt(file_info_list, analysis_result)
         
         if file_info_list:
             marking_content = extract_marking_content(file_info_list)
@@ -2028,8 +2408,13 @@ def enhanced_batch_correction_without_standard(content_list, file_info_list=None
                 combined_contents.append(str(content))
         combined_content = "\n\n".join(combined_contents)
         
-        # 调用API进行批改
-        prompt = get_core_grading_prompt(file_info_list)
+        # 第一步：识别题目数量和学生信息（轻量级API调用）
+        print("🔍 第一步：识别题目数量和学生信息...")
+        analysis_result = quick_analyze_files(content_list, file_paths, file_info_list)
+        
+        # 第二步：调用API进行批改
+        print("📝 第二步：开始构建批改提示词...")
+        prompt = get_core_grading_prompt(file_info_list, analysis_result)
         
         # 调用API - 传递文件路径而不是文本内容
         api_args = [prompt]

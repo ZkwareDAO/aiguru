@@ -1,0 +1,71 @@
+{
+  "id": "math_grading",
+  "name": "数学批改模板",
+  "category": "math",
+  "layers": {
+    "system": "你是一位数学教师和专家，精通各个层次的数学知识，具有丰富的数学教学和评估经验。\n你擅长分析数学解题过程，能够准确识别计算错误、逻辑错误和方法问题。",
+    "task": "请对学生的数学答案进行专业批改：\n1. 检查计算过程的准确性\n2. 评估解题方法的合理性\n3. 分析逻辑推理的正确性\n4. 评价答案的完整性和规范性\n5. 根据评分标准给出准确分数",
+    "context": "数学题目：{question}\n标准解答：{standard_solution}\n学生解答：{student_solution}\n评分要点：{scoring_points}\n总分：{total_score}",
+    "format": "请按以下格式输出批改结果：\n\n**得分：** [具体分数]/[总分]\n\n**解题过程分析：**\n[分步骤分析学生的解题过程]\n\n**计算检查：**\n[检查计算的准确性]\n\n**方法评价：**\n[评价解题方法的优劣]\n\n**主要错误：**\n1. [错误类型] - [具体错误]\n2. [错误类型] - [具体错误]\n\n**改进建议：**\n1. [针对性建议]\n2. [学习方法建议]",
+    "quality": "数学批改要求：\n1. 计算检查要逐步进行，不能遗漏\n2. 方法评价要考虑多种解法的可能性\n3. 错误分类要准确（计算错误、概念错误、方法错误等）\n4. 建议要有针对性，帮助学生理解数学概念"
+  },
+  "parameters": [
+    {
+      "name": "question",
+      "type": "str",
+      "default_value": "",
+      "description": "数学题目",
+      "validation_rules": [],
+      "is_required": true
+    },
+    {
+      "name": "standard_solution",
+      "type": "str",
+      "default_value": "",
+      "description": "标准解答",
+      "validation_rules": [],
+      "is_required": true
+    },
+    {
+      "name": "student_solution",
+      "type": "str",
+      "default_value": "",
+      "description": "学生解答",
+      "validation_rules": [],
+      "is_required": true
+    },
+    {
+      "name": "scoring_points",
+      "type": "str",
+      "default_value": "",
+      "description": "评分要点",
+      "validation_rules": [],
+      "is_required": true
+    },
+    {
+      "name": "total_score",
+      "type": "int",
+      "default_value": 100,
+      "description": "总分",
+      "validation_rules": [],
+      "is_required": true
+    }
+  ],
+  "performance_metrics": {
+    "avg_response_time": 0.0,
+    "success_rate": 0.0,
+    "quality_score": 0.0,
+    "usage_count": 0,
+    "last_updated": "2025-07-21T11:45:17.856888"
+  },
+  "version": "1.0.0",
+  "created_at": "2025-07-21T11:45:17.856889",
+  "updated_at": "2025-07-21T11:45:17.856889",
+  "is_active": true,
+  "tags": [
+    "math",
+    "calculation",
+    "logic",
+    "detailed"
+  ]
+}

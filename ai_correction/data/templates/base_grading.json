@@ -1,0 +1,62 @@
+{
+  "id": "base_grading",
+  "name": "通用批改模板",
+  "category": "grading",
+  "layers": {
+    "system": "你是一位专业的教师和评估专家，具有丰富的教学经验和严谨的评分标准。\n你的任务是对学生的作业进行客观、公正、准确的批改和评分。",
+    "task": "请根据提供的标准答案和评分标准，对学生的答案进行详细批改。\n任务要求：\n1. 仔细比较学生答案与标准答案\n2. 根据评分标准给出准确分数\n3. 指出答案中的错误和不足\n4. 提供具体的改进建议",
+    "context": "批改材料：\n标准答案：{standard_answer}\n学生答案：{student_answer}\n评分标准：{grading_criteria}\n总分：{total_score}",
+    "format": "请按以下格式输出批改结果：\n\n**得分：** [具体分数]/[总分]\n\n**详细分析：**\n[对答案的详细分析，包括正确之处和错误之处]\n\n**主要问题：**\n1. [问题1]\n2. [问题2]\n...\n\n**改进建议：**\n1. [建议1]\n2. [建议2]\n...",
+    "quality": "质量要求：\n1. 评分必须严格按照标准，不得主观臆断\n2. 分析要客观公正，有理有据\n3. 建议要具体可行，有助于学生提高\n4. 语言要专业准确，态度要鼓励支持"
+  },
+  "parameters": [
+    {
+      "name": "standard_answer",
+      "type": "str",
+      "default_value": "",
+      "description": "标准答案",
+      "validation_rules": [],
+      "is_required": true
+    },
+    {
+      "name": "student_answer",
+      "type": "str",
+      "default_value": "",
+      "description": "学生答案",
+      "validation_rules": [],
+      "is_required": true
+    },
+    {
+      "name": "grading_criteria",
+      "type": "str",
+      "default_value": "",
+      "description": "评分标准",
+      "validation_rules": [],
+      "is_required": true
+    },
+    {
+      "name": "total_score",
+      "type": "int",
+      "default_value": 100,
+      "description": "总分",
+      "validation_rules": [],
+      "is_required": true
+    }
+  ],
+  "performance_metrics": {
+    "avg_response_time": 2.5,
+    "success_rate": 1.0,
+    "quality_score": 0.85,
+    "usage_count": 1,
+    "last_updated": "2025-07-21T11:45:17.863213"
+  },
+  "version": "1.0.0",
+  "created_at": "2025-07-21T11:45:17.856882",
+  "updated_at": "2025-07-21T11:45:17.856882",
+  "is_active": true,
+  "tags": [
+    "grading",
+    "general",
+    "structured"
+  ]
+}

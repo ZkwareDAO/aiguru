@@ -35,7 +35,9 @@ from .prompts_simplified import (
     get_summary_generation_prompt,
     get_question_analysis_prompt,
     ULTIMATE_SYSTEM_MESSAGE,
-    QUESTION_ANALYSIS_PROMPT
+    QUESTION_ANALYSIS_PROMPT,
+    MARKING_SCHEME_DEEP_LEARNING_PROMPT,
+    MARKING_CONSISTENCY_CHECK_PROMPT
 )
 
 logger = logging.getLogger(__name__)
@@ -76,8 +78,119 @@ class IntelligentBatchProcessor:
         # 确保批次大小不超过10
         self.batch_size = min(batch_size, 10)
         self.max_concurrent = max_concurrent
-        self.semaphore = asyncio.Semaphore(max_concurrent)
+        self.semaphore = None  # 延迟创建，避免在没有事件循环的线程中创建
+    
+    def _ensure_semaphore(self):
+        """确保 semaphore 已创建，如果没有则创建"""
+        if self.semaphore is None:
+            try:
+                # 尝试获取当前事件循环
+                loop = asyncio.get_event_loop()
+                self.semaphore = asyncio.Semaphore(self.max_concurrent)
+            except RuntimeError:
+                # 如果没有事件循环，创建一个新的
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                self.semaphore = asyncio.Semaphore(self.max_concurrent)
         
+    async def step0_learn_marking_scheme(self, file_paths: List[str], file_info_list: List[Dict]) -> Dict[str, Any]:
+        """
+        步骤0：深度学习批改标准（新增步骤）
+        让AI反复学习批改标准，确保严格参照
+        """
+        logger.info("📚 步骤0：深度学习批改标准...")
+        
+        # 提取批改标准文件
+        marking_files = []
+        for i, info in enumerate(file_info_list):
+            file_name = info.get('name', '').upper()
+            if any(prefix in file_name for prefix in ['MARKING', '批改标准', '评分标准', '标准答案']):
+                marking_files.append(file_paths[i])
+                logger.info(f"📋 发现批改标准文件: {info.get('name', '')}")
+        
+        if not marking_files:
+            logger.warning("⚠️ 未发现批改标准文件，将使用一般评分原则")
+            return {
+                "has_marking_scheme": False,
+                "learning_result": "未提供批改标准，将使用一般数学评分原则",
+                "learned_standards": {}
+            }
+        
+        # 深度学习批改标准
+        learning_prompt = f"""🛑 重要提醒：你可以直接查看PDF图像内容！
+
+📄 你已经接收到了批改标准的PDF图像内容，可以直接查看和分析其中的文字、公式和评分要求。
+
+{MARKING_SCHEME_DEEP_LEARNING_PROMPT}
+
+请仔细学习批改标准，这将是后续批改的绝对依据。"""
+        
+        try:
+            # 使用多媒体API学习批改标准
+            if marking_files and marking_files[0].endswith('.pdf'):
+                logger.info("📄 使用多媒体API学习批改标准...")
+                api_args = [learning_prompt]
+                api_args.extend(marking_files)
+                
+                learning_result = call_tongyiqianwen_api(
+                    *api_args,
+                    system_message="你是批改标准学习专家，需要深入理解评分标准的每个细节。"
+                )
+            else:
+                # 处理文本文件
+                marking_content = ""
+                for file_path in marking_files:
+                    content = process_file_content(file_path)
+                    marking_content += f"\\n\\n=== {Path(file_path).name} ===\\n{content}"
+                
+                learning_result = call_tongyiqianwen_api(
+                    learning_prompt + f"\\n\\n批改标准内容：\\n{marking_content}",
+                    system_message="你是批改标准学习专家，需要深入理解评分标准的每个细节。"
+                )
+            
+            logger.info("✅ 批改标准学习完成")
+            logger.info(f"📊 学习结果长度: {len(learning_result)} 字符")
+            
+            return {
+                "has_marking_scheme": True,
+                "learning_result": learning_result,
+                "learned_standards": self.parse_learned_standards(learning_result),
+                "marking_files": marking_files
+            }
+            
+        except Exception as e:
+            logger.error(f"❌ 批改标准学习失败: {e}")
+            return {
+                "has_marking_scheme": False,
+                "learning_result": f"学习失败: {str(e)}",
+                "learned_standards": {}
+            }
+    
+    def parse_learned_standards(self, learning_result: str) -> Dict[str, Any]:
+        """解析学习到的批改标准"""
+        standards = {}
+        
+        # 提取题目分析
+        import re
+        question_patterns = re.findall(r'\\*\\*题目(\\d+)分析\\*\\*：([^\\*]+)', learning_result)
+        for question_num, analysis in question_patterns:
+            standards[f"question_{question_num}"] = {
+                "analysis": analysis.strip(),
+                "extracted": True
+            }
+        
+        # 提取评分原则
+        principles_match = re.search(r'\\*\\*评分原则总结\\*\\*：([^\\*]+)', learning_result)
+        if principles_match:
+            standards["principles"] = principles_match.group(1).strip()
+        
+        # 提取重点记忆
+        memory_match = re.search(r'\\*\\*重点记忆\\*\\*：([^=]+)', learning_result)
+        if memory_match:
+            standards["key_points"] = memory_match.group(1).strip()
+        
+        return standards
+    
     async def step1_analyze_structure(self, file_paths: List[str], file_info_list: List[Dict]) -> Dict[str, Any]:
         """
         步骤1：识别分析文件结构
@@ -125,13 +238,46 @@ class IntelligentBatchProcessor:
                                 answer_contents.append(f"\n=== 文件 (PDF图像): {file_name} ===\n{image_content}")
                                 logger.info(f"✅ 其他PDF图像（当作答案）: {file_name}, {len(base64_images)}页")
                         else:
-                            # 如果PDF转图像失败，提供错误信息
-                            error_msg = f"[PDF文件 {file_name} 无法转换为图像，请检查文件是否损坏]"
+                            # 如果PDF转图像失败，提供详细的错误信息和解决建议
+                            from .calling_api import validate_pdf_file
+                            
+                            # 进行PDF文件验证以获取详细错误信息
+                            validation_result = validate_pdf_file(file_path)
+                            
+                            if validation_result['is_valid']:
+                                # 文件本身有效，但转换失败
+                                error_msg = f"[PDF文件 {file_name} 验证通过但转换失败]\n"
+                                error_msg += "可能原因：\n"
+                                error_msg += "- PDF内容过于复杂\n"
+                                error_msg += "- 内存不足\n"
+                                error_msg += "- PDF处理库版本问题\n"
+                                error_msg += "建议：请尝试重新上传或联系技术支持"
+                            else:
+                                # 文件本身有问题
+                                error_msg = f"[PDF文件 {file_name} 处理失败]\n"
+                                error_msg += f"错误原因：{validation_result['error_message']}\n"
+                                if validation_result['suggestions']:
+                                    error_msg += "解决建议：\n"
+                                    for suggestion in validation_result['suggestions']:
+                                        error_msg += f"- {suggestion}\n"
+                                
+                                # 添加文件信息（如果有）
+                                if validation_result['file_info']:
+                                    error_msg += "文件信息：\n"
+                                    file_info = validation_result['file_info']
+                                    if 'size_mb' in file_info:
+                                        error_msg += f"- 文件大小：{file_info['size_mb']:.1f}MB\n"
+                                    if 'page_count' in file_info:
+                                        error_msg += f"- 页面数量：{file_info['page_count']}\n"
+                                    if 'is_encrypted' in file_info:
+                                        error_msg += f"- 是否加密：{'是' if file_info['is_encrypted'] else '否'}\n"
+                            
                             if 'MARKING' in file_name.upper() or '标准' in file_name:
                                 marking_contents.append(f"\n=== 批改标准文件 (PDF处理失败): {file_name} ===\n{error_msg}")
                             else:
                                 answer_contents.append(f"\n=== 文件 (PDF处理失败): {file_name} ===\n{error_msg}")
                             logger.warning(f"⚠️ PDF转图像失败: {file_name}")
+                            logger.warning(f"详细错误信息: {validation_result['error_message']}")
                     except Exception as e:
                         logger.error(f"PDF转图像异常: {e}")
                         error_msg = f"[PDF文件 {file_name} 处理异常: {str(e)}]"
@@ -278,14 +424,31 @@ class IntelligentBatchProcessor:
                                             answer_contents.append(f"\n=== 文件 (PDF图像): {file_name} ===\n{image_content}")
                                         logger.info(f"✅ PDF作为图像: {file_name}, {len(base64_images)}页")
                                     else:
-                                        # PDF转图像失败
+                                        # PDF转图像失败 - 使用增强的错误处理
                                         file_name = Path(file_path).name
-                                        error_msg = f"[PDF文件 {file_name} 无法转换为图像]"
+                                        from .calling_api import validate_pdf_file
+                                        
+                                        # 进行PDF文件验证以获取详细错误信息
+                                        validation_result = validate_pdf_file(file_path)
+                                        
+                                        if validation_result['is_valid']:
+                                            error_msg = f"[PDF文件 {file_name} 验证通过但转换失败]\n"
+                                            error_msg += "可能原因：PDF内容过于复杂或内存不足\n"
+                                            error_msg += "建议：请尝试重新上传或联系技术支持"
+                                        else:
+                                            error_msg = f"[PDF文件 {file_name} 处理失败]\n"
+                                            error_msg += f"错误原因：{validation_result['error_message']}\n"
+                                            if validation_result['suggestions']:
+                                                error_msg += "解决建议：\n"
+                                                for suggestion in validation_result['suggestions']:
+                                                    error_msg += f"- {suggestion}\n"
+                                        
                                         if 'MARKING' in file_name.upper():
                                             marking_contents.append(f"\n=== 批改标准文件 (PDF处理失败): {file_name} ===\n{error_msg}")
                                         else:
                                             answer_contents.append(f"\n=== 文件 (PDF处理失败): {file_name} ===\n{error_msg}")
                                         logger.warning(f"⚠️ PDF转图像失败: {file_name}")
+                                        logger.warning(f"详细错误信息: {validation_result['error_message']}")
                                 except Exception as img_e:
                                     logger.error(f"PDF转图像异常: {img_e}")
                                     file_name = Path(file_path).name
@@ -631,11 +794,14 @@ class IntelligentBatchProcessor:
         
         return batches
     
-    async def step2_grade_batch(self, batch: BatchTask, has_marking_scheme: bool, total_batches: int, total_questions: int, file_paths: List[str], one_batch_mode: bool = False) -> Dict[str, Any]:
+    async def step2_grade_batch(self, batch: BatchTask, has_marking_scheme: bool, total_batches: int, total_questions: int, file_paths: List[str], learning_data: Dict[str, Any], one_batch_mode: bool = False) -> Dict[str, Any]:
         """
         步骤2：批改单个批次
-        使用prompts_simplified.py中的批改提示词
+        使用prompts_simplified.py中的批改提示词，严格参照批改标准
         """
+        # 确保 semaphore 已创建
+        self._ensure_semaphore()
+        
         async with self.semaphore:
             start_time = time.time()
             
@@ -644,6 +810,27 @@ class IntelligentBatchProcessor:
             else:
                 logger.info(f"🚀 步骤2：批改批次 {batch.batch_id + 1}/{total_batches} (学生: {batch.student_name}, 题号: {batch.question_numbers})")
             
+            # 构建强化的批改标准提醒
+            marking_reminder = ""
+            if learning_data.get("has_marking_scheme", False):
+                marking_reminder = f"""
+🛑 【批改标准严格参照提醒】🛑
+
+📚 你已经学习了批改标准，现在必须严格按照标准批改！
+
+📋 学习到的重要信息：
+{learning_data.get("learning_result", "")[:500]}...
+
+⚠️ 核心要求：
+1. 每个给分点必须在批改标准中找到依据
+2. 严格按照标准的分值分配给分
+3. 不能给出超出标准的分数
+4. 每个步骤都要引用具体的批改标准
+5. 遇到疑问时选择更严格的标准
+
+🔍 批改时请反复对照批改标准，确保每一分都有依据！
+"""
+            
             # 根据模式构建不同的提示词
             if one_batch_mode:
                 # 一次性批改模式
@@ -651,10 +838,12 @@ class IntelligentBatchProcessor:
 
 📄 你已经接收到了PDF文件的图像内容，可以直接查看和分析其中的文字、公式和图表。不要说"无法查看PDF"，请直接分析图像中的内容。
 
+{marking_reminder}
+
 请批改以下所有内容。由于无法识别具体题目数量，请：
 1. 仔细查找所有题目（可能的标记：题目1、第1题、Q1、Question 1等）
 2. 为每道找到的题目进行批改
-3. 如果有批改标准，严格按照标准批改
+3. 🛑 严格按照批改标准批改，每个给分点都要引用标准
 4. 使用规定的格式输出每道题的批改结果
 
 学生: {batch.student_name} (ID: {batch.student_id})
@@ -662,7 +851,7 @@ class IntelligentBatchProcessor:
 文件内容：
 {batch.file_content}
 
-请批改所有找到的题目，使用规定的格式输出。"""
+🛑 记住：严格参照批改标准，每个给分点都必须有"📚标准："引用！"""
             else:
                 # 正常批改模式
                 batch_prompt = get_batch_processing_prompt(
@@ -673,6 +862,8 @@ class IntelligentBatchProcessor:
                 full_prompt = f"""🛑 重要提醒：你可以直接查看PDF图像内容！
 
 📄 你已经接收到了PDF文件的图像内容，可以直接查看和分析其中的文字、公式和图表。不要说"无法查看PDF"，请直接分析图像中的内容。
+
+{marking_reminder}
 
 {batch_prompt}
 
@@ -686,12 +877,13 @@ class IntelligentBatchProcessor:
 ⚠️ 关键指示：
 1. 你可以直接查看PDF图像中的所有内容
 2. 请仔细对比学生答案与批改标准
-3. 严格按照MARKING标准给分
+3. 🛑 严格按照MARKING标准给分，每个给分点都要引用标准
 4. 必须批改指定范围内的所有题目
+5. 每个步骤都要包含"📚标准："引用
 
 {batch.file_content}
 
-请开始批改！"""
+🛑 开始批改！记住：每个给分点都必须有批改标准依据！"""
             
             try:
                 # 检查批次内容是否包含PDF图像
@@ -734,6 +926,13 @@ class IntelligentBatchProcessor:
                         'success': False
                     }
                 
+                # 检查批改结果是否符合标准要求
+                if learning_data.get("has_marking_scheme", False):
+                    consistency_check = await self.check_marking_consistency(result, learning_data)
+                    if not consistency_check.get("passed", True):
+                        logger.warning(f"⚠️ 批次 {batch.batch_id} 批改结果不符合标准要求")
+                        # 可以选择重新批改或添加警告
+                
                 logger.info(f"✅ 批次 {batch.batch_id} 批改完成，耗时: {time.time() - start_time:.2f}秒")
                 
                 return {
@@ -759,6 +958,41 @@ class IntelligentBatchProcessor:
                     'processing_time': time.time() - start_time,
                     'success': False
                 }
+    
+    async def check_marking_consistency(self, grading_result: str, learning_data: Dict[str, Any]) -> Dict[str, Any]:
+        """检查批改结果与批改标准的一致性"""
+        try:
+            # 构建一致性检查提示
+            consistency_prompt = f"""
+{MARKING_CONSISTENCY_CHECK_PROMPT}
+
+已学习的批改标准：
+{learning_data.get("learning_result", "")[:1000]}
+
+批改结果：
+{grading_result}
+
+请检查批改结果是否严格符合批改标准。
+"""
+            
+            # 调用API进行一致性检查
+            check_result = call_tongyiqianwen_api(
+                consistency_prompt,
+                system_message="你是批改质量检查专家，负责确保批改结果严格符合标准。"
+            )
+            
+            # 解析检查结果
+            passed = "通过" in check_result and "需要修正" not in check_result
+            
+            return {
+                "passed": passed,
+                "check_result": check_result,
+                "issues": [] if passed else ["批改结果不符合标准要求"]
+            }
+            
+        except Exception as e:
+            logger.error(f"一致性检查失败: {e}")
+            return {"passed": True, "check_result": "检查失败", "issues": []}
     
     async def step3_generate_summary(self, student_id: str, student_name: str, batch_results: List[Dict]) -> str:
         """
@@ -808,8 +1042,14 @@ class IntelligentBatchProcessor:
         start_time = datetime.now()
         logger.info("🎯 开始智能批量处理...")
         
+        # 步骤0：深度学习批改标准
+        learning_result = await self.step0_learn_marking_scheme(file_paths, file_info_list)
+        
         # 步骤1：识别文件结构
         structure_data = await self.step1_analyze_structure(file_paths, file_info_list)
+        
+        # 将学习结果合并到结构数据中
+        structure_data.update(learning_result)
         
         # 输出识别结果
         logger.info(f"\n📋 步骤1完成 - 文件结构识别结果：")
@@ -817,6 +1057,16 @@ class IntelligentBatchProcessor:
         logger.info(f"  - 学生数量: {len(structure_data.get('students', []))} 人")
         logger.info(f"  - 文件类型: {structure_data.get('content_type', '未知')}")
         logger.info(f"  - 识别置信度: {structure_data.get('confidence', 'unknown')}")
+        logger.info(f"  - 批改标准: {'✅ 已学习' if structure_data.get('has_marking_scheme', False) else '❌ 未提供'}")
+        
+        # 如果有批改标准，输出学习摘要
+        if structure_data.get('has_marking_scheme', False):
+            logger.info(f"\n📚 批改标准学习摘要：")
+            learned_standards = structure_data.get('learned_standards', {})
+            if learned_standards.get('principles'):
+                logger.info(f"  - 评分原则: {learned_standards['principles'][:100]}...")
+            if learned_standards.get('key_points'):
+                logger.info(f"  - 重点记忆: {learned_standards['key_points'][:100]}...")
         
         # 创建批次任务
         batches = self.create_batch_tasks(structure_data)
@@ -831,7 +1081,7 @@ class IntelligentBatchProcessor:
         # 步骤2：并发批改所有批次
         logger.info(f"\n⚡ 步骤2开始：并发批改 {len(batches)} 个批次...")
         batch_results = await asyncio.gather(
-            *[self.step2_grade_batch(batch, structure_data['has_marking_scheme'], len(batches), structure_data['total_questions'], file_paths, structure_data.get('one_batch_mode', False)) for batch in batches]
+            *[self.step2_grade_batch(batch, structure_data['has_marking_scheme'], len(batches), structure_data['total_questions'], file_paths, structure_data, structure_data.get('one_batch_mode', False)) for batch in batches]
         )
         
         # 步骤3：为每个学生生成总结
@@ -885,10 +1135,17 @@ class IntelligentBatchProcessor:
         except:
             return 0.0
 
-# 创建全局处理器实例
-intelligent_processor = IntelligentBatchProcessor()
+# 全局处理器实例（延迟创建）
+intelligent_processor = None
 
-async def intelligent_batch_correction(file_paths: List[str], file_info_list: List[Dict], 
+def get_intelligent_processor(batch_size: int = 10, max_concurrent: int = 3) -> IntelligentBatchProcessor:
+    """获取智能处理器实例，如果不存在则创建"""
+    global intelligent_processor
+    if intelligent_processor is None:
+        intelligent_processor = IntelligentBatchProcessor(batch_size, max_concurrent)
+    return intelligent_processor
+
+async def intelligent_batch_correction(file_paths: List[str], file_info_list: List[Dict],
                                      batch_size: int = 10, max_concurrent: int = 3) -> Dict[str, Any]:
     """
     智能批量批改的入口函数
@@ -902,7 +1159,7 @@ async def intelligent_batch_correction(file_paths: List[str], file_info_list: Li
     Returns:
         包含批改结果和总结的字典
     """
-    processor = IntelligentBatchProcessor(batch_size=batch_size, max_concurrent=max_concurrent)
+    processor = get_intelligent_processor(batch_size=batch_size, max_concurrent=max_concurrent)
     
     # 执行批量处理
     result = await processor.process_files(file_paths, file_info_list)
@@ -1380,7 +1637,7 @@ def format_summary_to_html(summary: str) -> str:
     
     return result_html
 
-def intelligent_batch_correction_sync(file_paths: List[str], file_info_list: List[Dict], 
+def intelligent_batch_correction_sync(file_paths: List[str], file_info_list: List[Dict],
                                     batch_size: int = 10, max_concurrent: int = 3) -> Dict[str, Any]:
     """
     智能批量批改的同步入口函数（供Streamlit使用）
@@ -1388,11 +1645,25 @@ def intelligent_batch_correction_sync(file_paths: List[str], file_info_list: Lis
     # 创建新的事件循环或获取现有的
     try:
         loop = asyncio.get_event_loop()
+        if loop.is_closed():
+            raise RuntimeError("Event loop is closed")
     except RuntimeError:
+        # 创建新的事件循环
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
     
-    # 运行异步函数
-    return loop.run_until_complete(
-        intelligent_batch_correction(file_paths, file_info_list, batch_size, max_concurrent)
-    ) 
+    try:
+        # 运行异步函数
+        return loop.run_until_complete(
+            intelligent_batch_correction(file_paths, file_info_list, batch_size, max_concurrent)
+        )
+    except Exception as e:
+        # 如果出现错误，尝试创建新的事件循环重试一次
+        try:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            return loop.run_until_complete(
+                intelligent_batch_correction(file_paths, file_info_list, batch_size, max_concurrent)
+            )
+        except Exception as retry_e:
+            raise Exception(f"批改失败: {str(e)}, 重试也失败: {str(retry_e)}")

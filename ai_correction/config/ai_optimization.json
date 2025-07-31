@@ -1,0 +1,153 @@
+{
+  "ai_optimization": {
+    "prompt_engine": {
+      "cache_size": 1000,
+      "cache_ttl": 3600,
+      "template_path": "templates/prompts",
+      "default_language": "zh-CN",
+      "max_prompt_length": 50000,
+      "token_estimation_enabled": true,
+      "ab_testing_enabled": true,
+      "ab_test_ratio": 0.1
+    },
+    "api_manager": {
+      "default_timeout": 30,
+      "max_retries": 3,
+      "retry_strategy": {
+        "type": "exponential",
+        "base_delay": 1.0,
+        "max_delay": 60.0,
+        "backoff_multiplier": 2.0,
+        "jitter": true
+      },
+      "max_concurrent_requests": 10,
+      "rate_limit_per_minute": 100
+    },
+    "content_processor": {
+      "max_file_size": 20971520,
+      "max_image_size": 5242880,
+      "max_text_length": 50000,
+      "supported_formats": ["txt", "pdf", "jpg", "jpeg", "png", "gif"],
+      "ocr_enabled": true,
+      "ocr_language": "chi_sim+eng"
+    },
+    "quality_control": {
+      "enabled_checks": ["score_range", "format_check", "logic_check", "consistency"],
+      "quality_threshold": 0.8,
+      "consistency_threshold": 0.85,
+      "auto_fix_enabled": false
+    },
+    "cache": {
+      "cache_type": "memory",
+      "memory_cache": {
+        "max_size": 1000,
+        "ttl": 3600
+      },
+      "file_cache": {
+        "cache_dir": "cache/ai_optimization",
+        "max_size": 104857600
+      },
+      "redis_cache": {
+        "host": "localhost",
+        "port": 6379,
+        "db": 0,
+        "password": null
+      }
+    }
+  },
+  "models": {
+    "default_model": "gpt-4",
+    "available_models": {
+      "gpt-4": {
+        "provider": "openai",
+        "endpoint": "https://api.openai.com/v1/chat/completions",
+        "max_tokens": 4096,
+        "max_content_size": 100000,
+        "cost_per_token": 0.00003,
+        "supported_tasks": ["grading", "analysis", "summary"],
+        "rate_limits": {
+          "requests_per_minute": 60,
+          "tokens_per_minute": 150000
+        }
+      },
+      "gpt-3.5-turbo": {
+        "provider": "openai",
+        "endpoint": "https://api.openai.com/v1/chat/completions",
+        "max_tokens": 4096,
+        "max_content_size": 50000,
+        "cost_per_token": 0.000002,
+        "supported_tasks": ["grading", "analysis", "summary"],
+        "rate_limits": {
+          "requests_per_minute": 100,
+          "tokens_per_minute": 300000
+        }
+      }
+    },
+    "selection_strategy": {
+      "type": "cost_optimized",
+      "fallback_enabled": true,
+      "fallback_order": ["gpt-4", "gpt-3.5-turbo"]
+    }
+  },
+  "quality_control": {
+    "rules": {
+      "score_range_check": {
+        "id": "score_range_001",
+        "name": "分数范围检查",
+        "description": "检查分数是否在有效范围内",
+        "type": "score_range",
+        "severity": "high",
+        "weight": 1.0,
+        "threshold": 1.0,
+        "parameters": {
+          "min_score": 0,
+          "max_score": 100
+        },
+        "is_active": true
+      },
+      "format_check": {
+        "id": "format_001",
+        "name": "格式检查",
+        "description": "检查输出格式是否符合要求",
+        "type": "format_check",
+        "severity": "medium",
+        "weight": 0.8,
+        "threshold": 0.9,
+        "parameters": {
+          "required_fields": ["score", "feedback", "suggestions"]
+        },
+        "is_active": true
+      }
+    }
+  },
+  "monitoring": {
+    "enabled": true,
+    "metrics": {
+      "response_time": true,
+      "token_usage": true,
+      "cost_tracking": true,
+      "quality_scores": true,
+      "error_rates": true
+    },
+    "alerts": {
+      "slow_response_threshold": 30,
+      "high_error_rate_threshold": 0.1,
+      "cost_threshold_per_hour": 10.0,
+      "notification_methods": ["log"]
+    }
+  },
+  "logging": {
+    "level": "INFO",
+    "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    "file": {
+      "enabled": true,
+      "path": "logs/ai_optimization.log",
+      "max_size": 10485760,
+      "backup_count": 5
+    },
+    "console": {
+      "enabled": true,
+      "level": "INFO"
+    }
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "id": "language_grading",
+  "name": "语文批改模板",
+  "category": "language",
+  "layers": {
+    "system": "你是一位语文教师和文学专家，具有深厚的语言文字功底和丰富的语文教学经验。\n你擅长分析文章的内容、结构、语言表达和文学手法。",
+    "task": "请对学生的语文作业进行全面批改：\n1. 评价内容的准确性和深度\n2. 分析结构的合理性和逻辑性\n3. 检查语言表达的规范性和流畅性\n4. 评估文学理解和表达能力\n5. 根据评分标准给出综合分数",
+    "context": "题目要求：{question_requirement}\n参考答案：{reference_answer}\n学生答案：{student_answer}\n评分标准：{grading_standard}\n总分：{total_score}",
+    "format": "请按以下格式输出批改结果：\n\n**得分：** [具体分数]/[总分]\n\n**内容分析：**\n[分析答案内容的准确性和完整性]\n\n**结构评价：**\n[评价文章结构和逻辑]\n\n**语言表达：**\n[评价语言的规范性和表达效果]\n\n**亮点总结：**\n[指出答案中的优秀之处]\n\n**改进建议：**\n1. [内容方面的建议]\n2. [表达方面的建议]\n3. [结构方面的建议]",
+    "quality": "语文批改要求：\n1. 注重内容理解的准确性和深度\n2. 关注语言表达的规范性和美感\n3. 评价要兼顾知识性和文学性\n4. 建议要有助于提高语文素养"
+  },
+  "parameters": [
+    {
+      "name": "question_requirement",
+      "type": "str",
+      "default_value": "",
+      "description": "题目要求",
+      "validation_rules": [],
+      "is_required": true
+    },
+    {
+      "name": "reference_answer",
+      "type": "str",
+      "default_value": "",
+      "description": "参考答案",
+      "validation_rules": [],
+      "is_required": true
+    },
+    {
+      "name": "student_answer",
+      "type": "str",
+      "default_value": "",
+      "description": "学生答案",
+      "validation_rules": [],
+      "is_required": true
+    },
+    {
+      "name": "grading_standard",
+      "type": "str",
+      "default_value": "",
+      "description": "评分标准",
+      "validation_rules": [],
+      "is_required": true
+    },
+    {
+      "name": "total_score",
+      "type": "int",
+      "default_value": 100,
+      "description": "总分",
+      "validation_rules": [],
+      "is_required": true
+    }
+  ],
+  "performance_metrics": {
+    "avg_response_time": 0.0,
+    "success_rate": 0.0,
+    "quality_score": 0.0,
+    "usage_count": 0,
+    "last_updated": "2025-07-21T11:45:17.856892"
+  },
+  "version": "1.0.0",
+  "created_at": "2025-07-21T11:45:17.856893",
+  "updated_at": "2025-07-21T11:45:17.856893",
+  "is_active": true,
+  "tags": [
+    "language",
+    "literature",
+    "expression",
+    "comprehensive"
+  ]
+}
