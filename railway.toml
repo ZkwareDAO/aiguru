@@ -6,3 +6,12 @@ healthcheckPath = "/health"
 healthcheckTimeout = 300
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 10
+
+[[services]]
+name = "backend"
+source = "backend/"
+
+[services.variables]
+PYTHONPATH = "/app"
+UVICORN_HOST = "0.0.0.0"
+UVICORN_PORT = "8000"

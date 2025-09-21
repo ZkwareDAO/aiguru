@@ -1,0 +1,38 @@
+# AI教育平台2.0 Railway环境变量配置
+# 复制以下环境变量到Railway控制台
+
+# 数据库配置
+DATABASE_URL=postgresql://postgres:sfraebGPmjkZtWpAsHqeHrxUrxuDSQFz@postgres.railway.internal:5432/railway
+REDIS_URL=redis://default:fXZjFSKZfAfkTiqBfomlFHzcddmZZLLv@redis.railway.internal:6379
+
+# OpenRouter AI配置 (需要用户提供API密钥)
+OPENROUTER_API_KEY=sk-or-v1-your-api-key-here
+
+# JWT密钥配置
+SECRET_KEY=your-super-secret-jwt-key-here-minimum-32-characters
+
+# Firebase配置 (需要用户提供)
+FIREBASE_PROJECT_ID=your-firebase-project-id
+FIREBASE_CLIENT_EMAIL=your-firebase-client-email
+FIREBASE_PRIVATE_KEY=your-firebase-private-key
+
+# 应用配置
+ENVIRONMENT=production
+DEBUG=false
+CORS_ORIGINS=*
+HOST=0.0.0.0
+PORT=8000
+
+# 文件上传配置
+MAX_FILE_SIZE=50MB
+UPLOAD_DIR=/tmp/uploads
+
+# 邮件配置 (可选)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASSWORD=your-email-password
+
+# 日志配置
+LOG_LEVEL=INFO
+LOG_FORMAT=json
