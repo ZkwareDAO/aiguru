@@ -42,72 +42,82 @@ graph TD
 
 ## 2. 技术描述
 
-- **前端**: Next.js@14 + TypeScript + Tailwind CSS + Shadcn/ui
-- **后端**: FastAPI + SQLAlchemy + Alembic + AsyncPG
-- **数据库**: PostgreSQL (Railway托管)
-- **缓存**: Redis (Railway托管)
-- **AI服务**: OpenAI GPT-4 API
-- **文件存储**: AWS S3 或 Railway Volume
-- **部署平台**: Railway
+* **前端**: Next.js\@14 + TypeScript + Tailwind CSS + Shadcn/ui
+
+* **后端**: FastAPI + SQLAlchemy + Alembic + AsyncPG
+
+* **数据库**: PostgreSQL (Railway托管)
+
+* **缓存**: Redis (Railway托管)
+
+* **AI服务**: OpenAI GPT-4 API
+
+* **文件存储**: AWS S3 或 Railway Volume
+
+* **部署平台**: Railway
 
 ## 3. 路由定义
 
 ### 3.1 前端路由
 
-| 路由 | 用途 |
-|------|------|
-| / | 首页，根据用户角色重定向到对应仪表板 |
-| /login | 登录页面，用户身份验证 |
-| /register | 注册页面，新用户注册 |
-| /dashboard | 用户仪表板，显示个人概览信息 |
-| /classes | 班级列表页面，显示用户相关的所有班级 |
-| /classes/[id] | 班级详情页面，显示特定班级的详细信息 |
-| /assignments | 作业列表页面，显示所有作业 |
-| /assignments/[id] | 作业详情页面，显示特定作业的详细信息 |
-| /assignments/create | 创建作业页面（仅教师） |
-| /grading | AI批改系统页面（仅教师） |
-| /reports | 学习报告页面，显示学习分析数据 |
-| /profile | 个人资料页面，用户信息管理 |
-| /ai-assistant | AI助手页面，智能问答和学习建议 |
+| 路由                  | 用途                 |
+| ------------------- | ------------------ |
+| /                   | 首页，根据用户角色重定向到对应仪表板 |
+| /login              | 登录页面，用户身份验证        |
+| /register           | 注册页面，新用户注册         |
+| /dashboard          | 用户仪表板，显示个人概览信息     |
+| /classes            | 班级列表页面，显示用户相关的所有班级 |
+| /classes/\[id]      | 班级详情页面，显示特定班级的详细信息 |
+| /assignments        | 作业列表页面，显示所有作业      |
+| /assignments/\[id]  | 作业详情页面，显示特定作业的详细信息 |
+| /assignments/create | 创建作业页面（仅教师）        |
+| /grading            | AI批改系统页面（仅教师）      |
+| /reports            | 学习报告页面，显示学习分析数据    |
+| /profile            | 个人资料页面，用户信息管理      |
+| /ai-assistant       | AI助手页面，智能问答和学习建议   |
 
 ### 3.2 后端API路由
 
-| 路由 | 用途 |
-|------|------|
-| /api/auth/* | 用户认证相关接口 |
-| /api/users/* | 用户管理接口 |
-| /api/classes/* | 班级管理接口 |
-| /api/assignments/* | 作业管理接口 |
-| /api/submissions/* | 作业提交接口 |
-| /api/grading/* | AI批改接口 |
-| /api/files/* | 文件管理接口 |
-| /api/analytics/* | 学习分析接口 |
-| /api/ai-agent/* | AI助手接口 |
-| /ws/* | WebSocket连接 |
+| 路由                  | 用途          |
+| ------------------- | ----------- |
+| /api/auth/\*        | 用户认证相关接口    |
+| /api/users/\*       | 用户管理接口      |
+| /api/classes/\*     | 班级管理接口      |
+| /api/assignments/\* | 作业管理接口      |
+| /api/submissions/\* | 作业提交接口      |
+| /api/grading/\*     | AI批改接口      |
+| /api/files/\*       | 文件管理接口      |
+| /api/analytics/\*   | 学习分析接口      |
+| /api/ai-agent/\*    | AI助手接口      |
+| /ws/\*              | WebSocket连接 |
 
 ## 4. API定义
 
 ### 4.1 核心API接口
 
 #### 用户认证
+
 ```
 POST /api/auth/login
 ```
 
 请求参数:
-| 参数名 | 参数类型 | 是否必需 | 描述 |
-|--------|----------|----------|------|
-| email | string | true | 用户邮箱 |
+
+| 参数名      | 参数类型   | 是否必需 | 描述   |
+| -------- | ------ | ---- | ---- |
+| email    | string | true | 用户邮箱 |
 | password | string | true | 用户密码 |
 
 响应参数:
-| 参数名 | 参数类型 | 描述 |
-|--------|----------|------|
-| access_token | string | JWT访问令牌 |
-| refresh_token | string | JWT刷新令牌 |
-| user | object | 用户信息对象 |
+
+| 参数名            | 参数类型   | 描述      |
+| -------------- | ------ | ------- |
+| access\_token  | string | JWT访问令牌 |
+| refresh\_token | string | JWT刷新令牌 |
+| user           | object | 用户信息对象  |
 
 示例:
+
 ```json
 {
   "email": "teacher@example.com",
@@ -116,6 +126,7 @@ POST /api/auth/login
 ```
 
 #### 班级管理
+
 ```
 GET /api/classes
 POST /api/classes
@@ -125,6 +136,7 @@ DELETE /api/classes/{class_id}
 ```
 
 #### 作业管理
+
 ```
 GET /api/assignments
 POST /api/assignments
@@ -134,6 +146,7 @@ DELETE /api/assignments/{assignment_id}
 ```
 
 #### AI批改
+
 ```
 POST /api/grading/tasks
 GET /api/grading/tasks/{task_id}
@@ -141,6 +154,7 @@ PUT /api/grading/tasks/{task_id}
 ```
 
 #### 文件管理
+
 ```
 POST /api/files/upload
 GET /api/files/{file_id}
@@ -150,25 +164,40 @@ DELETE /api/files/{file_id}
 ### 4.2 前端组件与API映射
 
 #### ClassDashboard组件
-- **GET /api/classes/{class_id}** - 获取班级基本信息
-- **GET /api/classes/{class_id}/students** - 获取班级学生列表
-- **GET /api/classes/{class_id}/stats** - 获取班级统计数据
-- **GET /api/assignments?class_id={class_id}** - 获取班级作业列表
-- **GET /api/analytics/class/{class_id}/performance** - 获取班级表现数据
+
+* **GET /api/classes/{class\_id}** - 获取班级基本信息
+
+* **GET /api/classes/{class\_id}/students** - 获取班级学生列表
+
+* **GET /api/classes/{class\_id}/stats** - 获取班级统计数据
+
+* **GET /api/assignments?class\_id={class\_id}** - 获取班级作业列表
+
+* **GET /api/analytics/class/{class\_id}/performance** - 获取班级表现数据
 
 #### AssignmentSystem组件
-- **GET /api/assignments** - 获取作业列表
-- **POST /api/assignments** - 创建新作业
-- **PUT /api/assignments/{assignment_id}** - 更新作业
-- **DELETE /api/assignments/{assignment_id}** - 删除作业
-- **GET /api/assignments/{assignment_id}/submissions** - 获取作业提交列表
-- **POST /api/submissions** - 提交作业
+
+* **GET /api/assignments** - 获取作业列表
+
+* **POST /api/assignments** - 创建新作业
+
+* **PUT /api/assignments/{assignment\_id}** - 更新作业
+
+* **DELETE /api/assignments/{assignment\_id}** - 删除作业
+
+* **GET /api/assignments/{assignment\_id}/submissions** - 获取作业提交列表
+
+* **POST /api/submissions** - 提交作业
 
 #### AIGradingSystem组件
-- **POST /api/files/upload** - 上传批改文件
-- **POST /api/grading/tasks** - 创建批改任务
-- **GET /api/grading/tasks/{task_id}** - 获取批改进度
-- **POST /api/grading/tasks/{task_id}/distribute** - 分发批改结果
+
+* **POST /api/files/upload** - 上传批改文件
+
+* **POST /api/grading/tasks** - 创建批改任务
+
+* **GET /api/grading/tasks/{task\_id}** - 获取批改进度
+
+* **POST /api/grading/tasks/{task\_id}/distribute** - 分发批改结果
 
 ## 5. 服务器架构图
 
@@ -330,6 +359,7 @@ erDiagram
 ### 6.2 数据定义语言
 
 #### 用户表 (users)
+
 ```sql
 -- 创建用户表
 CREATE TABLE users (
@@ -355,6 +385,7 @@ CREATE INDEX idx_users_created_at ON users(created_at DESC);
 ```
 
 #### 班级表 (classes)
+
 ```sql
 -- 创建班级表
 CREATE TABLE classes (
@@ -377,7 +408,8 @@ CREATE INDEX idx_classes_class_code ON classes(class_code);
 CREATE INDEX idx_classes_created_at ON classes(created_at DESC);
 ```
 
-#### 班级学生关联表 (class_students)
+#### 班级学生关联表 (class\_students)
+
 ```sql
 -- 创建班级学生关联表
 CREATE TABLE class_students (
@@ -396,6 +428,7 @@ CREATE INDEX idx_class_students_student_id ON class_students(student_id);
 ```
 
 #### 作业表 (assignments)
+
 ```sql
 -- 创建作业表
 CREATE TABLE assignments (
@@ -429,6 +462,7 @@ CREATE INDEX idx_assignments_due_date ON assignments(due_date);
 ```
 
 #### 提交表 (submissions)
+
 ```sql
 -- 创建提交表
 CREATE TABLE submissions (
@@ -459,6 +493,7 @@ CREATE INDEX idx_submissions_submitted_at ON submissions(submitted_at DESC);
 ```
 
 #### 初始化数据
+
 ```sql
 -- 插入测试用户
 INSERT INTO users (email, password_hash, name, role, school, grade) VALUES
@@ -507,21 +542,30 @@ SMTP_PASSWORD=your-app-password
 ### 7.2 部署步骤
 
 1. **创建Railway项目**
-   - 连接GitHub仓库
-   - 选择后端目录作为根目录
+
+   * 连接GitHub仓库
+
+   * 选择后端目录作为根目录
 
 2. **添加数据库服务**
-   - 添加PostgreSQL插件
-   - 添加Redis插件
+
+   * 添加PostgreSQL插件
+
+   * 添加Redis插件
 
 3. **配置环境变量**
-   - 设置上述环境变量
-   - 配置数据库连接
+
+   * 设置上述环境变量
+
+   * 配置数据库连接
 
 4. **部署配置**
-   - 使用Dockerfile进行部署
-   - 配置健康检查
-   - 设置自动部署
+
+   * 使用Dockerfile进行部署
+
+   * 配置健康检查
+
+   * 设置自动部署
 
 ### 7.3 前端部署
 
@@ -538,51 +582,80 @@ NEXT_PUBLIC_WS_URL=wss://your-backend.railway.app
 ### 8.1 迁移步骤
 
 1. **数据库初始化**
-   - 运行Alembic迁移脚本
-   - 创建基础数据表
-   - 插入初始测试数据
+
+   * 运行Alembic迁移脚本
+
+   * 创建基础数据表
+
+   * 插入初始测试数据
 
 2. **API接口替换**
-   - 替换前端组件中的模拟数据调用
-   - 添加错误处理和加载状态
-   - 实现数据缓存机制
+
+   * 替换前端组件中的模拟数据调用
+
+   * 添加错误处理和加载状态
+
+   * 实现数据缓存机制
 
 3. **功能测试**
-   - 用户注册登录流程
-   - 班级创建和管理
-   - 作业发布和提交
-   - AI批改功能
+
+   * 用户注册登录流程
+
+   * 班级创建和管理
+
+   * 作业发布和提交
+
+   * AI批改功能
 
 ### 8.2 需要修改的前端组件
 
 1. **ClassDashboard组件**
-   - 移除mockStudents等模拟数据
-   - 添加API调用hooks
-   - 实现数据加载状态
+
+   * 移除mockStudents等模拟数据
+
+   * 添加API调用hooks
+
+   * 实现数据加载状态
 
 2. **AssignmentSystem组件**
-   - 移除mockAssignments模拟数据
-   - 集成真实的作业CRUD操作
-   - 添加文件上传功能
+
+   * 移除mockAssignments模拟数据
+
+   * 集成真实的作业CRUD操作
+
+   * 添加文件上传功能
 
 3. **AIGradingSystem组件**
-   - 集成真实的文件上传API
-   - 连接AI批改服务
-   - 实现批改进度跟踪
+
+   * 集成真实的文件上传API
+
+   * 连接AI批改服务
+
+   * 实现批改进度跟踪
 
 ### 8.3 性能优化
 
 1. **数据缓存**
-   - 使用React Query进行数据缓存
-   - 实现Redis缓存策略
-   - 优化数据库查询
+
+   * 使用React Query进行数据缓存
+
+   * 实现Redis缓存策略
+
+   * 优化数据库查询
 
 2. **文件处理**
-   - 实现文件压缩和优化
-   - 添加文件类型验证
-   - 配置CDN加速
+
+   * 实现文件压缩和优化
+
+   * 添加文件类型验证
+
+   * 配置CDN加速
 
 3. **实时更新**
-   - 使用WebSocket实现实时通知
-   - 批改进度实时更新
-   - 成绩发布实时推送
+
+   * 使用WebSocket实现实时通知
+
+   * 批改进度实时更新
+
+   * 成绩发布实时推送
+
