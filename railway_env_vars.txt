@@ -6,10 +6,10 @@ DATABASE_URL=postgresql://postgres:sfraebGPmjkZtWpAsHqeHrxUrxuDSQFz@postgres.rai
 REDIS_URL=redis://default:fXZjFSKZfAfkTiqBfomlFHzcddmZZLLv@redis.railway.internal:6379
 
 # OpenRouter AI配置 (需要用户提供API密钥)
-OPENROUTER_API_KEY=sk-or-v1-your-api-key-here
+OPENROUTER_API_KEY=sk-or-v1-your-openrouter-api-key-here
 
 # JWT密钥配置
-SECRET_KEY=your-super-secret-jwt-key-here-minimum-32-characters
+SECRET_KEY=aiguru2-super-secret-key-for-jwt-tokens-production-32chars
 
 # Firebase配置 (需要用户提供)
 FIREBASE_PROJECT_ID=your-firebase-project-id

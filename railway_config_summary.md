@@ -1,134 +1,95 @@
-# Railway项目配置总结
+# Railway 项目配置总结
 
-## 项目信息
+## 项目基本信息
 - **项目名称**: aiguru2
+- **环境**: production
 - **项目ID**: 9ecbe5a8-9ed5-4c8d-b28f-65eb8dd9f74c
-- **Railway控制台**: https://railway.com/project/9ecbe5a8-9ed5-4c8d-b28f-65eb8dd9f74c
-- **状态**: ✅ 已部署并运行
+- **部署域名**: https://aiguru20-production.up.railway.app
 
-## 数据库服务状态
+## 服务配置状态
 
-### PostgreSQL数据库
-- **状态**: ✅ 已部署并运行
-- **版本**: PostgreSQL 17.6
-- **内部地址**: postgres.railway.internal:5432
+### 1. 主应用服务 (aiguru2.0)
+- **服务ID**: 211abfa1-443c-4a5f-8add-9053073bb34d
+- **状态**: 已配置但部署失败
+- **域名**: https://aiguru20-production.up.railway.app
+- **问题**: Nixpacks无法识别项目结构（前后端分离项目）
+
+### 2. PostgreSQL 数据库服务
+- **状态**: ✅ 正常运行
+- **内部连接**: postgresql://postgres:sfraebGPmjkZtWpAsHqeHrxUrxuDSQFz@postgres.railway.internal:5432/railway
+- **外部连接**: postgresql://postgres:sfraebGPmjkZtWpAsHqeHrxUrxuDSQFz@metro.proxy.rlwy.net:29538/railway
 - **数据库名**: railway
-- **连接字符串**: `postgresql://postgres:sfraebGPmjkZtWpAsHqeHrxUrxuDSQFz@postgres.railway.internal:5432/railway`
+- **存储卷**: postgres-volume (28c73e13-1dac-4ff6-a88f-506c1f152547)
 
-### Redis缓存
-- **状态**: ✅ 已部署并运行
-- **版本**: Redis 8.2.1
-- **内部地址**: redis.railway.internal:6379
-- **连接字符串**: `redis://default:fXZjFSKZfAfkTiqBfomlFHzcddmZZLLv@redis.railway.internal:6379`
+## 环境变量配置
 
-## 应用服务状态
+### aiguru2.0 服务环境变量
+- ✅ OPENROUTER_API_KEY: sk-or-v1-placeholder
+- ✅ FIREBASE_API_KEY: placeholder_firebase_api_key
+- ✅ FIREBASE_AUTH_DOMAIN: placeholder-project.firebaseapp.com
+- ✅ FIREBASE_PROJECT_ID: placeholder-project-id
+- ✅ RAILWAY_PUBLIC_DOMAIN: aiguru20-production.up.railway.app
+- ✅ RAILWAY_SERVICE_POSTGRES_URL: postgres-production-c0a4.up.railway.app
 
-### 后端服务
-- **状态**: ✅ 已成功部署
-- **技术栈**: FastAPI + Python 3.11
-- **AI引擎**: OpenRouter Gemini 2.5 Flash Lite
-- **构建状态**: 成功
+### PostgreSQL 服务环境变量
+- ✅ DATABASE_URL: postgresql://postgres:sfraebGPmjkZtWpAsHqeHrxUrxuDSQFz@postgres.railway.internal:5432/railway
+- ✅ DATABASE_PUBLIC_URL: postgresql://postgres:sfraebGPmjkZtWpAsHqeHrxUrxuDSQFz@metro.proxy.rlwy.net:29538/railway
+- ✅ PGDATABASE: railway
+- ✅ RAILWAY_TCP_PROXY_PORT: 29538
 
-### 前端服务
-- **状态**: ✅ 已成功部署
-- **技术栈**: Next.js 14 + TypeScript
-- **功能**: 坐标标注和局部图双模式可视化
-- **构建状态**: 成功
+## 项目结构分析
 
-## 环境变量配置状态
+### 前端 (Next.js)
+- **位置**: `/frontend`
+- **框架**: Next.js 14.2.16
+- **构建配置**: nixpacks.toml (Node.js 18)
+- **启动命令**: npm start
+- **端口**: 3000
 
-### ✅ 已配置的环境变量
-- `DATABASE_URL` - PostgreSQL连接字符串（Railway自动提供）
-- `REDIS_URL` - Redis连接字符串（Railway自动提供）
-- `ENVIRONMENT=production`
-- `DEBUG=false`
-- `HOST=0.0.0.0`
-- `PORT=8000`
-- `SECRET_KEY` - 应用密钥
-- `LOG_LEVEL=INFO`
+### 后端 (FastAPI)
+- **位置**: `/backend`
+- **框架**: FastAPI (Python)
+- **构建配置**: nixpacks.toml (Python 3.11)
+- **启动命令**: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+- **端口**: 8000
 
-### ⚠️ 需要手动配置的关键环境变量
+## 部署问题与解决方案
 
-#### 🤖 AI服务配置（必需）
-```bash
-OPENROUTER_API_KEY=sk-or-v1-your-api-key-here
-OPENROUTER_MODEL=google/gemini-2.0-flash-exp
-AI_GRADING_API_URL=https://openrouter.ai/api/v1
-```
+### 当前问题
+1. **主要问题**: Railway无法识别根目录的项目结构
+   - 根目录缺少package.json或requirements.txt
+   - railway.toml配置了多服务但Railway可能不支持
 
-#### 🔥 Firebase Auth配置（必需）
-```bash
-FIREBASE_PROJECT_ID=your-firebase-project-id
-FIREBASE_CLIENT_EMAIL=your-firebase-client-email
-FIREBASE_PRIVATE_KEY=your-firebase-private-key
-FIREBASE_PRIVATE_KEY_ID=your-firebase-private-key-id
-FIREBASE_CLIENT_ID=your-firebase-client-id
-```
+2. **部署失败**: 
+   - 从根目录部署: "Nixpacks was unable to generate a build plan"
+   - 从frontend目录部署: 构建失败
 
-#### 🔐 JWT配置（推荐）
-```bash
-JWT_SECRET_KEY=your-jwt-secret-key-min-32-chars
-JWT_ALGORITHM=HS256
-JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30
-JWT_REFRESH_TOKEN_EXPIRE_DAYS=7
-```
+### 建议解决方案
+1. **选择单一服务部署**:
+   - 为前端和后端分别创建独立的Railway服务
+   - 或者选择部署前端到Railway，后端部署到其他平台
 
-#### 🌐 CORS配置（推荐）
-```bash
-ALLOWED_HOSTS=your-domain.railway.app,localhost,127.0.0.1
-CORS_ORIGINS=https://your-frontend-domain.vercel.app,http://localhost:3000
-```
+2. **修改项目结构**:
+   - 将前端文件移到根目录
+   - 或者在根目录添加适当的构建配置
 
-#### 📧 邮件服务配置（可选）
-```bash
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USERNAME=your-email@gmail.com
-SMTP_PASSWORD=your-app-specific-password
-SMTP_USE_TLS=true
-```
+3. **环境变量更新**:
+   - 将placeholder值替换为实际的API密钥
+   - 确保数据库连接字符串正确配置
 
-#### ☁️ 文件存储配置（可选）
-```bash
-AWS_ACCESS_KEY_ID=your-aws-access-key-id
-AWS_SECRET_ACCESS_KEY=your-aws-secret-access-key
-AWS_S3_BUCKET=your-s3-bucket-name
-AWS_REGION=us-east-1
-```
+## 当前状态总结
+- ✅ Railway CLI已连接
+- ✅ PostgreSQL数据库正常运行
+- ✅ 基础环境变量已配置
+- ❌ 应用部署失败（结构问题）
+- ❌ 服务无法正常访问
 
-## 项目结构验证
-- ✅ 所有必需的文件和目录都存在
-- ✅ FastAPI应用配置正确
-- ✅ 数据库模型和API路由已设置
-- ✅ Docker配置文件已准备
-- ✅ Railway配置文件已设置
-
-## 下一步操作建议
-
-### 1. 配置API密钥
-1. 访问Railway控制台: https://railway.com/project/9ecbe5a8-9ed5-4c8d-b28f-65eb8dd9f74c
-2. 获取OpenRouter API密钥: https://openrouter.ai/
-3. 配置Firebase项目: https://console.firebase.google.com/
-4. 在Railway中设置环境变量
-
-### 2. 测试应用功能
-- 健康检查: `https://your-app.railway.app/health`
-- API文档: `https://your-app.railway.app/docs`
-- 用户认证功能测试
-- AI批改功能测试
-
-### 3. 监控和维护
-- 查看应用日志: `railway logs`
-- 监控数据库连接状态
-- 检查API响应时间
-- 定期备份数据库
-
-## 技术支持
-如遇到问题，请检查：
-1. Railway项目日志
-2. 数据库连接状态
-3. 环境变量配置
-4. API密钥有效性
+## 下一步行动
+1. 决定部署策略（前端优先或重构项目结构）
+2. 更新环境变量中的placeholder值
+3. 重新部署并测试服务访问
+4. 配置域名和SSL证书（如需要）
 
 ---
-**AI教育平台2.0 - 让教学更智能，让学习更高效！** 🎓
+*最后更新时间: 2025-01-23*
+*Railway CLI版本: 4.6.3*

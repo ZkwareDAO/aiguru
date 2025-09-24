@@ -65,7 +65,7 @@ REDIS_URL=redis://default:fXZjFSKZfAfkTiqBfomlFHzcddmZZLLv@redis.railway.interna
 ### 🔑 必需的API密钥配置
 ```bash
 # 🤖 OpenRouter Gemini 2.5 Flash Lite (必需)
-OPENROUTER_API_KEY=sk-or-v1-your-api-key-here
+OPENROUTER_API_KEY=sk-or-v1-your-openrouter-api-key-here
 OPENROUTER_MODEL=google/gemini-2.0-flash-exp
 
 # 🔥 Firebase Auth配置 (必需)
@@ -74,7 +74,7 @@ FIREBASE_CLIENT_EMAIL=your-firebase-client-email
 FIREBASE_PRIVATE_KEY=your-firebase-private-key
 
 # 🔐 JWT密钥
-SECRET_KEY=aiguru2-super-secret-key-for-jwt-tokens-production
+SECRET_KEY=aiguru2-super-secret-key-for-jwt-tokens-production-32chars
 ```
 
 ### 📝 下一步操作
