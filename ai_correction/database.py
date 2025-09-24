@@ -520,9 +520,9 @@ def submit_assignment(assignment_id: int, student_username: str, answer_files: L
     
     try:
         cursor.execute('''
-            INSERT OR REPLACE INTO submissions (assignment_id, student_username, answer_files)
-            VALUES (?, ?, ?)
-        ''', (assignment_id, student_username, json.dumps(answer_files)))
+            INSERT OR REPLACE INTO submissions (assignment_id, student_username, answer_files, submitted_at)
+            VALUES (?, ?, ?, ?)
+        ''', (assignment_id, student_username, json.dumps(answer_files), datetime.now().isoformat()))
         
         conn.commit()
         return True
@@ -530,6 +530,48 @@ def submit_assignment(assignment_id: int, student_username: str, answer_files: L
     except Exception as e:
         print(f"提交作业失败: {e}")
         return False
+    finally:
+        conn.close()
+
+def save_grading_result(assignment_id: int, student_username: str, grading_result: str) -> bool:
+    """保存批改结果"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    try:
+        # 更新提交记录，添加批改结果
+        cursor.execute('''
+            UPDATE submissions 
+            SET ai_result = ?, graded_at = ?, status = 'graded'
+            WHERE assignment_id = ? AND student_username = ?
+        ''', (grading_result, datetime.now().isoformat(), assignment_id, student_username))
+        
+        conn.commit()
+        return cursor.rowcount > 0
+        
+    except Exception as e:
+        print(f"保存批改结果失败: {e}")
+        return False
+    finally:
+        conn.close()
+
+def get_grading_result(assignment_id: int, student_username: str) -> Optional[str]:
+    """获取批改结果"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    try:
+        cursor.execute('''
+            SELECT ai_result FROM submissions 
+            WHERE assignment_id = ? AND student_username = ?
+        ''', (assignment_id, student_username))
+        
+        result = cursor.fetchone()
+        return result['ai_result'] if result else None
+        
+    except Exception as e:
+        print(f"获取批改结果失败: {e}")
+        return None
     finally:
         conn.close()
 

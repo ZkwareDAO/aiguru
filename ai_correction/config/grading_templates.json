@@ -1,0 +1,96 @@
+{
+  "general": {
+    "id": "general",
+    "name": "通用批改模板",
+    "type": "general",
+    "description": "适用于大多数作业类型的通用批改模板",
+    "criteria": [
+      {
+        "name": "内容准确性",
+        "weight": 0.4,
+        "description": "答案内容的准确性和完整性"
+      },
+      {
+        "name": "逻辑清晰度",
+        "weight": 0.3,
+        "description": "思路逻辑的清晰度和条理性"
+      },
+      {
+        "name": "表达规范性",
+        "weight": 0.2,
+        "description": "语言表达的规范性和准确性"
+      },
+      {
+        "name": "创新性",
+        "weight": 0.1,
+        "description": "思路的创新性和独特性"
+      }
+    ],
+    "scoring_method": "weighted",
+    "max_score": 100.0,
+    "ai_model": "gpt-3.5-turbo",
+    "temperature": 0.3,
+    "max_tokens": 2000
+  },
+  "math": {
+    "id": "math",
+    "name": "数学作业模板",
+    "type": "math",
+    "description": "专门用于数学作业的批改模板",
+    "criteria": [
+      {
+        "name": "计算准确性",
+        "weight": 0.5,
+        "description": "计算过程和结果的准确性"
+      },
+      {
+        "name": "解题步骤",
+        "weight": 0.3,
+        "description": "解题步骤的完整性和逻辑性"
+      },
+      {
+        "name": "公式运用",
+        "weight": 0.2,
+        "description": "公式的正确运用和理解"
+      }
+    ],
+    "scoring_method": "weighted",
+    "max_score": 100.0,
+    "ai_model": "gpt-3.5-turbo",
+    "temperature": 0.3,
+    "max_tokens": 2000
+  },
+  "essay": {
+    "id": "essay",
+    "name": "作文批改模板",
+    "type": "essay",
+    "description": "专门用于作文和写作类作业的批改模板",
+    "criteria": [
+      {
+        "name": "主题明确性",
+        "weight": 0.25,
+        "description": "主题是否明确，论点是否清晰"
+      },
+      {
+        "name": "结构完整性",
+        "weight": 0.25,
+        "description": "文章结构是否完整，层次是否清晰"
+      },
+      {
+        "name": "语言表达",
+        "weight": 0.25,
+        "description": "语言表达的准确性和流畅性"
+      },
+      {
+        "name": "创意和深度",
+        "weight": 0.25,
+        "description": "内容的创意性和思考深度"
+      }
+    ],
+    "scoring_method": "weighted",
+    "max_score": 100.0,
+    "ai_model": "gpt-3.5-turbo",
+    "temperature": 0.3,
+    "max_tokens": 2000
+  }
+}

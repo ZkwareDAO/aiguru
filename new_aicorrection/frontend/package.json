@@ -1,6 +1,7 @@
 {
-  "name": "my-v0-project",
-  "version": "0.1.0",
+  "name": "ai-education-frontend",
+  "version": "2.0.0",
+  "description": "AI教育平台前端 - 支持坐标标注和局部图双模式展示",
   "private": true,
   "scripts": {
     "build": "next build",

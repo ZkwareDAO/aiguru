@@ -1,0 +1,81 @@
+version: '3.8'
+
+services:
+  classroom-grading:
+    build: .
+    container_name: classroom-grading-app
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+      - ./backups:/app/backups
+      - ./data:/app/data
+      - ./class_system.db:/app/class_system.db
+      - ./tasks.db:/app/tasks.db
+      - ./audit.db:/app/audit.db
+      - ./.env:/app/.env
+    environment:
+      - ENVIRONMENT=production
+      - DATABASE_URL=sqlite:///class_system.db
+      - LOG_LEVEL=INFO
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "scripts/health_check.py", "--exit-code"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - classroom-network
+
+  # 可选：添加监控服务
+  monitoring:
+    build: .
+    container_name: classroom-monitoring
+    command: ["python", "scripts/system_monitor.py", "--config", "config/monitoring.json"]
+    volumes:
+      - ./logs:/app/logs
+      - ./config:/app/config
+      - ./class_system.db:/app/class_system.db
+      - ./tasks.db:/app/tasks.db
+      - ./audit.db:/app/audit.db
+    environment:
+      - ENVIRONMENT=production
+    restart: unless-stopped
+    depends_on:
+      - classroom-grading
+    networks:
+      - classroom-network
+
+  # 可选：添加备份服务
+  backup:
+    build: .
+    container_name: classroom-backup
+    command: ["sh", "-c", "while true; do sleep 86400; ./scripts/backup_restore.sh backup -c; done"]
+    volumes:
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+      - ./backups:/app/backups
+      - ./data:/app/data
+      - ./class_system.db:/app/class_system.db
+      - ./tasks.db:/app/tasks.db
+      - ./audit.db:/app/audit.db
+      - ./.env:/app/.env
+    environment:
+      - ENVIRONMENT=production
+    restart: unless-stopped
+    depends_on:
+      - classroom-grading
+    networks:
+      - classroom-network
+
+networks:
+  classroom-network:
+    driver: bridge
+
+volumes:
+  uploads:
+  logs:
+  backups:
+  data:

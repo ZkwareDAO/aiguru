@@ -15,6 +15,12 @@ from .task import (
     TaskProgress, TaskConfig, TaskHistory
 )
 
+from .assignment import Assignment
+
+from .submission import Submission, SubmissionStatus, SubmissionGradingDetails
+
+from .classroom_grading_task import ClassroomGradingTask, ClassroomTaskStatus
+
 __all__ = [
     'GradingConfig',
     'GradingTemplate', 
@@ -30,5 +36,11 @@ __all__ = [
     'TaskError',
     'TaskProgress',
     'TaskConfig',
-    'TaskHistory'
+    'TaskHistory',
+    'Assignment',
+    'Submission',
+    'SubmissionStatus',
+    'SubmissionGradingDetails',
+    'ClassroomGradingTask',
+    'ClassroomTaskStatus'
 ]

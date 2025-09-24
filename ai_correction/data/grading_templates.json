@@ -1,0 +1,258 @@
+[
+  {
+    "id": "b227a79f-39a8-4d96-a58a-28aff22e0eca",
+    "name": "语文作文批改",
+    "description": "适用于语文作文的综合评分模板",
+    "subject": "chinese",
+    "grade_level": "middle_7_9",
+    "config": {
+      "id": "e179f457-fd9a-43fd-8059-6879cda50e89",
+      "name": "语文作文批改",
+      "subject": "chinese",
+      "grade_level": "middle_7_9",
+      "scoring_rules": [
+        {
+          "id": "2f5ddd9e-22f0-4b7e-846f-d6ae791561b2",
+          "name": "内容与思想",
+          "description": "文章内容的深度和思想性",
+          "max_score": 25.0,
+          "criteria": [
+            "主题明确",
+            "内容充实",
+            "思想深刻",
+            "观点正确"
+          ],
+          "auto_grading": true,
+          "weight": 0.4
+        },
+        {
+          "id": "c2f71348-51b8-4cb2-8621-772cd81087f5",
+          "name": "语言表达",
+          "description": "语言运用的准确性和流畅性",
+          "max_score": 25.0,
+          "criteria": [
+            "语言准确",
+            "表达流畅",
+            "词汇丰富",
+            "句式多样"
+          ],
+          "auto_grading": true,
+          "weight": 0.3
+        },
+        {
+          "id": "a51059fa-1dd6-4fb0-b0d6-d64c661bbd2c",
+          "name": "结构层次",
+          "description": "文章结构的合理性和层次性",
+          "max_score": 20.0,
+          "criteria": [
+            "结构完整",
+            "层次清晰",
+            "过渡自然",
+            "首尾呼应"
+          ],
+          "auto_grading": true,
+          "weight": 0.2
+        },
+        {
+          "id": "6d42c591-e3ce-43b0-b0c5-81f697aafcaa",
+          "name": "创新亮点",
+          "description": "文章的创新性和亮点",
+          "max_score": 10.0,
+          "criteria": [
+            "立意新颖",
+            "表达独特",
+            "见解深刻",
+            "文采飞扬"
+          ],
+          "auto_grading": true,
+          "weight": 0.1
+        }
+      ],
+      "weight_distribution": {
+        "content_accuracy": 0.4,
+        "language_quality": 0.3,
+        "structure_logic": 0.2,
+        "creativity": 0.1
+      },
+      "custom_prompts": [
+        "请重点关注文章的主题表达和思想深度",
+        "注意语言表达的准确性和流畅性",
+        "评价文章结构的合理性"
+      ],
+      "created_at": "2025-08-05T01:34:51.270571",
+      "updated_at": "2025-08-05T01:34:51.270592",
+      "is_template": false,
+      "created_by": null
+    },
+    "usage_count": 0,
+    "is_public": true,
+    "created_by": null,
+    "created_at": "2025-08-05T01:34:51.270600"
+  },
+  {
+    "id": "1f4a3e39-114c-4253-84f6-55689a28c509",
+    "name": "数学解答题批改",
+    "description": "适用于数学解答题的步骤化评分模板",
+    "subject": "math",
+    "grade_level": "high_10_12",
+    "config": {
+      "id": "25a4639b-1b06-40a2-a61a-8aadd9d1f836",
+      "name": "数学解答题批改",
+      "subject": "math",
+      "grade_level": "high_10_12",
+      "scoring_rules": [
+        {
+          "id": "ba6538c7-199b-4c57-84d7-8673e755ec7a",
+          "name": "解题思路",
+          "description": "解题方法和思路的正确性",
+          "max_score": 30.0,
+          "criteria": [
+            "方法正确",
+            "思路清晰",
+            "步骤合理",
+            "逻辑严密"
+          ],
+          "auto_grading": true,
+          "weight": 0.5
+        },
+        {
+          "id": "9f5003e8-197a-4b62-9953-b4bf73357ae8",
+          "name": "计算过程",
+          "description": "计算步骤的准确性和完整性",
+          "max_score": 40.0,
+          "criteria": [
+            "计算准确",
+            "步骤完整",
+            "过程清晰",
+            "格式规范"
+          ],
+          "auto_grading": true,
+          "weight": 0.4
+        },
+        {
+          "id": "ea849fec-b451-458f-a5da-73a7c7768c29",
+          "name": "最终答案",
+          "description": "最终答案的正确性",
+          "max_score": 30.0,
+          "criteria": [
+            "答案正确",
+            "单位准确",
+            "格式规范",
+            "结论明确"
+          ],
+          "auto_grading": true,
+          "weight": 0.3
+        }
+      ],
+      "weight_distribution": {
+        "content_accuracy": 0.5,
+        "language_quality": 0.4,
+        "structure_logic": 0.1,
+        "creativity": 0.0
+      },
+      "custom_prompts": [
+        "重点检查解题方法是否正确",
+        "仔细核对计算过程中的每一步",
+        "确认最终答案的准确性"
+      ],
+      "created_at": "2025-08-05T01:34:51.270624",
+      "updated_at": "2025-08-05T01:34:51.270624",
+      "is_template": false,
+      "created_by": null
+    },
+    "usage_count": 0,
+    "is_public": true,
+    "created_by": null,
+    "created_at": "2025-08-05T01:34:51.270630"
+  },
+  {
+    "id": "0cf952b7-df99-480d-b0a8-e1c23ea29462",
+    "name": "英语作文批改",
+    "description": "适用于英语作文的综合评分模板",
+    "subject": "english",
+    "grade_level": "high_10_12",
+    "config": {
+      "id": "c83d3aa1-ca41-4a91-8d08-cbba0580bbf9",
+      "name": "英语作文批改",
+      "subject": "english",
+      "grade_level": "high_10_12",
+      "scoring_rules": [
+        {
+          "id": "db0c9f66-ee01-4abc-9bbd-5beb93b3a390",
+          "name": "内容要点",
+          "description": "内容的完整性和相关性",
+          "max_score": 25.0,
+          "criteria": [
+            "要点完整",
+            "内容相关",
+            "论述充分",
+            "例证恰当"
+          ],
+          "auto_grading": true,
+          "weight": 0.35
+        },
+        {
+          "id": "836ac63a-108e-4916-bd64-0032a097ef9a",
+          "name": "语言运用",
+          "description": "语法、词汇和句式的运用",
+          "max_score": 25.0,
+          "criteria": [
+            "语法正确",
+            "词汇丰富",
+            "句式多样",
+            "表达地道"
+          ],
+          "auto_grading": true,
+          "weight": 0.35
+        },
+        {
+          "id": "190b09bb-cacb-4150-81b8-176d6d0d4ceb",
+          "name": "篇章结构",
+          "description": "文章结构和逻辑组织",
+          "max_score": 20.0,
+          "criteria": [
+            "结构清晰",
+            "逻辑连贯",
+            "过渡自然",
+            "段落合理"
+          ],
+          "auto_grading": true,
+          "weight": 0.2
+        },
+        {
+          "id": "5514de24-91e2-49f1-b9f0-c18f2bb12e8b",
+          "name": "书写规范",
+          "description": "拼写、标点和书写质量",
+          "max_score": 10.0,
+          "criteria": [
+            "拼写正确",
+            "标点准确",
+            "书写清晰",
+            "格式规范"
+          ],
+          "auto_grading": true,
+          "weight": 0.1
+        }
+      ],
+      "weight_distribution": {
+        "content_accuracy": 0.35,
+        "language_quality": 0.35,
+        "structure_logic": 0.2,
+        "creativity": 0.1
+      },
+      "custom_prompts": [
+        "检查内容是否涵盖所有要点",
+        "评估语言运用的准确性和丰富性",
+        "关注文章的整体结构和逻辑"
+      ],
+      "created_at": "2025-08-05T01:34:51.270748",
+      "updated_at": "2025-08-05T01:34:51.270748",
+      "is_template": false,
+      "created_by": null
+    },
+    "usage_count": 0,
+    "is_public": true,
+    "created_by": null,
+    "created_at": "2025-08-05T01:34:51.270753"
+  }
+]

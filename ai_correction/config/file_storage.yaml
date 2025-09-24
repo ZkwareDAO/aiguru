@@ -1,0 +1,16 @@
+allowed_extensions:
+- .pdf
+- .doc
+- .docx
+- .txt
+- .md
+- .jpg
+- .jpeg
+- .png
+- .gif
+- .json
+backup_enabled: true
+base_path: uploads
+max_file_size_mb: 100
+retention_days: 365
+scan_enabled: true

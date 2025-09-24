@@ -3,7 +3,7 @@
 from fastapi import APIRouter
 
 # Import endpoint routers
-from app.api import auth, users, files, classes, assignments, ai_agent, websocket
+from app.api import auth, users, files, classes, assignments, ai_agent, websocket, enhanced_grading
 
 api_router = APIRouter()
 
@@ -20,4 +20,5 @@ api_router.include_router(files.router)
 api_router.include_router(classes.router)
 api_router.include_router(assignments.router)
 api_router.include_router(ai_agent.router)
+api_router.include_router(enhanced_grading.router)
 api_router.include_router(websocket.router)

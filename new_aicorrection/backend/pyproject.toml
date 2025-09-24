@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ai-education-backend"
-version = "0.1.0"
-description = "AI智能批改系统后端服务"
+version = "2.0.0"
+description = "AI智能批改系统后端服务 - 支持OpenRouter Gemini 2.5 Flash Lite双模式可视化"
 readme = "README.md"
 requires-python = ">=3.11"
 license = {text = "MIT"}

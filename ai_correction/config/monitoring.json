@@ -1,0 +1,180 @@
+{
+  "monitoring": {
+    "interval": 60,
+    "history_retention": 24,
+    "enable_alerts": true,
+    "enable_email_alerts": false,
+    "enable_webhook_alerts": false,
+    "max_history_size": 1000
+  },
+  "database": {
+    "path": "class_system.db",
+    "connection_timeout": 30,
+    "max_connections": 10
+  },
+  "email": {
+    "smtp_server": "smtp.example.com",
+    "smtp_port": 587,
+    "use_tls": true,
+    "username": "",
+    "password": "",
+    "from_email": "monitor@example.com",
+    "to_emails": ["admin@example.com"]
+  },
+  "webhook": {
+    "url": "https://hooks.slack.com/services/YOUR/WEBHOOK/URL",
+    "timeout": 10,
+    "retry_attempts": 3
+  },
+  "alert_rules": [
+    {
+      "name": "high_cpu",
+      "metric": "cpu_percent",
+      "operator": ">",
+      "threshold": 80.0,
+      "duration": 300,
+      "severity": "warning",
+      "message": "CPU使用率过高: {value}%",
+      "enabled": true
+    },
+    {
+      "name": "critical_cpu",
+      "metric": "cpu_percent",
+      "operator": ">",
+      "threshold": 95.0,
+      "duration": 60,
+      "severity": "critical",
+      "message": "CPU使用率严重过高: {value}%",
+      "enabled": true
+    },
+    {
+      "name": "high_memory",
+      "metric": "memory_percent",
+      "operator": ">",
+      "threshold": 85.0,
+      "duration": 300,
+      "severity": "warning",
+      "message": "内存使用率过高: {value}%",
+      "enabled": true
+    },
+    {
+      "name": "critical_memory",
+      "metric": "memory_percent",
+      "operator": ">",
+      "threshold": 95.0,
+      "duration": 60,
+      "severity": "critical",
+      "message": "内存使用率严重过高: {value}%",
+      "enabled": true
+    },
+    {
+      "name": "low_disk_space",
+      "metric": "disk_percent",
+      "operator": ">",
+      "threshold": 90.0,
+      "duration": 60,
+      "severity": "error",
+      "message": "磁盘空间不足: {value}%",
+      "enabled": true
+    },
+    {
+      "name": "critical_disk_space",
+      "metric": "disk_percent",
+      "operator": ">",
+      "threshold": 95.0,
+      "duration": 30,
+      "severity": "critical",
+      "message": "磁盘空间严重不足: {value}%",
+      "enabled": true
+    },
+    {
+      "name": "high_grading_queue",
+      "metric": "pending_grading_tasks",
+      "operator": ">",
+      "threshold": 100,
+      "duration": 600,
+      "severity": "warning",
+      "message": "批改任务队列积压: {value}个任务",
+      "enabled": true
+    },
+    {
+      "name": "critical_grading_queue",
+      "metric": "pending_grading_tasks",
+      "operator": ">",
+      "threshold": 500,
+      "duration": 300,
+      "severity": "critical",
+      "message": "批改任务队列严重积压: {value}个任务",
+      "enabled": true
+    },
+    {
+      "name": "high_failed_tasks",
+      "metric": "failed_grading_tasks",
+      "operator": ">",
+      "threshold": 10,
+      "duration": 300,
+      "severity": "error",
+      "message": "批改失败任务过多: {value}个",
+      "enabled": true
+    },
+    {
+      "name": "database_size_warning",
+      "metric": "database_size_mb",
+      "operator": ">",
+      "threshold": 1000,
+      "duration": 3600,
+      "severity": "warning",
+      "message": "数据库文件过大: {value}MB",
+      "enabled": true
+    },
+    {
+      "name": "upload_files_size_warning",
+      "metric": "upload_files_size_mb",
+      "operator": ">",
+      "threshold": 5000,
+      "duration": 3600,
+      "severity": "warning",
+      "message": "上传文件占用空间过大: {value}MB",
+      "enabled": true
+    }
+  ],
+  "health_checks": {
+    "enabled": true,
+    "interval": 300,
+    "timeout": 30,
+    "checks": [
+      {
+        "name": "database_connection",
+        "enabled": true,
+        "critical": true
+      },
+      {
+        "name": "web_service",
+        "enabled": true,
+        "critical": false
+      },
+      {
+        "name": "disk_space",
+        "enabled": true,
+        "critical": true
+      },
+      {
+        "name": "python_environment",
+        "enabled": true,
+        "critical": true
+      }
+    ]
+  },
+  "performance": {
+    "enable_profiling": false,
+    "profile_interval": 3600,
+    "max_profile_files": 10
+  },
+  "logging": {
+    "level": "INFO",
+    "file": "logs/monitoring.log",
+    "max_size": 10485760,
+    "backup_count": 5,
+    "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  }
+}

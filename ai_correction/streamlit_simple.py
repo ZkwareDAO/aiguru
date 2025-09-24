@@ -52,7 +52,9 @@ try:
         search_assignments,
         get_assignment_status,
         get_user_submission_status,
-        get_assignment_analytics_data
+        get_assignment_analytics_data,
+        save_grading_result,
+        get_grading_result
     )
     CLASS_SYSTEM_AVAILABLE = True
     print("✅ 班级系统数据库模块加载成功")
@@ -4550,22 +4552,66 @@ def show_student_assignments():
                                             # 如果有批改标准，自动触发批改
                                             if assignment.get('marking_files'):
                                                 st.info("🤖 正在自动批改中...")
+                                                
+                                                # 创建进度条
+                                                progress_bar = st.progress(0)
+                                                status_text = st.empty()
+                                                
                                                 try:
+                                                    status_text.text("正在准备批改...")
+                                                    progress_bar.progress(10)
+                                                    
                                                     # 调用批改API
+                                                    status_text.text("正在调用AI批改引擎...")
+                                                    progress_bar.progress(30)
+                                                    
                                                     result = batch_correction_with_standard(
                                                         marking_scheme_files=assignment['marking_files'],
                                                         student_answer_files=saved_files,
                                                         strictness_level="标准"
                                                     )
                                                     
-                                                    # 这里可以保存批改结果到数据库
-                                                    # 暂时显示结果
-                                                    st.success("✅ 自动批改完成！")
-                                                    with st.expander("查看批改结果"):
-                                                        st.text_area("批改结果", value=str(result), height=200)
+                                                    progress_bar.progress(70)
+                                                    status_text.text("正在保存批改结果...")
+                                                    
+                                                    # 保存批改结果到数据库
+                                                    if save_grading_result(
+                                                        assignment['id'], 
+                                                        st.session_state.username, 
+                                                        result
+                                                    ):
+                                                        progress_bar.progress(100)
+                                                        status_text.text("✅ 自动批改完成！")
+                                                        
+                                                        # 显示批改结果
+                                                        with st.expander("📋 查看批改结果", expanded=True):
+                                                            if isinstance(result, str):
+                                                                st.markdown(result)
+                                                            else:
+                                                                st.text_area("批改结果", value=str(result), height=200, disabled=True)
+                                                        
+                                                        # 发送通知
+                                                        add_notification(
+                                                            st.session_state.username,
+                                                            "作业批改完成",
+                                                            f"您的作业《{assignment['title']}》已完成自动批改，请查看结果。",
+                                                            "success"
+                                                        )
+                                                    else:
+                                                        st.warning("⚠️ 批改结果保存失败")
                                                         
                                                 except Exception as e:
-                                                    st.warning(f"⚠️ 自动批改失败：{str(e)}")
+                                                    progress_bar.progress(0)
+                                                    status_text.text("")
+                                                    st.error(f"❌ 自动批改失败：{str(e)}")
+                                                    
+                                                    # 记录错误日志
+                                                    add_notification(
+                                                        st.session_state.username,
+                                                        "作业批改失败",
+                                                        f"您的作业《{assignment['title']}》自动批改失败：{str(e)}",
+                                                        "error"
+                                                    )
                                             
                                             st_rerun()
                                         else:
@@ -5719,18 +5765,65 @@ def show_assignment_detail_modal(assignment):
                            
                            # 如果有批改标准，触发自动批改
                            if assignment.get('marking_files'):
-                               with st.spinner("🤖 正在自动批改..."):
-                                   try:
-                                       result = batch_correction_with_standard(
-                                           marking_scheme_files=assignment['marking_files'],
-                                           student_answer_files=saved_files,
-                                           strictness_level="标准"
+                               # 创建进度条
+                               progress_bar = st.progress(0)
+                               status_text = st.empty()
+                               
+                               try:
+                                   status_text.text("正在准备批改...")
+                                   progress_bar.progress(10)
+                                   
+                                   # 调用批改API
+                                   status_text.text("正在调用AI批改引擎...")
+                                   progress_bar.progress(30)
+                                   
+                                   result = batch_correction_with_standard(
+                                       marking_scheme_files=assignment['marking_files'],
+                                       student_answer_files=saved_files,
+                                       strictness_level="标准"
+                                   )
+                                   
+                                   progress_bar.progress(70)
+                                   status_text.text("正在保存批改结果...")
+                                   
+                                   # 保存批改结果到数据库
+                                   if save_grading_result(
+                                       assignment['id'], 
+                                       st.session_state.username, 
+                                       result
+                                   ):
+                                       progress_bar.progress(100)
+                                       status_text.text("✅ 自动批改完成！")
+                                       
+                                       # 显示批改结果
+                                       with st.expander("📋 查看批改结果", expanded=True):
+                                           if isinstance(result, str):
+                                               st.markdown(result)
+                                           else:
+                                               st.text_area("批改结果", value=str(result), height=200, disabled=True)
+                                       
+                                       # 发送通知
+                                       add_notification(
+                                           st.session_state.username,
+                                           "作业批改完成",
+                                           f"您的作业《{assignment['title']}》已完成自动批改，请查看结果。",
+                                           "success"
                                        )
-                                       st.success("✅ 自动批改完成！")
-                                       with st.expander("查看批改结果"):
-                                           st.text_area("", str(result), height=200, disabled=True)
-                                   except Exception as e:
-                                       st.warning(f"⚠️ 自动批改失败：{str(e)}")
+                                   else:
+                                       st.warning("⚠️ 批改结果保存失败")
+                                       
+                               except Exception as e:
+                                   progress_bar.progress(0)
+                                   status_text.text("")
+                                   st.error(f"❌ 自动批改失败：{str(e)}")
+                                   
+                                   # 记录错误日志
+                                   add_notification(
+                                       st.session_state.username,
+                                       "作业批改失败",
+                                       f"您的作业《{assignment['title']}》自动批改失败：{str(e)}",
+                                       "error"
+                                   )
                            
                            st_rerun()
                        else:
@@ -5754,14 +5847,28 @@ def get_class_students(class_id):
        print(f"获取班级学生失败: {e}")
        return []
 
+# 导入数据库连接函数
+from database import get_db_connection
+
 # 更新提交AI结果的辅助函数
 def update_submission_ai_result(submission_id, ai_result):
    """更新提交的AI批改结果"""
    try:
-       # 这里应该调用数据库函数更新AI批改结果
-       # 暂时只打印，需要在database.py中实现相应函数
-       print(f"更新提交 {submission_id} 的AI结果: {ai_result[:100]}...")
-       return True
+       # 通过submission_id获取assignment_id和student_username
+       conn = get_db_connection()
+       cursor = conn.cursor()
+       cursor.execute('''
+           SELECT assignment_id, student_username FROM submissions WHERE id = ?
+       ''', (submission_id,))
+       result = cursor.fetchone()
+       conn.close()
+       
+       if result:
+           assignment_id, student_username = result['assignment_id'], result['student_username']
+           return save_grading_result(assignment_id, student_username, ai_result)
+       else:
+           print(f"未找到提交记录: {submission_id}")
+           return False
    except Exception as e:
        print(f"更新AI结果失败: {e}")
        return False

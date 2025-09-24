@@ -1,0 +1,53 @@
+# 生产环境额外依赖
+
+# 性能监控
+psutil>=5.9.0
+
+# HTTP客户端（用于健康检查）
+requests>=2.28.0
+
+# 邮件发送
+smtplib-ssl>=1.0.0
+
+# 进程管理
+supervisor>=4.2.0
+
+# 日志轮转
+logrotate>=0.1.0
+
+# 安全增强
+cryptography>=3.4.8
+
+# 数据库优化
+sqlite-utils>=3.30.0
+
+# 系统监控
+py-cpuinfo>=9.0.0
+
+# 网络工具
+netifaces>=0.11.0
+
+# 时间处理
+python-dateutil>=2.8.2
+
+# JSON处理
+ujson>=5.6.0
+
+# 压缩工具
+zstandard>=0.19.0
+
+# 内存分析
+memory-profiler>=0.60.0
+
+# 异步支持
+aiofiles>=22.1.0
+asyncio>=3.4.3
+
+# 缓存
+diskcache>=5.4.0
+
+# 配置管理
+python-dotenv>=0.19.0
+
+# 进程守护
+python-daemon>=2.3.0

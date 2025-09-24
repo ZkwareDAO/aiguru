@@ -1,0 +1,49 @@
+[Unit]
+Description=Classroom Assignment Grading System
+Documentation=https://github.com/your-org/classroom-grading-system
+After=network.target network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/classroom-grading-system
+Environment=PATH=/opt/classroom-grading-system/venv/bin
+Environment=PYTHONPATH=/opt/classroom-grading-system
+Environment=ENVIRONMENT=production
+EnvironmentFile=/opt/classroom-grading-system/.env
+
+# 主应用进程
+ExecStart=/opt/classroom-grading-system/venv/bin/streamlit run streamlit_simple.py --server.port 8501 --server.address 0.0.0.0 --server.headless true
+
+# 进程管理
+Restart=always
+RestartSec=10
+StartLimitInterval=60
+StartLimitBurst=3
+
+# 安全设置
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/classroom-grading-system/uploads /opt/classroom-grading-system/logs /opt/classroom-grading-system/backups
+
+# 资源限制
+LimitNOFILE=65536
+LimitNPROC=4096
+MemoryMax=2G
+CPUQuota=200%
+
+# 日志设置
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=classroom-grading
+
+# 健康检查
+ExecReload=/bin/kill -HUP $MAINPID
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target

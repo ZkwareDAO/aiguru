@@ -2,14 +2,15 @@
 # -*- coding: utf-8 -*-
 """
 UI组件包
+包含所有用户界面组件
 """
 
-from .grading_wizard import GradingWizard
-from .criteria_editor import CriteriaEditor
-from .grading_config_manager import GradingConfigManager
+from .assignment_center import AssignmentCenter
+from .submission_interface import SubmissionInterface
+from .grading_dashboard import GradingDashboard
 
 __all__ = [
-    'GradingWizard',
-    'CriteriaEditor', 
-    'GradingConfigManager'
+    'AssignmentCenter',
+    'SubmissionInterface', 
+    'GradingDashboard'
 ]

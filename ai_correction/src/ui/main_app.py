@@ -167,6 +167,12 @@ class MainApp:
             self._render_history_page()
         elif current_page == 'settings':
             self._render_settings_page()
+        elif current_page == 'assignments':
+            self._render_assignments_page()
+        elif current_page == 'submissions':
+            self._render_submissions_page()
+        elif current_page == 'dashboard':
+            self._render_dashboard_page()
         else:
             self._render_home_page()
     
@@ -202,24 +208,47 @@ class MainApp:
         else:
             st.success(f"欢迎回来，{st.session_state.current_user}！")
             
+            # 快速访问按钮 - 第一行
             col1, col2, col3, col4 = st.columns(4)
             with col1:
-                if st.button("开始批改"):
-                    st.session_state.current_page = 'grading'
+                if st.button("📚 作业管理"):
+                    st.session_state.current_page = 'assignments'
                     st.rerun()
             
             with col2:
-                if st.button("详细分析"):
-                    st.session_state.current_page = 'analysis'
+                if st.button("📤 提交管理"):
+                    st.session_state.current_page = 'submissions'
                     st.rerun()
             
             with col3:
-                if st.button("查看历史"):
+                if st.button("📊 批改仪表板"):
+                    st.session_state.current_page = 'dashboard'
+                    st.rerun()
+            
+            with col4:
+                if st.button("📝 开始批改"):
+                    st.session_state.current_page = 'grading'
+                    st.rerun()
+            
+            # 快速访问按钮 - 第二行
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                if st.button("📈 详细分析"):
+                    st.session_state.current_page = 'analysis'
+                    st.rerun()
+            
+            with col2:
+                if st.button("🔄 进度监控"):
+                    st.session_state.current_page = 'progress'
+                    st.rerun()
+            
+            with col3:
+                if st.button("📚 查看历史"):
                     st.session_state.current_page = 'history'
                     st.rerun()
             
             with col4:
-                if st.button("系统设置"):
+                if st.button("⚙️ 系统设置"):
                     st.session_state.current_page = 'settings'
                     st.rerun()
     
@@ -361,6 +390,152 @@ class MainApp:
         st.header("⚙️ 系统设置")
         st.info("🚧 设置功能正在重构中...")
     
+    def _render_assignments_page(self):
+        """渲染作业管理页面"""
+        try:
+            from src.services.assignment_service import AssignmentService
+            from src.services.submission_service import SubmissionService
+            from src.ui.components.assignment_center import AssignmentCenter
+            
+            # 创建服务实例
+            assignment_service = AssignmentService()
+            submission_service = SubmissionService()
+            assignment_center = AssignmentCenter(assignment_service, submission_service)
+            
+            # 根据用户角色显示不同界面
+            current_user = st.session_state.get('current_user', 'test_user')
+            user_role = st.session_state.get('user_role', 'teacher')  # 默认为教师角色
+            
+            # 角色选择器（用于演示）
+            with st.expander("🎭 角色切换（演示用）", expanded=False):
+                selected_role = st.radio("选择角色", ["teacher", "student"], 
+                                        index=0 if user_role == 'teacher' else 1)
+                if selected_role != user_role:
+                    st.session_state.user_role = selected_role
+                    st.rerun()
+            
+            if user_role == 'teacher':
+                assignment_center.render_teacher_view(current_user)
+            else:
+                assignment_center.render_student_view(current_user)
+                
+        except Exception as e:
+            st.error(f"❌ 加载作业管理组件失败: {e}")
+            st.info("请确保所有依赖组件已正确安装")
+            import traceback
+            st.code(traceback.format_exc())
+    
+    def _render_submissions_page(self):
+        """渲染提交管理页面"""
+        try:
+            from src.services.assignment_service import AssignmentService
+            from src.services.submission_service import SubmissionService
+            from src.ui.components.submission_interface import SubmissionInterface
+            
+            # 创建服务实例
+            assignment_service = AssignmentService()
+            submission_service = SubmissionService()
+            submission_interface = SubmissionInterface(assignment_service, submission_service)
+            
+            st.header("📤 提交管理")
+            
+            # 选择作业
+            assignments = assignment_service.get_student_assignments("test_student")  # 简化处理
+            
+            if not assignments:
+                st.info("暂无可用作业")
+                return
+            
+            # 作业选择器
+            assignment_options = [f"{a.id}: {a.title}" for a in assignments]
+            selected_assignment_str = st.selectbox("选择作业", assignment_options)
+            
+            if selected_assignment_str:
+                assignment_id = int(selected_assignment_str.split(":")[0])
+                selected_assignment = next(a for a in assignments if a.id == assignment_id)
+                
+                # 选项卡
+                tab1, tab2, tab3, tab4 = st.tabs(["📋 作业详情", "📤 提交作业", "📊 提交状态", "📈 批改结果"])
+                
+                with tab1:
+                    submission_interface.render_assignment_details(selected_assignment, "test_student")
+                
+                with tab2:
+                    submission_interface.render_file_upload_form(selected_assignment, "test_student")
+                
+                with tab3:
+                    submission_interface.render_submission_status(selected_assignment, "test_student")
+                
+                with tab4:
+                    submission_interface.render_grading_results(selected_assignment, "test_student")
+                
+        except Exception as e:
+            st.error(f"❌ 加载提交管理组件失败: {e}")
+            st.info("请确保所有依赖组件已正确安装")
+            import traceback
+            st.code(traceback.format_exc())
+    
+    def _render_dashboard_page(self):
+        """渲染批改仪表板页面"""
+        try:
+            from src.services.assignment_service import AssignmentService
+            from src.services.submission_service import SubmissionService
+            from src.ui.components.grading_dashboard import GradingDashboard
+            
+            # 创建服务实例
+            assignment_service = AssignmentService()
+            submission_service = SubmissionService()
+            grading_dashboard = GradingDashboard(assignment_service, submission_service)
+            
+            st.header("📊 批改仪表板")
+            
+            # 仪表板类型选择
+            dashboard_type = st.selectbox(
+                "选择仪表板类型",
+                ["班级概览", "作业统计", "批改进度", "学生表现分析"]
+            )
+            
+            if dashboard_type == "班级概览":
+                class_id = st.number_input("班级ID", min_value=1, value=1)
+                if st.button("加载班级概览"):
+                    grading_dashboard.render_class_overview(class_id, "test_teacher")
+            
+            elif dashboard_type == "作业统计":
+                assignment_id = st.number_input("作业ID", min_value=1, value=1)
+                if st.button("加载作业统计"):
+                    grading_dashboard.render_assignment_statistics(assignment_id)
+            
+            elif dashboard_type == "批改进度":
+                progress_type = st.radio("进度类型", ["单个作业", "班级进度", "全局进度"])
+                
+                if progress_type == "单个作业":
+                    assignment_id = st.number_input("作业ID", min_value=1, value=1)
+                    if st.button("加载作业进度"):
+                        grading_dashboard.render_grading_progress(assignment_id=assignment_id)
+                elif progress_type == "班级进度":
+                    class_id = st.number_input("班级ID", min_value=1, value=1)
+                    if st.button("加载班级进度"):
+                        grading_dashboard.render_grading_progress(class_id=class_id)
+                else:
+                    if st.button("加载全局进度"):
+                        grading_dashboard.render_grading_progress()
+            
+            elif dashboard_type == "学生表现分析":
+                class_id = st.number_input("班级ID", min_value=1, value=1)
+                assignment_id = st.number_input("作业ID（可选，留空为班级整体分析）", min_value=0, value=0)
+                
+                if st.button("加载学生表现分析"):
+                    if assignment_id > 0:
+                        grading_dashboard.render_student_performance_analysis(class_id, assignment_id)
+                    else:
+                        grading_dashboard.render_student_performance_analysis(class_id)
+                
+        except Exception as e:
+            st.error(f"❌ 加载批改仪表板组件失败: {e}")
+            st.info("请确保所有依赖组件已正确安装")
+            import traceback
+            st.code(traceback.format_exc())
+    
     def _render_sidebar(self):
         """渲染侧边栏"""
         with st.sidebar:
@@ -370,8 +545,11 @@ class MainApp:
             pages = {
                 'home': '🏠 首页',
                 'grading': '📝 批改',
-                'analysis': '📊 分析',
-                'progress': '📊 进度监控',
+                'assignments': '📚 作业管理',
+                'submissions': '📤 提交管理',
+                'dashboard': '📊 批改仪表板',
+                'analysis': '📈 详细分析',
+                'progress': '🔄 进度监控',
                 'history': '📚 历史',
                 'settings': '⚙️ 设置'
             }
