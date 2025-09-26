@@ -2,16 +2,15 @@
 nixPkgs = ["python311", "python311Packages.pip", "gcc", "pkg-config"]
 
 [phases.install]
-cmd = "cd backend && pip install --user --no-cache-dir -r requirements.txt"
+cmd = "cd backend && pip install --no-cache-dir -r requirements.txt"
 
 [phases.build]
 cmd = "echo 'Python FastAPI build completed'"
 
 [start]
-cmd = "cd backend && /root/.local/bin/python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+cmd = "cd backend && python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT"
 
 [variables]
 PYTHONPATH = "/app/backend"
 PYTHONUNBUFFERED = "1"
 PORT = "8000"
-PATH = "/root/.local/bin:/usr/local/bin:/usr/bin:/bin"
