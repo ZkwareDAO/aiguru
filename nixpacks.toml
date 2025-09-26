@@ -1,15 +1,15 @@
-# Fixed nixpacks configuration for Railway deployment - Fix uvicorn module issue
+# Fixed nixpacks configuration for Railway deployment - Use python -m pip for consistency
 [phases.setup]
 nixPkgs = ["python311", "python311Packages.pip", "gcc", "pkg-config"]
 
 [phases.install]
-cmd = "cd backend && /root/.nix-profile/bin/pip install --no-cache-dir -r requirements.txt"
+cmd = "cd backend && python -m pip install --no-cache-dir -r requirements.txt"
 
 [phases.build]
-cmd = "echo 'Python FastAPI build completed - fix uvicorn module'"
+cmd = "echo 'Python FastAPI build completed - use python -m pip for consistency'"
 
 [start]
-cmd = "cd backend && /root/.nix-profile/bin/python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+cmd = "cd backend && python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT"
 
 [variables]
 PYTHONPATH = "/app/backend"
