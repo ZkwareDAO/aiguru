@@ -80,7 +80,6 @@ class Settings(BaseSettings):
         elif isinstance(v, list):
             return ",".join(v)
         return "*"
-        raise ValueError(v)
     
     @field_validator("ALLOWED_HOSTS", mode="before")
     @classmethod
