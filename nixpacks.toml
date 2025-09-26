@@ -1,5 +1,5 @@
 [phases.setup]
-nixPkgs = ["python311", "gcc", "pkg-config"]
+nixPkgs = ["python311", "python311Packages.pip", "gcc", "pkg-config"]
 
 [phases.install]
 cmd = "cd backend && pip install --no-cache-dir -r requirements.txt"
