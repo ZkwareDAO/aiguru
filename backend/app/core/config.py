@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     # Security settings
     SECRET_KEY: str = Field(..., min_length=32, description="Application secret key")
     ALLOWED_HOSTS: List[str] = ["*"]
-    CORS_ORIGINS: List[str] = ["*"]
+    CORS_ORIGINS: str = "*"
     
     # Database settings
     DATABASE_URL: Optional[str] = None
@@ -65,15 +65,21 @@ class Settings(BaseSettings):
     SMTP_USERNAME: Optional[str] = None
     SMTP_PASSWORD: Optional[str] = None
     SMTP_USE_TLS: bool = True
+
+    # Firebase settings
+    FIREBASE_PROJECT_ID: Optional[str] = None
+    FIREBASE_CLIENT_EMAIL: Optional[str] = None
+    FIREBASE_PRIVATE_KEY: Optional[str] = None
     
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod
-    def assemble_cors_origins(cls, v: Any) -> List[str]:
+    def assemble_cors_origins(cls, v: Any) -> str:
         """Parse CORS origins from string or list."""
-        if isinstance(v, str) and not v.startswith("["):
-            return [i.strip() for i in v.split(",")]
-        elif isinstance(v, (list, str)):
+        if isinstance(v, str):
             return v
+        elif isinstance(v, list):
+            return ",".join(v)
+        return "*"
         raise ValueError(v)
     
     @field_validator("ALLOWED_HOSTS", mode="before")

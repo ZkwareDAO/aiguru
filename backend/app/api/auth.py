@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.auth import auth_manager, TokenData
 from app.core.database import get_db
 from app.core.dependencies import get_current_user, get_current_user_token
+from app.core.firebase_auth import firebase_auth_manager, FirebaseUser
 from app.models.user import User
 from app.schemas.user import (
     UserLogin,
@@ -20,7 +21,9 @@ from app.schemas.user import (
     PasswordReset,
     PasswordResetConfirm,
     UserResponse,
-    EmailVerification
+    EmailVerification,
+    FirebaseAuthRequest,
+    FirebaseAuthResponse
 )
 from app.services.user_service import UserService
 from app.services.password_service import PasswordService
@@ -379,5 +382,65 @@ async def send_verification_email(
     
     # In a real implementation, you would send an email with the verification_token here
     # For now, we'll just return a success message
-    
+
     return {"message": "验证邮件已发送，请检查您的邮箱"}
+
+
+@router.post("/firebase", response_model=FirebaseAuthResponse)
+async def firebase_auth(
+    auth_request: FirebaseAuthRequest,
+    db: AsyncSession = Depends(get_db)
+) -> FirebaseAuthResponse:
+    """Firebase认证登录/注册."""
+    try:
+        # 验证Firebase token
+        firebase_user = await firebase_auth_manager.verify_token(auth_request.firebase_token)
+
+        if not firebase_user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="无效的Firebase令牌",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        user_service = UserService(db)
+
+        # 检查用户是否已存在
+        user = await user_service.get_user_by_firebase_uid(firebase_user.uid)
+        is_new_user = False
+
+        if not user:
+            # 创建新用户
+            user = await user_service.create_firebase_user(firebase_user)
+            is_new_user = True
+        else:
+            # 更新用户信息（如果需要）
+            if user.email != firebase_user.email or user.name != firebase_user.name:
+                user = await user_service.update_firebase_user(user, firebase_user)
+
+        # 生成JWT令牌
+        token_response = auth_manager.create_token_pair(
+            user_id=user.id,
+            email=user.email,
+            role=user.role.value
+        )
+
+        return FirebaseAuthResponse(
+            access_token=token_response.access_token,
+            refresh_token=token_response.refresh_token,
+            token_type=token_response.token_type,
+            expires_in=token_response.expires_in,
+            user=UserResponse.model_validate(user),
+            is_new_user=is_new_user
+        )
+
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Firebase认证失败，请稍后重试"
+        )

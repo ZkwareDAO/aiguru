@@ -1228,8 +1228,9 @@ async def get_class_assignment_report(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
-# 
-System administration endpoints
+
+
+# System administration endpoints
 
 @router.get("/system/summary", response_model=dict)
 async def get_assignment_system_summary(

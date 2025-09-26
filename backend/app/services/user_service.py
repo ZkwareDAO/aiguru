@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.auth import auth_manager
+from app.core.firebase_auth import FirebaseUser
 from app.models.user import User, UserRole, ParentStudentRelation
 from app.schemas.user import UserCreate, UserUpdate, UserResponse
 
@@ -65,6 +66,56 @@ class UserService:
             select(User).where(User.email == email)
         )
         return result.scalar_one_or_none()
+
+    async def get_user_by_firebase_uid(self, firebase_uid: str) -> Optional[User]:
+        """Get user by Firebase UID."""
+        result = await self.db.execute(
+            select(User).where(User.firebase_uid == firebase_uid)
+        )
+        return result.scalar_one_or_none()
+
+    async def create_firebase_user(self, firebase_user: FirebaseUser) -> User:
+        """Create a new user from Firebase authentication."""
+        # Check if email already exists
+        existing_user = await self.get_user_by_email(firebase_user.email)
+        if existing_user:
+            raise ValueError("邮箱已被注册")
+
+        # Create user with Firebase UID
+        user = User(
+            email=firebase_user.email,
+            name=firebase_user.name or firebase_user.email.split('@')[0],
+            role=UserRole.STUDENT,  # Default role for Firebase users
+            firebase_uid=firebase_user.uid,
+            password_hash=None,  # No password for Firebase users
+            is_active=True,
+            is_verified=firebase_user.email_verified
+        )
+
+        self.db.add(user)
+        await self.db.commit()
+        await self.db.refresh(user)
+
+        return user
+
+    async def update_firebase_user(self, user: User, firebase_user: FirebaseUser) -> User:
+        """Update existing user with Firebase data."""
+        # Update user information if changed
+        if user.email != firebase_user.email:
+            user.email = firebase_user.email
+
+        if firebase_user.name and user.name != firebase_user.name:
+            user.name = firebase_user.name
+
+        if user.is_verified != firebase_user.email_verified:
+            user.is_verified = firebase_user.email_verified
+
+        user.updated_at = datetime.now(timezone.utc)
+
+        await self.db.commit()
+        await self.db.refresh(user)
+
+        return user
     
     async def authenticate_user(self, email: str, password: str) -> Optional[User]:
         """Authenticate user with email and password."""
