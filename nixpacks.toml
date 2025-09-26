@@ -1,12 +1,12 @@
-# Fixed nixpacks configuration for Railway deployment - Use consistent Python paths
+# Fixed nixpacks configuration for Railway deployment - Use python in install, absolute path in start
 [phases.setup]
 nixPkgs = ["python311", "python311Packages.pip", "gcc", "pkg-config"]
 
 [phases.install]
-cmd = "cd backend && /root/.nix-profile/bin/python -m pip install --no-cache-dir -r requirements.txt"
+cmd = "cd backend && python -m pip install --no-cache-dir -r requirements.txt && echo 'Pip install completed' && python -m pip list | grep uvicorn"
 
 [phases.build]
-cmd = "echo 'Python FastAPI build completed - using consistent /root/.nix-profile/bin/python paths'"
+cmd = "echo 'Python FastAPI build completed - pip install used python, start uses /root/.nix-profile/bin/python'"
 
 [start]
 cmd = "cd backend && /root/.nix-profile/bin/python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT"
