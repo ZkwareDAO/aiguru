@@ -1,9 +1,11 @@
-"""AI grading service for managing grading tasks and processing."""
+"""Enhanced AI grading service with migrated core functionality."""
 
 import asyncio
+import json
 import logging
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Tuple
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple, Any
 from uuid import UUID
 
 from sqlalchemy import and_, desc, func, or_, select
@@ -33,17 +35,273 @@ from app.schemas.grading import (
     GradingTaskUpdate
 )
 
+# Import migrated core AI grading functionality
+from app.core.ai_grading_engine import (
+    call_ai_api,
+    call_ai_api_async,
+    process_file_content,
+    api_config,
+    get_api_status,
+    update_api_config
+)
+from app.core.grading_prompts import (
+    get_core_grading_prompt,
+    get_prompt_for_subject,
+    get_difficulty_adjusted_prompt,
+    ULTIMATE_SYSTEM_MESSAGE
+)
+from app.core.intelligent_batch_processor import (
+    IntelligentBatchProcessor,
+    process_grading_request,
+    process_grading_request_sync
+)
+from app.core.pdf_generator import (
+    create_grading_pdf,
+    create_batch_pdfs
+)
+
 logger = logging.getLogger(__name__)
 
 
-class GradingTaskManager:
-    """Manager for AI grading tasks with queue management and retry logic."""
+class EnhancedGradingTaskManager:
+    """Enhanced manager for AI grading tasks with migrated core functionality."""
     
     def __init__(self, db: AsyncSession):
         self.db = db
         self._processing_tasks: Dict[UUID, asyncio.Task] = {}
         self._max_concurrent_tasks = 5
         self._task_timeout_minutes = 30
+        self.batch_processor = IntelligentBatchProcessor()
+        
+        # Load grading templates
+        self._load_grading_templates()
+    
+    def _load_grading_templates(self):
+        """Load grading templates from configuration"""
+        try:
+            templates_path = Path(__file__).parent.parent / "core" / "grading_templates.json"
+            if templates_path.exists():
+                with open(templates_path, 'r', encoding='utf-8') as f:
+                    self.templates = json.load(f)
+                logger.info("Grading templates loaded successfully")
+            else:
+                self.templates = {}
+                logger.warning("Grading templates file not found")
+        except Exception as e:
+            logger.error(f"Failed to load grading templates: {e}")
+            self.templates = {}
+    
+    async def create_grading_task_enhanced(
+        self,
+        task_data: GradingTaskCreate,
+        files: Optional[List[str]] = None,
+        use_intelligent_processing: bool = True
+    ) -> GradingTaskResponse:
+        """Create a grading task with enhanced AI processing"""
+        try:
+            # Verify submission exists and is valid for grading
+            submission = await self._get_submission_for_grading(task_data.submission_id)
+            
+            # Check if there's already a pending/processing task for this submission
+            existing_task = await self._get_active_task_for_submission(task_data.submission_id)
+            if existing_task:
+                logger.warning(f"Active grading task already exists for submission {task_data.submission_id}")
+                return GradingTaskResponse.from_orm(existing_task)
+            
+            # Create new grading task
+            grading_task = GradingTask(
+                submission_id=task_data.submission_id,
+                task_type=task_data.task_type,
+                ai_model=task_data.ai_model,
+                prompt_template=task_data.prompt_template,
+                max_retries=task_data.max_retries,
+                status=GradingTaskStatus.PENDING
+            )
+            
+            self.db.add(grading_task)
+            await self.db.commit()
+            await self.db.refresh(grading_task)
+            
+            # Update submission status
+            submission.status = SubmissionStatus.GRADING
+            await self.db.commit()
+            
+            # Start enhanced grading process if files are provided
+            if files and use_intelligent_processing:
+                asyncio.create_task(self._process_enhanced_grading(grading_task, files))
+            
+            logger.info(f"Enhanced grading task {grading_task.id} created for submission {task_data.submission_id}")
+            
+            return GradingTaskResponse.from_orm(grading_task)
+            
+        except Exception as e:
+            await self.db.rollback()
+            logger.error(f"Failed to create enhanced grading task: {str(e)}")
+            raise GradingError(f"Failed to create grading task: {str(e)}")
+    
+    async def _process_enhanced_grading(self, task: GradingTask, files: List[str]):
+        """Process grading using the enhanced AI grading engine"""
+        try:
+            # Update task status to processing
+            task.status = GradingTaskStatus.PROCESSING
+            task.started_at = datetime.utcnow()
+            await self.db.commit()
+            
+            # Prepare file info
+            file_info_list = []
+            for file_path in files:
+                file_info_list.append({
+                    'name': Path(file_path).name,
+                    'path': file_path,
+                    'size': Path(file_path).stat().st_size if Path(file_path).exists() else 0
+                })
+            
+            # Use intelligent batch processor for grading
+            result = await process_grading_request(files, file_info_list)
+            
+            if result.get('workflow_successful', False):
+                # Extract grading results
+                grading_results = result.get('step2_batch_grading', {})
+                summary_results = result.get('step3_summary_generation', {})
+                
+                # Update task with results
+                task.status = GradingTaskStatus.COMPLETED
+                task.completed_at = datetime.utcnow()
+                task.progress = 100
+                
+                # Store results in task metadata
+                task.result_data = {
+                    'grading_result': grading_results.get('grading_result', ''),
+                    'summary': summary_results.get('summary', ''),
+                    'statistics': summary_results.get('statistics', {}),
+                    'workflow_results': result
+                }
+                
+                # Update submission with score if available
+                submission = await self._get_submission_for_grading(task.submission_id)
+                statistics = summary_results.get('statistics', {})
+                if statistics.get('total_score') is not None:
+                    submission.score = statistics['total_score']
+                    submission.ai_feedback = grading_results.get('grading_result', '')
+                    submission.status = SubmissionStatus.GRADED
+                    submission.graded_at = datetime.utcnow()
+                
+                # Generate PDF report if requested
+                await self._generate_pdf_report(task, result)
+                
+            else:
+                # Handle grading failure
+                task.status = GradingTaskStatus.FAILED
+                task.completed_at = datetime.utcnow()
+                task.error_message = "Enhanced grading process failed"
+                
+                # Reset submission status
+                submission = await self._get_submission_for_grading(task.submission_id)
+                submission.status = SubmissionStatus.SUBMITTED
+            
+            await self.db.commit()
+            
+        except Exception as e:
+            logger.error(f"Enhanced grading process failed for task {task.id}: {e}")
+            
+            # Update task status to failed
+            task.status = GradingTaskStatus.FAILED
+            task.completed_at = datetime.utcnow()
+            task.error_message = str(e)
+            
+            # Reset submission status
+            try:
+                submission = await self._get_submission_for_grading(task.submission_id)
+                submission.status = SubmissionStatus.SUBMITTED
+            except:
+                pass
+            
+            await self.db.commit()
+    
+    async def _generate_pdf_report(self, task: GradingTask, grading_results: Dict[str, Any]):
+        """Generate PDF report for grading results"""
+        try:
+            # Extract content for PDF
+            grading_content = grading_results.get('step2_batch_grading', {}).get('grading_result', '')
+            statistics = grading_results.get('step3_summary_generation', {}).get('statistics', {})
+            
+            if grading_content:
+                # Create PDF output path
+                reports_dir = Path("reports")
+                reports_dir.mkdir(exist_ok=True)
+                
+                pdf_filename = f"grading_report_{task.id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+                pdf_path = reports_dir / pdf_filename
+                
+                # Generate PDF
+                success = create_grading_pdf(
+                    content=grading_content,
+                    output_path=str(pdf_path),
+                    title=f"AI批改报告 - 任务 {task.id}",
+                    statistics=statistics
+                )
+                
+                if success:
+                    # Store PDF path in task metadata
+                    if not task.result_data:
+                        task.result_data = {}
+                    task.result_data['pdf_report_path'] = str(pdf_path)
+                    
+                    logger.info(f"PDF report generated for task {task.id}: {pdf_path}")
+                
+        except Exception as e:
+            logger.error(f"Failed to generate PDF report for task {task.id}: {e}")
+    
+    async def grade_with_custom_prompt(
+        self,
+        submission_id: UUID,
+        custom_prompt: str,
+        files: List[str],
+        subject: Optional[str] = None,
+        difficulty: str = "medium"
+    ) -> Dict[str, Any]:
+        """Grade submission with custom prompt and subject-specific adjustments"""
+        try:
+            # Get appropriate prompt for subject
+            if subject:
+                base_prompt = get_prompt_for_subject(subject, difficulty)
+                combined_prompt = f"{base_prompt}\n\n{custom_prompt}"
+            else:
+                combined_prompt = custom_prompt
+            
+            # Process files
+            file_contents = []
+            for file_path in files:
+                content = process_file_content(file_path)
+                file_contents.append(content)
+            
+            # Call AI API
+            result = await call_ai_api_async(
+                prompt=combined_prompt,
+                system_message=ULTIMATE_SYSTEM_MESSAGE,
+                files=files
+            )
+            
+            return {
+                'success': True,
+                'result': result,
+                'files_processed': len(files)
+            }
+            
+        except Exception as e:
+            logger.error(f"Custom prompt grading failed: {e}")
+            return {
+                'success': False,
+                'error': str(e)
+            }
+    
+    async def get_grading_templates(self) -> Dict[str, Any]:
+        """Get available grading templates"""
+        return self.templates.get('grading_templates', {})
+    
+    async def get_api_status(self) -> Dict[str, Any]:
+        """Get AI API status"""
+        return get_api_status()
     
     async def create_grading_task(
         self,
@@ -289,7 +547,9 @@ class GradingTaskManager:
                 try:
                     task_data = GradingTaskCreate(
                         submission_id=submission_id,
-                        task_type=batch_request.task_type
+                        task_type=batch_request.task_type,
+                        ai_model="default",
+                        prompt_template="default"
                     )
                     task = await self.create_grading_task(task_data)
                     created_tasks.append(task.id)
@@ -490,7 +750,10 @@ class GradingTaskManager:
 
 
 # Service factory function
-async def get_grading_task_manager() -> GradingTaskManager:
-    """Get grading task manager instance."""
+async def get_grading_task_manager() -> EnhancedGradingTaskManager:
+    """Get enhanced grading task manager instance."""
     async with get_db_session() as db:
-        return GradingTaskManager(db)
+        return EnhancedGradingTaskManager(db)
+
+# Compatibility alias
+GradingTaskManager = EnhancedGradingTaskManager
