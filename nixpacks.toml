@@ -1,4 +1,4 @@
-# Fixed nixpacks configuration for Railway deployment
+# Fixed nixpacks configuration for Railway deployment - Force rebuild
 [phases.setup]
 nixPkgs = ["python311", "python311Packages.pip", "gcc", "pkg-config"]
 
@@ -6,7 +6,7 @@ nixPkgs = ["python311", "python311Packages.pip", "gcc", "pkg-config"]
 cmd = "cd backend && pip install --no-cache-dir -r requirements.txt"
 
 [phases.build]
-cmd = "echo 'Python FastAPI build completed'"
+cmd = "echo 'Python FastAPI build completed - force rebuild'"
 
 [start]
 cmd = "cd backend && python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT"
