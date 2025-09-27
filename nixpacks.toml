@@ -1,4 +1,4 @@
-# Fixed nixpacks configuration for Railway deployment - Use consistent python environment
+# Fixed nixpacks configuration for Railway deployment - Use system python with proper PATH
 [phases.setup]
 nixPkgs = ["python311", "python311Packages.pip", "gcc", "pkg-config"]
 
@@ -12,3 +12,4 @@ cmd = "cd backend && /root/.nix-profile/bin/python -m uvicorn app.main:app --hos
 PYTHONPATH = "/app/backend"
 PYTHONUNBUFFERED = "1"
 PORT = "8000"
+PATH = "/root/.nix-profile/bin:$PATH"
