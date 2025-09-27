@@ -1,4 +1,7 @@
-# Simplified nixpacks configuration - let nixpacks auto-detect Python project
+# Explicit nixpacks configuration to ensure uvicorn is properly installed
+[phases.install]
+cmd = "cd backend && pip install --no-cache-dir -r requirements.txt"
+
 [start]
 cmd = "cd backend && python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT"
 
