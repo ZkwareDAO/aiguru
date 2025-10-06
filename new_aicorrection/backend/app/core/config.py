@@ -52,6 +52,21 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: Optional[str] = None
     AI_GRADING_API_URL: Optional[str] = None
     AI_GRADING_API_KEY: Optional[str] = None
+
+    # OpenRouter settings (for cost optimization)
+    OPENROUTER_API_KEY: Optional[str] = None
+    OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
+    DEFAULT_MODEL: str = "google/gemini-2.0-flash-exp:free"
+
+    # Cost optimization settings
+    ENABLE_UNIFIED_AGENT: bool = True
+    ENABLE_SMART_CACHE: bool = True
+    CACHE_SIMILARITY_THRESHOLD: float = 0.85
+    DEFAULT_GRADING_MODE: str = "fast"  # fast/standard/premium
+
+    # LLM settings
+    LLM_TEMPERATURE: float = 0.3
+    LLM_MAX_TOKENS: int = 2000
     
     # File storage settings
     AWS_ACCESS_KEY_ID: Optional[str] = None
@@ -120,3 +135,7 @@ class Settings(BaseSettings):
 def get_settings() -> Settings:
     """Get cached application settings."""
     return Settings()
+
+
+# Global settings instance
+settings = get_settings()

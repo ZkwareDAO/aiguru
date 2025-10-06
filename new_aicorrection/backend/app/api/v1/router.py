@@ -4,6 +4,7 @@ from fastapi import APIRouter
 
 # Import endpoint routers
 from app.api import auth, users, files, classes, assignments, ai_agent, websocket, enhanced_grading
+from app.api.v1 import grading_v2
 
 api_router = APIRouter()
 
@@ -22,3 +23,6 @@ api_router.include_router(assignments.router)
 api_router.include_router(ai_agent.router)
 api_router.include_router(enhanced_grading.router)
 api_router.include_router(websocket.router)
+
+# Include new Agent-based grading API
+api_router.include_router(grading_v2.router)

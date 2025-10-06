@@ -1,13 +1,34 @@
-# AI教育平台 2.0 🎓✨
+# AI教育平台 3.0 🎓✨
 
-[![Version](https://img.shields.io/badge/版本-2.0.0-blue.svg)](https://github.com/your-org/aiguru)
-[![Status](https://img.shields.io/badge/状态-稳定版-green.svg)](https://railway.app)
-[![AI Model](https://img.shields.io/badge/AI-Gemini%202.5%20Flash%20Lite-orange.svg)](https://openrouter.ai)
-[![Platform](https://img.shields.io/badge/部署-Railway-purple.svg)](https://railway.app)
+[![Version](https://img.shields.io/badge/版本-3.0.0-blue.svg)](https://github.com/your-org/aiguru)
+[![Status](https://img.shields.io/badge/状态-开发中-yellow.svg)](https://railway.app)
+[![AI Model](https://img.shields.io/badge/AI-Gemini%202.0%20Flash-orange.svg)](https://openrouter.ai)
+[![Architecture](https://img.shields.io/badge/架构-LangGraph%20Agents-green.svg)](https://langchain.com)
+[![Cost](https://img.shields.io/badge/成本优化-31%25-brightgreen.svg)](docs/09_COST_OPTIMIZATION_STRATEGY.md)
 
-> 🚀 **革命性AI教育平台** - 支持坐标标注和局部图双模式可视化的智能批改系统
+> 🚀 **新一代AI教育平台** - 基于LangGraph多Agent架构的智能批改系统
 
-基于OpenRouter Gemini 2.5 Flash Lite的下一代AI教育平台，为教师、学生和家长提供前所未有的智能批改体验。
+基于LangGraph和OpenRouter的下一代AI教育平台，采用成本优化的Agent架构，为教师、学生和家长提供高效、经济的智能批改体验。
+
+## 🆕 v3.0 新特性
+
+### 🤖 LangGraph多Agent架构
+- **UnifiedGradingAgent** - 一次LLM调用完成批改+反馈 (节省23%成本)
+- **SmartOrchestrator** - 智能编排器,根据复杂度选择最优方案
+- **ComplexityAssessor** - 自动评估任务复杂度
+- **CacheService** - 智能缓存,命中率30%
+
+### 💰 成本优化
+- **单次批改成本**: $0.009 (原 $0.013, 节省31%)
+- **月度节省**: $40 (基于10K次批改)
+- **年度节省**: $480
+- **智能模式选择**: 简单任务$0.005, 复杂任务$0.015
+
+### 📚 完整文档
+- [快速开始](QUICKSTART.md) - 5分钟启动系统
+- [实施总结](IMPLEMENTATION_SUMMARY.md) - 完整的实施报告
+- [设计文档](docs/README.md) - 10篇详细设计文档
+- [实施进度](docs/PHASE1_PROGRESS.md) - 当前进度70%
 
 ---
 

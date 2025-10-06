@@ -32,6 +32,8 @@ httpx>=0.25.0
 
 # AI and ML
 langchain>=0.1.0
+langgraph>=0.0.20
+langchain-openai>=0.0.5
 openai>=1.3.0
 
 # Configuration
