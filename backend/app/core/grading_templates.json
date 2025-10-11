@@ -1,0 +1,328 @@
+{
+  "grading_templates": {
+    "base_grading": {
+      "id": "base_grading",
+      "name": "通用批改模板",
+      "category": "grading",
+      "description": "适用于所有学科的通用批改模板",
+      "system_prompt": "你是一位专业的教师和评估专家，具有丰富的教学经验和严谨的评分标准。你的任务是对学生的作业进行客观、公正、准确的批改和评分。",
+      "task_prompt": "请根据提供的标准答案和评分标准，对学生的答案进行详细批改。\n任务要求：\n1. 仔细比较学生答案与标准答案\n2. 根据评分标准给出准确分数\n3. 指出答案中的错误和不足\n4. 提供具体的改进建议",
+      "format_requirements": "请按以下格式输出批改结果：\n\n**得分：** [具体分数]/[总分]\n\n**详细分析：**\n[对答案的详细分析，包括正确之处和错误之处]\n\n**主要问题：**\n1. [问题1]\n2. [问题2]\n...\n\n**改进建议：**\n1. [建议1]\n2. [建议2]\n...",
+      "quality_requirements": "质量要求：\n1. 评分必须严格按照标准，不得主观臆断\n2. 分析要客观公正，有理有据\n3. 建议要具体可行，有助于学生提高\n4. 语言要专业准确，态度要鼓励支持",
+      "parameters": {
+        "standard_answer": {
+          "type": "string",
+          "required": true,
+          "description": "标准答案"
+        },
+        "student_answer": {
+          "type": "string", 
+          "required": true,
+          "description": "学生答案"
+        },
+        "grading_criteria": {
+          "type": "string",
+          "required": true,
+          "description": "评分标准"
+        },
+        "total_score": {
+          "type": "integer",
+          "default": 100,
+          "description": "总分"
+        }
+      }
+    },
+    
+    "math_grading": {
+      "id": "math_grading",
+      "name": "数学批改模板",
+      "category": "math",
+      "description": "专门用于数学作业的批改模板",
+      "system_prompt": "你是一位资深的数学教师，专门负责数学作业的批改和评分。你熟悉各种数学概念、公式和解题方法。",
+      "task_prompt": "请对学生的数学答案进行专业批改。\n重点关注：\n1. 数学概念的理解是否正确\n2. 计算过程是否准确\n3. 解题方法是否合理\n4. 最终答案是否正确\n5. 数学表达是否规范",
+      "format_requirements": "### 题目[X]\n**满分**：[Y分] - 📊 来源：MARKING标准\n**得分**：[Z分]\n**批改详情**：\n- 关键步骤1: [具体内容] ✓/✗ [分值]\n- 关键步骤2: [具体内容] ✓/✗ [分值]\n\n**数学要点**：\n- 概念理解：[评价]\n- 计算准确性：[评价]\n- 解题方法：[评价]",
+      "quality_requirements": "数学批改要求：\n1. 严格按照数学逻辑评分\n2. 接受多种正确的解题方法\n3. 对计算错误要明确指出\n4. 使用标准数学符号\n5. 注重数学思维的培养",
+      "parameters": {
+        "math_topic": {
+          "type": "string",
+          "required": false,
+          "description": "数学主题（代数、几何、统计等）"
+        },
+        "difficulty_level": {
+          "type": "string",
+          "enum": ["easy", "medium", "hard"],
+          "default": "medium",
+          "description": "难度等级"
+        }
+      }
+    },
+    
+    "language_grading": {
+      "id": "language_grading", 
+      "name": "语言文字批改模板",
+      "category": "language",
+      "description": "用于语文、英语等语言类科目的批改",
+      "system_prompt": "你是一位经验丰富的语言文字教师，专门负责语言类作业的批改，注重学生的表达能力、理解能力和创造性思维。",
+      "task_prompt": "请对学生的语言文字作品进行全面批改。\n评价维度：\n1. 内容质量：思想深度、逻辑性、创新性\n2. 语言表达：用词准确、句式多样、语法正确\n3. 结构组织：段落安排、条理清晰、前后呼应\n4. 文体特征：是否符合文体要求\n5. 书写规范：标点符号、格式要求",
+      "format_requirements": "**总体评价**：[优秀/良好/一般/需改进]\n**得分**：[分数]/[总分]\n\n**分项评价**：\n- 内容质量：[分数] - [评语]\n- 语言表达：[分数] - [评语] \n- 结构组织：[分数] - [评语]\n- 文体特征：[分数] - [评语]\n\n**亮点**：\n1. [具体亮点1]\n2. [具体亮点2]\n\n**建议**：\n1. [改进建议1]\n2. [改进建议2]",
+      "quality_requirements": "语言批改要求：\n1. 注重学生的创造性和个性表达\n2. 给予积极正面的引导\n3. 指出具体的语言问题\n4. 提供可操作的改进建议\n5. 鼓励学生继续努力",
+      "parameters": {
+        "text_type": {
+          "type": "string",
+          "enum": ["作文", "阅读理解", "诗歌", "小说", "议论文", "说明文"],
+          "description": "文本类型"
+        },
+        "word_limit": {
+          "type": "integer",
+          "description": "字数要求"
+        }
+      }
+    },
+    
+    "science_grading": {
+      "id": "science_grading",
+      "name": "理科批改模板", 
+      "category": "science",
+      "description": "用于物理、化学、生物等理科的批改",
+      "system_prompt": "你是一位理科教师，熟悉科学原理和实验方法，能够准确评估学生对科学概念的理解和应用能力。",
+      "task_prompt": "请对学生的理科答案进行科学严谨的批改。\n评价要点：\n1. 科学概念理解是否准确\n2. 科学原理应用是否正确\n3. 实验设计是否合理\n4. 数据分析是否准确\n5. 结论是否符合科学逻辑",
+      "format_requirements": "### 科学评价\n**概念理解**：[评分] - [评语]\n**原理应用**：[评分] - [评语]\n**实验分析**：[评分] - [评语]\n**逻辑推理**：[评分] - [评语]\n\n**科学亮点**：\n- [优秀表现]\n\n**改进方向**：\n- [具体建议]",
+      "quality_requirements": "理科批改要求：\n1. 严格遵循科学原理\n2. 注重实验思维培养\n3. 鼓励科学探索精神\n4. 纠正科学误解\n5. 培养科学表达能力",
+      "parameters": {
+        "subject": {
+          "type": "string",
+          "enum": ["physics", "chemistry", "biology"],
+          "description": "具体科目"
+        },
+        "experiment_included": {
+          "type": "boolean",
+          "default": false,
+          "description": "是否包含实验内容"
+        }
+      }
+    }
+  },
+  
+  "grading_configs": {
+    "strict_mode": {
+      "name": "严格模式",
+      "description": "采用最严格的评分标准",
+      "settings": {
+        "partial_credit_threshold": 0.8,
+        "penalty_for_errors": 0.2,
+        "require_all_steps": true,
+        "allow_alternative_methods": false
+      }
+    },
+    
+    "standard_mode": {
+      "name": "标准模式", 
+      "description": "平衡严格性和鼓励性的标准评分",
+      "settings": {
+        "partial_credit_threshold": 0.6,
+        "penalty_for_errors": 0.1,
+        "require_all_steps": false,
+        "allow_alternative_methods": true
+      }
+    },
+    
+    "encouraging_mode": {
+      "name": "鼓励模式",
+      "description": "更注重鼓励学生，适当宽松的评分",
+      "settings": {
+        "partial_credit_threshold": 0.4,
+        "penalty_for_errors": 0.05,
+        "require_all_steps": false,
+        "allow_alternative_methods": true,
+        "bonus_for_creativity": 0.1
+      }
+    }
+  },
+  
+  "difficulty_levels": {
+    "easy": {
+      "name": "简单",
+      "description": "基础题目，注重基本概念掌握",
+      "adjustments": {
+        "partial_credit_multiplier": 1.2,
+        "error_tolerance": 0.9,
+        "explanation_requirement": "basic"
+      }
+    },
+    
+    "medium": {
+      "name": "中等",
+      "description": "标准难度，平衡基础和应用",
+      "adjustments": {
+        "partial_credit_multiplier": 1.0,
+        "error_tolerance": 0.7,
+        "explanation_requirement": "standard"
+      }
+    },
+    
+    "hard": {
+      "name": "困难",
+      "description": "高难度题目，要求深入理解",
+      "adjustments": {
+        "partial_credit_multiplier": 0.8,
+        "error_tolerance": 0.5,
+        "explanation_requirement": "detailed"
+      }
+    },
+    
+    "advanced": {
+      "name": "高级",
+      "description": "竞赛水平，要求创新思维",
+      "adjustments": {
+        "partial_credit_multiplier": 0.6,
+        "error_tolerance": 0.3,
+        "explanation_requirement": "comprehensive",
+        "creativity_weight": 0.2
+      }
+    }
+  },
+  
+  "subject_specific_configs": {
+    "mathematics": {
+      "required_elements": ["calculation_steps", "formula_usage", "final_answer"],
+      "common_errors": ["calculation_error", "conceptual_error", "format_error"],
+      "grading_weights": {
+        "method": 0.4,
+        "calculation": 0.3,
+        "answer": 0.3
+      }
+    },
+    
+    "chinese": {
+      "required_elements": ["content", "structure", "language", "creativity"],
+      "common_errors": ["grammar_error", "logic_error", "off_topic"],
+      "grading_weights": {
+        "content": 0.4,
+        "language": 0.3,
+        "structure": 0.2,
+        "creativity": 0.1
+      }
+    },
+    
+    "english": {
+      "required_elements": ["grammar", "vocabulary", "content", "organization"],
+      "common_errors": ["grammar_error", "spelling_error", "word_choice"],
+      "grading_weights": {
+        "content": 0.3,
+        "language": 0.4,
+        "organization": 0.2,
+        "mechanics": 0.1
+      }
+    },
+    
+    "physics": {
+      "required_elements": ["concept_understanding", "formula_application", "calculation", "units"],
+      "common_errors": ["unit_error", "formula_misuse", "conceptual_error"],
+      "grading_weights": {
+        "understanding": 0.3,
+        "application": 0.4,
+        "calculation": 0.2,
+        "presentation": 0.1
+      }
+    },
+    
+    "chemistry": {
+      "required_elements": ["chemical_equations", "calculations", "nomenclature", "concepts"],
+      "common_errors": ["equation_balance", "stoichiometry_error", "naming_error"],
+      "grading_weights": {
+        "concepts": 0.3,
+        "equations": 0.3,
+        "calculations": 0.3,
+        "nomenclature": 0.1
+      }
+    }
+  },
+  
+  "rubric_templates": {
+    "four_point_scale": {
+      "name": "4分制评分标准",
+      "levels": {
+        "4": {
+          "name": "优秀",
+          "description": "完全掌握，表现卓越",
+          "percentage_range": [90, 100]
+        },
+        "3": {
+          "name": "良好", 
+          "description": "基本掌握，表现良好",
+          "percentage_range": [75, 89]
+        },
+        "2": {
+          "name": "一般",
+          "description": "部分掌握，需要改进",
+          "percentage_range": [60, 74]
+        },
+        "1": {
+          "name": "不及格",
+          "description": "掌握不足，需要重新学习",
+          "percentage_range": [0, 59]
+        }
+      }
+    },
+    
+    "percentage_scale": {
+      "name": "百分制评分标准",
+      "levels": {
+        "A": {
+          "name": "优秀",
+          "description": "90-100分，表现卓越",
+          "percentage_range": [90, 100]
+        },
+        "B": {
+          "name": "良好",
+          "description": "80-89分，表现良好", 
+          "percentage_range": [80, 89]
+        },
+        "C": {
+          "name": "中等",
+          "description": "70-79分，达到要求",
+          "percentage_range": [70, 79]
+        },
+        "D": {
+          "name": "及格",
+          "description": "60-69分，基本达标",
+          "percentage_range": [60, 69]
+        },
+        "F": {
+          "name": "不及格",
+          "description": "0-59分，未达标准",
+          "percentage_range": [0, 59]
+        }
+      }
+    }
+  },
+  
+  "feedback_templates": {
+    "positive_reinforcement": [
+      "你的解题思路很清晰！",
+      "计算过程非常准确！",
+      "表达非常流畅自然！", 
+      "展现了很好的创造性思维！",
+      "对概念的理解很到位！",
+      "你的努力很明显！"
+    ],
+    
+    "constructive_criticism": [
+      "这里的计算需要再仔细检查一下",
+      "可以尝试用另一种方法来解决这个问题",
+      "注意检查单位的使用",
+      "这个概念还需要进一步理解",
+      "表达可以更加清晰一些",
+      "格式需要按照要求调整"
+    ],
+    
+    "improvement_suggestions": [
+      "建议多练习类似的题目",
+      "可以尝试画图辅助理解",
+      "注意审题的细节",
+      "加强基础概念的学习",
+      "多读一些相关的参考资料",
+      "可以请教老师或同学"
+    ]
+  }
+}
