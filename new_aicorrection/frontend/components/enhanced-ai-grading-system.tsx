@@ -17,6 +17,7 @@ import {
 
 import CoordinateGradingView from './coordinate-grading-view';
 import CroppedRegionGradingView from './cropped-region-grading-view';
+import { apiClient, API_ENDPOINTS } from '../lib/api';
 
 interface EnhancedGradingResult {
   submission_id: string;
@@ -143,7 +144,8 @@ export default function EnhancedAIGradingSystem({
       apiFormData.append('image_file', uploadedFile);
 
       // Call enhanced grading API
-      const response = await fetch('/api/v1/enhanced-grading/upload-and-grade', {
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${API_BASE_URL}/api/v1/enhanced-grading/upload-and-grade`, {
         method: 'POST',
         body: apiFormData,
         headers: {
@@ -182,7 +184,8 @@ export default function EnhancedAIGradingSystem({
     
     try {
       // Re-grade with new display mode
-      const response = await fetch('/api/v1/enhanced-grading/grade-visual', {
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${API_BASE_URL}/api/v1/enhanced-grading/grade-visual`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
