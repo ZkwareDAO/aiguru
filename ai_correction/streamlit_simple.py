@@ -36,34 +36,21 @@ except ImportError as e:
     API_AVAILABLE = False
     st.warning(f"⚠️ AI批改引擎未就绪：{str(e)}")
 
-# 导入LangGraph集成 - 优化版本
+# 导入LangGraph集成 - 简化版本（不包含OCR）
 try:
     from functions.langgraph_integration_optimized import (
-        get_optimized_langgraph_integration,
-        intelligent_correction_with_files_langgraph_optimized
+        get_simplified_langgraph_integration,
+        intelligent_correction_with_files_langgraph_simplified
     )
     from functions.langgraph_integration import (
         show_langgraph_progress,
         show_langgraph_results
     )
     LANGGRAPH_AVAILABLE = True
-    OPTIMIZED_LANGGRAPH_AVAILABLE = True
-    st.success("✅ 优化 LangGraph AI批改系统已就绪")
-except ImportError:
-    try:
-        from functions.langgraph_integration import (
-            intelligent_correction_with_files_langgraph,
-            get_langgraph_integration,
-            show_langgraph_progress,
-            show_langgraph_results
-        )
-        LANGGRAPH_AVAILABLE = True
-        OPTIMIZED_LANGGRAPH_AVAILABLE = False
-        st.success("✅ LangGraph AI批改系统已就绪")
-    except ImportError as e:
-        LANGGRAPH_AVAILABLE = False
-        OPTIMIZED_LANGGRAPH_AVAILABLE = False
-        st.warning(f"⚠️ LangGraph系统未就绪：{str(e)}")
+    st.success("✅ LangGraph AI批改系统已就绪（简化版，不包含OCR）")
+except ImportError as e:
+    LANGGRAPH_AVAILABLE = False
+    st.warning(f"⚠️ LangGraph系统未就绪：{str(e)}")
 
 # 导入进度相关模块
 try:
@@ -742,20 +729,13 @@ def show_grading():
 
         # 如果LangGraph可用，添加LangGraph选项
         if LANGGRAPH_AVAILABLE:
-            if OPTIMIZED_LANGGRAPH_AVAILABLE:
-                mode_options.extend([
-                    ("⚡ LangGraph快速批改", "langgraph_fast"),
-                    ("🧠 LangGraph智能批改", "langgraph_balanced"),
-                    ("🔬 LangGraph详细分析", "langgraph_detailed")
-                ])
-            else:
-                mode_options.append(("🧠 LangGraph智能批改", "langgraph"))
+            mode_options.append(("🧠 LangGraph智能批改", "langgraph"))
 
         mode = st.selectbox(
             "批改模式",
             mode_options,
             format_func=lambda x: x[0],
-            help="⚡快速: 2-3倍速度提升，基础分析\n🧠智能: 平衡速度和质量\n🔬详细: 完整分析，包含坐标标注和知识点挖掘"
+            help="🧠 LangGraph: 基于LangGraph的智能批改系统（不包含OCR）"
         )[1]
     
     # 批改按钮
@@ -769,100 +749,37 @@ def show_grading():
                     saved_marking_files = save_files(marking_files or [], st.session_state.username) if marking_files else []
                     
                     # 根据模式选择批改方法
-                    if mode.startswith("langgraph") and LANGGRAPH_AVAILABLE:
-                        # 确定优化级别
-                        if mode == "langgraph_fast":
-                            optimization_level = "fast"
-                            mode_name = "⚡ LangGraph快速批改"
-                        elif mode == "langgraph_detailed":
-                            optimization_level = "detailed"
-                            mode_name = "🔬 LangGraph详细分析"
-                        elif mode == "langgraph_balanced":
-                            optimization_level = "balanced"
-                            mode_name = "🧠 LangGraph智能批改"
-                        else:  # 传统 langgraph 模式
-                            optimization_level = "balanced"
-                            mode_name = "🧠 LangGraph智能批改"
-
-                        st.info(f"{mode_name}系统启动中...")
-
-                        # 显示优化信息
-                        if OPTIMIZED_LANGGRAPH_AVAILABLE and mode.startswith("langgraph_"):
-                            optimization_info = {
-                                "fast": "🚀 2-3倍速度提升，基础分析，适合快速批改",
-                                "balanced": "⚖️ 平衡速度和质量，推荐使用",
-                                "detailed": "🔍 完整分析，包含坐标标注和知识点挖掘"
-                            }
-                            st.info(f"优化模式: {optimization_info[optimization_level]}")
+                    if mode == "langgraph" and LANGGRAPH_AVAILABLE:
+                        st.info("🧠 LangGraph智能批改系统启动中...")
 
                         # 创建进度显示容器
                         progress_container = st.empty()
                         start_time = time.time()
 
                         try:
-                            if OPTIMIZED_LANGGRAPH_AVAILABLE and mode.startswith("langgraph_"):
-                                # 使用优化版本
-                                result = intelligent_correction_with_files_langgraph_optimized(
-                                    question_files=saved_question_files,
-                                    answer_files=saved_answer_files,
-                                    marking_scheme_files=saved_marking_files,
-                                    strictness_level=strictness,
-                                    language=language,
-                                    mode="auto",
-                                    optimization_level=optimization_level
-                                )
+                            # 使用简化的LangGraph版本
+                            result = intelligent_correction_with_files_langgraph_simplified(
+                                question_files=saved_question_files,
+                                answer_files=saved_answer_files,
+                                marking_scheme_files=saved_marking_files,
+                                strictness_level=strictness,
+                                language=language,
+                                mode="auto"
+                            )
 
-                                # 显示性能统计
-                                processing_time = time.time() - start_time
-                                integration = get_optimized_langgraph_integration()
-                                stats = integration.get_performance_stats()
+                            # 显示性能统计
+                            processing_time = time.time() - start_time
+                            integration = get_simplified_langgraph_integration()
+                            stats = integration.get_performance_stats()
 
-                                st.success(f"✅ 批改完成！耗时: {processing_time:.2f}秒")
+                            st.success(f"✅ 批改完成！耗时: {processing_time:.2f}秒")
 
-                                # 显示性能信息
-                                if optimization_level == "fast":
-                                    st.info(f"🚀 快速模式节省了约 {max(0, 100-processing_time*20):.0f}% 的时间")
-
-                                # 保存结果（模拟LangGraph结果格式）
-                                st.session_state.langgraph_result = {
-                                    'success': True,
-                                    'optimization_level': optimization_level,
-                                    'processing_time': processing_time,
-                                    'performance_stats': stats
-                                }
-
-                            else:
-                                # 使用传统LangGraph版本
-                                integration = get_langgraph_integration()
-                                import asyncio
-
-                                async def run_langgraph_correction():
-                                    return await integration.intelligent_correction_with_langgraph(
-                                        question_files=saved_question_files,
-                                        answer_files=saved_answer_files,
-                                        marking_scheme_files=saved_marking_files,
-                                        strictness_level=strictness,
-                                        language=language,
-                                        mode="auto",
-                                        user_id=st.session_state.username
-                                    )
-
-                                # 运行异步函数
-                                loop = asyncio.new_event_loop()
-                                asyncio.set_event_loop(loop)
-
-                                try:
-                                    langgraph_result = loop.run_until_complete(run_langgraph_correction())
-
-                                    # 转换为文本格式
-                                    if langgraph_result.get('success', False):
-                                        result = langgraph_result.get('feedback', '')
-                                        st.session_state.langgraph_result = langgraph_result
-                                    else:
-                                        result = f"LangGraph批改失败: {langgraph_result.get('error', '未知错误')}"
-
-                                finally:
-                                    loop.close()
+                            # 保存结果
+                            st.session_state.langgraph_result = {
+                                'success': True,
+                                'processing_time': processing_time,
+                                'performance_stats': stats
+                            }
 
                         except Exception as e:
                             result = f"LangGraph批改失败: {str(e)}"
