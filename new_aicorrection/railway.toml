@@ -5,6 +5,7 @@ builder = "nixpacks"
 healthcheckPath = "/health"
 healthcheckTimeout = 300
 restartPolicyType = "on_failure"
+<<<<<<< HEAD
 restartPolicyMaxRetries = 10
 
 # 后端服务配置
@@ -32,3 +33,6 @@ builder = "nixpacks"
 [services.variables]
 NODE_ENV = "production"
 PORT = "$PORT"
+=======
+restartPolicyMaxRetries = 10
+>>>>>>> b42dfdc87b0c14ed38790b4ae0a68ff39e132e3d

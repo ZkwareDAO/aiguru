@@ -33,7 +33,11 @@ class Settings(BaseSettings):
     # Security settings
     SECRET_KEY: str = Field(..., min_length=32, description="Application secret key")
     ALLOWED_HOSTS: List[str] = ["*"]
+<<<<<<< HEAD
     CORS_ORIGINS: List[str] = ["*"]
+=======
+    CORS_ORIGINS: str = "*"
+>>>>>>> b42dfdc87b0c14ed38790b4ae0a68ff39e132e3d
     
     # Database settings
     DATABASE_URL: Optional[str] = None
@@ -52,6 +56,7 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: Optional[str] = None
     AI_GRADING_API_URL: Optional[str] = None
     AI_GRADING_API_KEY: Optional[str] = None
+<<<<<<< HEAD
 
     # OpenRouter settings (for cost optimization)
     OPENROUTER_API_KEY: Optional[str] = None
@@ -67,6 +72,8 @@ class Settings(BaseSettings):
     # LLM settings
     LLM_TEMPERATURE: float = 0.3
     LLM_MAX_TOKENS: int = 2000
+=======
+>>>>>>> b42dfdc87b0c14ed38790b4ae0a68ff39e132e3d
     
     # File storage settings
     AWS_ACCESS_KEY_ID: Optional[str] = None
@@ -80,6 +87,7 @@ class Settings(BaseSettings):
     SMTP_USERNAME: Optional[str] = None
     SMTP_PASSWORD: Optional[str] = None
     SMTP_USE_TLS: bool = True
+<<<<<<< HEAD
     
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod
@@ -90,6 +98,29 @@ class Settings(BaseSettings):
         elif isinstance(v, (list, str)):
             return v
         raise ValueError(v)
+=======
+
+    # Firebase settings (legacy)
+    FIREBASE_PROJECT_ID: Optional[str] = None
+    FIREBASE_CLIENT_EMAIL: Optional[str] = None
+    FIREBASE_PRIVATE_KEY: Optional[str] = None
+    
+    # Supabase settings
+    SUPABASE_URL: Optional[str] = None
+    SUPABASE_ANON_KEY: Optional[str] = None
+    SUPABASE_SERVICE_ROLE_KEY: Optional[str] = None
+    SUPABASE_JWT_SECRET: Optional[str] = None
+    
+    @field_validator("CORS_ORIGINS", mode="before")
+    @classmethod
+    def assemble_cors_origins(cls, v: Any) -> str:
+        """Parse CORS origins from string or list."""
+        if isinstance(v, str):
+            return v
+        elif isinstance(v, list):
+            return ",".join(v)
+        return "*"
+>>>>>>> b42dfdc87b0c14ed38790b4ae0a68ff39e132e3d
     
     @field_validator("ALLOWED_HOSTS", mode="before")
     @classmethod
@@ -134,8 +165,12 @@ class Settings(BaseSettings):
 @lru_cache()
 def get_settings() -> Settings:
     """Get cached application settings."""
+<<<<<<< HEAD
     return Settings()
 
 
 # Global settings instance
 settings = get_settings()
+=======
+    return Settings()
+>>>>>>> b42dfdc87b0c14ed38790b4ae0a68ff39e132e3d

@@ -39,7 +39,27 @@ class User(Base):
         nullable=False,
         index=True
     )
+<<<<<<< HEAD
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+=======
+    password_hash: Mapped[Optional[str]] = mapped_column(String(255))
+
+    # Firebase Auth integration (legacy)
+    firebase_uid: Mapped[Optional[str]] = mapped_column(
+        String(128),
+        unique=True,
+        nullable=True,
+        index=True
+    )
+    
+    # Supabase Auth integration
+    supabase_id: Mapped[Optional[str]] = mapped_column(
+        String(128),
+        unique=True,
+        nullable=True,
+        index=True
+    )
+>>>>>>> b42dfdc87b0c14ed38790b4ae0a68ff39e132e3d
     
     # Profile fields
     name: Mapped[str] = mapped_column(String(100), nullable=False)

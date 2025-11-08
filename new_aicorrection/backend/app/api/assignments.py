@@ -1229,6 +1229,10 @@ async def get_class_assignment_report(
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> b42dfdc87b0c14ed38790b4ae0a68ff39e132e3d
 # System administration endpoints
 
 @router.get("/system/summary", response_model=dict)

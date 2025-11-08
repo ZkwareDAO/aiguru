@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # AI教育平台 3.0 🎓✨
 
 [![Version](https://img.shields.io/badge/版本-3.0.0-blue.svg)](https://github.com/your-org/aiguru)
@@ -29,6 +30,18 @@
 - [实施总结](IMPLEMENTATION_SUMMARY.md) - 完整的实施报告
 - [设计文档](docs/README.md) - 10篇详细设计文档
 - [实施进度](docs/PHASE1_PROGRESS.md) - 当前进度70%
+=======
+# AI教育平台 2.0 🎓✨
+
+[![Version](https://img.shields.io/badge/版本-2.0.0-blue.svg)](https://github.com/your-org/aiguru)
+[![Status](https://img.shields.io/badge/状态-稳定版-green.svg)](https://railway.app)
+[![AI Model](https://img.shields.io/badge/AI-Gemini%202.5%20Flash%20Lite-orange.svg)](https://openrouter.ai)
+[![Platform](https://img.shields.io/badge/部署-Railway-purple.svg)](https://railway.app)
+
+> 🚀 **革命性AI教育平台** - 支持坐标标注和局部图双模式可视化的智能批改系统
+
+基于OpenRouter Gemini 2.5 Flash Lite的下一代AI教育平台，为教师、学生和家长提供前所未有的智能批改体验。
+>>>>>>> b42dfdc87b0c14ed38790b4ae0a68ff39e132e3d
 
 ---
 

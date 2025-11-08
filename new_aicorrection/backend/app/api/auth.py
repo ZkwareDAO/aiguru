@@ -10,6 +10,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.auth import auth_manager, TokenData
 from app.core.database import get_db
 from app.core.dependencies import get_current_user, get_current_user_token
+<<<<<<< HEAD
+=======
+from app.core.firebase_auth import firebase_auth_manager, FirebaseUser
+from app.core.supabase_auth import supabase_auth_manager
+>>>>>>> b42dfdc87b0c14ed38790b4ae0a68ff39e132e3d
 from app.models.user import User
 from app.schemas.user import (
     UserLogin,
@@ -20,7 +25,15 @@ from app.schemas.user import (
     PasswordReset,
     PasswordResetConfirm,
     UserResponse,
+<<<<<<< HEAD
     EmailVerification
+=======
+    EmailVerification,
+    FirebaseAuthRequest,
+    FirebaseAuthResponse,
+    SupabaseAuthRequest,
+    SupabaseAuthResponse
+>>>>>>> b42dfdc87b0c14ed38790b4ae0a68ff39e132e3d
 )
 from app.services.user_service import UserService
 from app.services.password_service import PasswordService
@@ -379,5 +392,145 @@ async def send_verification_email(
     
     # In a real implementation, you would send an email with the verification_token here
     # For now, we'll just return a success message
+<<<<<<< HEAD
     
     return {"message": "验证邮件已发送，请检查您的邮箱"}
+=======
+
+    return {"message": "验证邮件已发送，请检查您的邮箱"}
+
+
+@router.post("/firebase", response_model=FirebaseAuthResponse)
+async def firebase_auth(
+    auth_request: FirebaseAuthRequest,
+    db: AsyncSession = Depends(get_db)
+) -> FirebaseAuthResponse:
+    """Firebase认证登录/注册."""
+    # Check if Firebase is available
+    if firebase_auth_manager is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Firebase认证服务暂时不可用"
+        )
+
+    try:
+        # 验证Firebase token
+        firebase_user = await firebase_auth_manager.verify_token(auth_request.firebase_token)
+
+        if not firebase_user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="无效的Firebase令牌",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        user_service = UserService(db)
+
+        # 检查用户是否已存在
+        user = await user_service.get_user_by_firebase_uid(firebase_user.uid)
+        is_new_user = False
+
+        if not user:
+            # 创建新用户
+            user = await user_service.create_firebase_user(firebase_user)
+            is_new_user = True
+        else:
+            # 更新用户信息（如果需要）
+            if user.email != firebase_user.email or user.name != firebase_user.name:
+                user = await user_service.update_firebase_user(user, firebase_user)
+
+        # 生成JWT令牌
+        token_response = auth_manager.create_token_pair(
+            user_id=user.id,
+            email=user.email,
+            role=user.role.value
+        )
+
+        return FirebaseAuthResponse(
+            access_token=token_response.access_token,
+            refresh_token=token_response.refresh_token,
+            token_type=token_response.token_type,
+            expires_in=token_response.expires_in,
+            user=UserResponse.model_validate(user),
+            is_new_user=is_new_user
+        )
+
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Firebase认证失败，请稍后重试"
+        )
+
+
+@router.post("/supabase", response_model=SupabaseAuthResponse)
+async def supabase_auth(
+    auth_request: SupabaseAuthRequest,
+    db: AsyncSession = Depends(get_db)
+) -> SupabaseAuthResponse:
+    """Supabase认证登录/注册."""
+    # Check if Supabase is available
+    if not supabase_auth_manager._initialized:
+        if not supabase_auth_manager.initialize():
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Supabase认证服务暂时不可用"
+            )
+
+    try:
+        # 验证Supabase token
+        supabase_user = await supabase_auth_manager.verify_token(auth_request.access_token)
+
+        if not supabase_user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="无效的Supabase令牌",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        user_service = UserService(db)
+
+        # 检查用户是否已存在（通过Supabase ID）
+        user = await user_service.get_user_by_supabase_id(supabase_user.id)
+        is_new_user = False
+
+        if not user:
+            # 创建新用户
+            user = await user_service.create_supabase_user(supabase_user)
+            is_new_user = True
+        else:
+            # 更新用户信息（如果需要）
+            if user.email != supabase_user.email:
+                user = await user_service.update_supabase_user(user, supabase_user)
+
+        # 生成JWT令牌
+        token_response = auth_manager.create_token_pair(
+            user_id=user.id,
+            email=user.email,
+            role=user.role.value
+        )
+
+        return SupabaseAuthResponse(
+            access_token=token_response.access_token,
+            refresh_token=token_response.refresh_token,
+            token_type=token_response.token_type,
+            expires_in=token_response.expires_in,
+            user=UserResponse.model_validate(user),
+            is_new_user=is_new_user
+        )
+
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Supabase认证失败，请稍后重试"
+        )
+>>>>>>> b42dfdc87b0c14ed38790b4ae0a68ff39e132e3d

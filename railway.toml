@@ -1,0 +1,34 @@
+[build]
+builder = "nixpacks"
+
+[deploy]
+healthcheckPath = "/health"
+healthcheckTimeout = 300
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 10
+
+# 后端服务配置
+[[services]]
+name = "backend"
+source = "backend/"
+
+[services.build]
+builder = "nixpacks"
+
+[services.variables]
+PYTHONPATH = "/app"
+UVICORN_HOST = "0.0.0.0"
+PORT = "$PORT"
+ENVIRONMENT = "production"
+
+# 前端服务配置
+[[services]]
+name = "frontend"
+source = "frontend/"
+
+[services.build]
+builder = "nixpacks"
+
+[services.variables]
+NODE_ENV = "production"
+PORT = "$PORT"

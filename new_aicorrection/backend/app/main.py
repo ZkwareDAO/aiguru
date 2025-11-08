@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 """FastAPI application main module."""
+=======
+"""FastAPI application main module - simplified nixpacks config."""
+>>>>>>> b42dfdc87b0c14ed38790b4ae0a68ff39e132e3d
 
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator

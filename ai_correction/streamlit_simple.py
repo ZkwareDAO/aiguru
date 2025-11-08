@@ -89,8 +89,6 @@ st.set_page_config(
 try:
     from functions.api_correcting import (
         correction_single_group,
-        efficient_correction_single,
-        batch_efficient_correction,
         generate_marking_scheme,
         correction_with_marking_scheme,
         correction_without_marking_scheme
@@ -106,6 +104,31 @@ try:
 except ImportError as e:
     API_AVAILABLE = False
     st.warning(f"⚠️ AI批改引擎未就绪：{str(e)}")
+
+# 导入LangGraph集成 - 简化版本（不包含OCR）
+try:
+    from functions.langgraph_integration_optimized import (
+        get_simplified_langgraph_integration,
+        intelligent_correction_with_files_langgraph_simplified
+    )
+    from functions.langgraph_integration import (
+        show_langgraph_progress,
+        show_langgraph_results
+    )
+    LANGGRAPH_AVAILABLE = True
+    st.success("✅ LangGraph AI批改系统已就绪（简化版，不包含OCR）")
+except ImportError as e:
+    LANGGRAPH_AVAILABLE = False
+    st.warning(f"⚠️ LangGraph系统未就绪：{str(e)}")
+
+# 导入进度相关模块
+try:
+    from functions.progress_ui import show_progress_page, show_progress_modal
+    from functions.correction_service import get_correction_service
+    PROGRESS_AVAILABLE = True
+except ImportError as e:
+    PROGRESS_AVAILABLE = False
+    st.warning(f"⚠️ 进度模块未就绪：{str(e)}")
     
     # 演示函数
     def correction_single_group(*files, **kwargs):
@@ -132,43 +155,7 @@ except ImportError as e:
 3. 可尝试多种解题方法
 
 **注意：当前为演示模式，请配置API获得真实结果。**"""
-    
-    def efficient_correction_single(*files, **kwargs):
-        return """📋 **高效批改结果** (演示模式)
 
-**得分：8/10** | **等级：B+**
-
-🔍 **主要问题**
-• 计算步骤有错误
-• 答案格式不规范
-
-✅ **亮点**
-• 思路清晰
-• 基础扎实
-
-💡 **建议**
-• 检查计算
-• 规范格式
-
-*演示模式，请配置API*"""
-    
-    def batch_efficient_correction(*files, **kwargs):
-        return f"""📊 **批量批改完成** (演示模式)
-
-处理文件：{len(files)}个
-平均得分：7.5/10
-批改时间：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-
-## 批改概览
-- 文件1：8/10 (B+)
-- 文件2：7/10 (B)
-- 文件3：8/10 (B+)
-
-## 总体建议
-注意计算精度，规范答题格式。
-
-*演示模式，请配置API获得真实结果*"""
-    
     def generate_marking_scheme(*files, **kwargs):
         return """📋 **自动生成评分标准** (演示模式)
 
@@ -202,10 +189,10 @@ except ImportError as e:
    - 格式不规范：0分
 
 *演示标准，请配置API*"""
-    
+
     def correction_with_marking_scheme(scheme, *files, **kwargs):
         return correction_single_group(*files, **kwargs)
-    
+
     def correction_without_marking_scheme(*files, **kwargs):
         return correction_single_group(*files, **kwargs)
 
@@ -227,27 +214,41 @@ ALLOWED_EXTENSIONS = ['txt', 'md', 'pdf', 'docx', 'jpg', 'jpeg', 'png', 'gif', '
 # 确保目录存在
 UPLOAD_DIR.mkdir(exist_ok=True)
 
+<<<<<<< HEAD
 # 导入CSS样式 - 优化视觉体验版
 st.markdown("""
 <style>
     .stApp {
         background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #475569 100%);
         color: #f8fafc;
+=======
+# 黑白纯色CSS样式
+st.markdown("""
+<style>
+    .stApp {
+        background-color: #ffffff;
+        color: #000000;
+>>>>>>> b42dfdc87b0c14ed38790b4ae0a68ff39e132e3d
         font-family: 'Inter', 'Segoe UI', sans-serif;
     }
-    
+
     #MainMenu, .stDeployButton, footer, header {visibility: hidden;}
-    
+
     .main-title {
         font-size: 2.5rem;
         font-weight: 800;
+<<<<<<< HEAD
         background: linear-gradient(135deg, #60a5fa, #c084fc);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
+=======
+        color: #000000;
+>>>>>>> b42dfdc87b0c14ed38790b4ae0a68ff39e132e3d
         text-align: center;
         margin-bottom: 1rem;
         text-shadow: 0 0 20px rgba(96, 165, 250, 0.3);
     }
+<<<<<<< HEAD
     
     /* 增强所有文字对比度 - 改为白色 */
     .stMarkdown, .stText, .stCaption, .stWrite, p, span, div {
@@ -557,20 +558,27 @@ st.markdown("""
     }
     
     /* 按钮样式优化 */
+=======
+
+>>>>>>> b42dfdc87b0c14ed38790b4ae0a68ff39e132e3d
     .stButton > button {
-        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+        background-color: #000000;
         color: white !important;
-        border: none;
-        border-radius: 12px;
+        border: 2px solid #000000;
+        border-radius: 8px;
         padding: 0.75rem 1.5rem;
         font-weight: 700;
         font-size: 1rem;
         transition: all 0.3s ease;
+<<<<<<< HEAD
         box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
         text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+=======
+>>>>>>> b42dfdc87b0c14ed38790b4ae0a68ff39e132e3d
     }
-    
+
     .stButton > button:hover {
+<<<<<<< HEAD
         transform: translateY(-2px) scale(1.02);
         box-shadow: 0 8px 25px rgba(59, 130, 246, 0.6);
         background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
@@ -792,6 +800,22 @@ st.markdown("""
     }
     
     /* 分栏布局样式 - 增强版*/
+=======
+        background-color: #333333;
+        border-color: #333333;
+        transform: translateY(-2px);
+    }
+
+    .result-container {
+        background-color: #f5f5f5;
+        border: 2px solid #000000;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin: 1rem 0;
+    }
+    
+    /* 分栏布局样式 - 黑白纯色 */
+>>>>>>> b42dfdc87b0c14ed38790b4ae0a68ff39e132e3d
     .split-container {
         display: flex;
         gap: 1.5rem;
@@ -799,81 +823,120 @@ st.markdown("""
         margin-top: 1rem;
         padding: 0;
     }
-    
+
     .left-panel, .right-panel {
-        background: rgba(30, 41, 59, 0.95);
-        border: 2px solid rgba(96, 165, 250, 0.4);
-        border-radius: 20px;
+        background-color: #ffffff;
+        border: 2px solid #000000;
+        border-radius: 8px;
         padding: 0;
-        backdrop-filter: blur(20px);
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         flex: 1;
         position: relative;
         overflow: hidden;
     }
-    
+
     .panel-header {
+<<<<<<< HEAD
         background: linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(139, 92, 246, 0.3));
         border-bottom: 1px solid rgba(96, 165, 250, 0.4);
+=======
+        background-color: #f0f0f0;
+        border-bottom: 2px solid #000000;
+>>>>>>> b42dfdc87b0c14ed38790b4ae0a68ff39e132e3d
         padding: 1rem 1.5rem;
         font-weight: 700;
         font-size: 1.1rem;
+<<<<<<< HEAD
         color: #f1f5f9;
         display: flex;
         align-items: center;
         gap: 0.5rem;
         border-radius: 18px 18px 0 0;
         text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+=======
+        color: #000000;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        border-radius: 6px 6px 0 0;
+>>>>>>> b42dfdc87b0c14ed38790b4ae0a68ff39e132e3d
     }
-    
+
     .panel-content {
         height: calc(100% - 4rem);
         overflow-y: auto;
         overflow-x: hidden;
         padding: 1.5rem;
         position: relative;
+<<<<<<< HEAD
         color: #f1f5f9;
+=======
+        color: #000000;
+>>>>>>> b42dfdc87b0c14ed38790b4ae0a68ff39e132e3d
     }
     
     /* 自定义滚动条样式 */
     .panel-content::-webkit-scrollbar {
         width: 10px;
     }
-    
+
     .panel-content::-webkit-scrollbar-track {
+<<<<<<< HEAD
         background: rgba(0, 0, 0, 0.3);
         border-radius: 5px;
+=======
+        background-color: #f0f0f0;
+        border-radius: 4px;
+>>>>>>> b42dfdc87b0c14ed38790b4ae0a68ff39e132e3d
     }
-    
+
     .panel-content::-webkit-scrollbar-thumb {
+<<<<<<< HEAD
         background: linear-gradient(135deg, #3b82f6, #8b5cf6);
         border-radius: 5px;
+=======
+        background-color: #666666;
+        border-radius: 4px;
+>>>>>>> b42dfdc87b0c14ed38790b4ae0a68ff39e132e3d
         transition: all 0.3s ease;
     }
-    
+
     .panel-content::-webkit-scrollbar-thumb:hover {
-        background: linear-gradient(135deg, #2563eb, #7c3aed);
+        background-color: #333333;
     }
-    
+
     /* 文件预览容器 */
     .file-preview-inner {
+<<<<<<< HEAD
         background: rgba(0, 0, 0, 0.3);
         border: 1px solid rgba(96, 165, 250, 0.3);
         border-radius: 12px;
+=======
+        background-color: #f5f5f5;
+        border: 2px solid #cccccc;
+        border-radius: 8px;
+>>>>>>> b42dfdc87b0c14ed38790b4ae0a68ff39e132e3d
         padding: 1rem;
         min-height: 200px;
         color: #f1f5f9;
     }
-    
+
     /* 批改结果容器 */
     .correction-result-inner {
+<<<<<<< HEAD
         background: rgba(0, 0, 0, 0.3);
         border: 1px solid rgba(139, 92, 246, 0.3);
         border-radius: 12px;
+=======
+        background-color: #f5f5f5;
+        border: 2px solid #cccccc;
+        border-radius: 8px;
+>>>>>>> b42dfdc87b0c14ed38790b4ae0a68ff39e132e3d
         padding: 1.5rem;
         min-height: 200px;
         font-family: 'Consolas', 'Monaco', monospace;
         line-height: 1.6;
+<<<<<<< HEAD
         color: #f1f5f9;
         font-weight: 500;
     }
@@ -883,37 +946,83 @@ st.markdown("""
         background: rgba(0, 0, 0, 0.4);
         border: 1px solid rgba(96, 165, 250, 0.3);
         border-radius: 10px;
+=======
+        color: #000000;
+    }
+
+    /* 文件切换器增强样式 */
+    .file-selector-container {
+        background-color: #f0f0f0;
+        border: 2px solid #cccccc;
+        border-radius: 8px;
+>>>>>>> b42dfdc87b0c14ed38790b4ae0a68ff39e132e3d
         padding: 1rem;
         margin-bottom: 1rem;
     }
-    
+
     /* 鼠标悬停效果 */
     .left-panel:hover, .right-panel:hover {
+<<<<<<< HEAD
         border-color: rgba(96, 165, 250, 0.7);
         box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
         transform: translateY(-2px);
         transition: all 0.3s ease;
     }
     
+=======
+        border-color: #000000;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        transform: translateY(-2px);
+        transition: all 0.3s ease;
+    }
+
+    /* 确保容器可以正确滚动 */
+    .stSelectbox > div > div,
+    .stTextArea > div > div > textarea {
+        background-color: #ffffff !important;
+        border: 2px solid #cccccc !important;
+        color: #000000 !important;
+    }
+
+    /* 确保独立滚动 */
+    .panel-content {
+        scroll-behavior: smooth;
+    }
+
+    /* 增强焦点效果 */
+    .panel-content:focus-within {
+        outline: 2px solid #000000;
+        outline-offset: -2px;
+    }
+
+>>>>>>> b42dfdc87b0c14ed38790b4ae0a68ff39e132e3d
     /* 文件预览图片样式 */
     .file-preview-inner img {
         max-width: 100%;
         height: auto;
         border-radius: 8px;
+<<<<<<< HEAD
         border: 1px solid rgba(96, 165, 250, 0.3);
+=======
+        border: 2px solid #cccccc;
+>>>>>>> b42dfdc87b0c14ed38790b4ae0a68ff39e132e3d
         transition: transform 0.3s ease;
     }
-    
+
     .file-preview-inner img:hover {
         transform: scale(1.02);
     }
-    
+
     /* 批改结果文本样式优化 */
     .correction-result-inner pre {
         font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
         font-size: 0.95rem;
         line-height: 1.6;
+<<<<<<< HEAD
         color: #f1f5f9;
+=======
+        color: #000000;
+>>>>>>> b42dfdc87b0c14ed38790b4ae0a68ff39e132e3d
         background: transparent;
         border: none;
         padding: 0;
@@ -922,17 +1031,23 @@ st.markdown("""
         word-wrap: break-word;
         font-weight: 500;
     }
+<<<<<<< HEAD
     
     /* 响应式设计*/
+=======
+
+    /* 响应式设计 */
+>>>>>>> b42dfdc87b0c14ed38790b4ae0a68ff39e132e3d
     @media (max-width: 768px) {
         .split-container {
             flex-direction: column;
             height: auto;
         }
-        
+
         .left-panel, .right-panel {
             min-height: 400px;
         }
+<<<<<<< HEAD
         
         .main-title {
             font-size: 2rem;
@@ -1085,6 +1200,48 @@ st.markdown("""
     /* 但是保持批改结果页面的特殊样式不变 */
     .correction-result-inner * {
         color: inherit !important;
+=======
+
+        .panel-content {
+            height: 400px;
+        }
+    }
+
+    .file-switcher {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .file-switcher button {
+        background-color: #e8e8e8 !important;
+        color: #000000 !important;
+        border: 2px solid #cccccc !important;
+        border-radius: 6px !important;
+        padding: 0.5rem 1rem !important;
+        font-size: 0.9rem !important;
+        transition: all 0.3s ease !important;
+    }
+
+    .file-switcher button:hover,
+    .file-switcher button.active {
+        background-color: #cccccc !important;
+        color: #000000 !important;
+        border-color: #000000 !important;
+    }
+
+    .stTextInput > div > div > input,
+    .stSelectbox > div > div {
+        background-color: #ffffff !important;
+        border: 2px solid #cccccc !important;
+        border-radius: 8px !important;
+        color: #000000 !important;
+    }
+
+    .css-1d391kg {
+        background-color: #ffffff !important;
+>>>>>>> b42dfdc87b0c14ed38790b4ae0a68ff39e132e3d
     }
 </style>
 """, unsafe_allow_html=True)
@@ -1262,6 +1419,7 @@ def init_session():
         st.session_state.current_file_index = 0
     if 'correction_settings' not in st.session_state:
         st.session_state.correction_settings = {}
+<<<<<<< HEAD
     
     # 班级系统状态
     if 'show_class_system' not in st.session_state:
@@ -1307,6 +1465,10 @@ def init_session():
             st.session_state.class_creation_mode = True
         elif st.session_state.user_role == 'student':
             st.session_state.class_join_mode = True
+=======
+    if 'current_task_id' not in st.session_state:
+        st.session_state.current_task_id = None
+>>>>>>> b42dfdc87b0c14ed38790b4ae0a68ff39e132e3d
 
 # 数据管理
 def read_users():
@@ -1766,6 +1928,7 @@ def show_grading():
     if marking_files:
         all_uploaded_files.extend(marking_files)
     
+<<<<<<< HEAD
     # 修改批改按钮处理逻辑
     if st.button("🚀 开始AI批改", type="primary", use_container_width=True):
         if not all_uploaded_files:
@@ -1934,6 +2097,138 @@ def show_grading():
         finally:
             progress_bar.empty()
             status_text.empty()
+=======
+    # 批改设置
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        strictness = st.selectbox("严格程度", ["宽松", "中等", "严格"], index=1)
+    
+    with col2:
+        language = st.selectbox("语言", [("中文", "zh"), ("English", "en")], format_func=lambda x: x[0])[1]
+    
+    with col3:
+        mode_options = [
+            ("🎯 高效模式", "efficient"),
+            ("📝 详细模式", "detailed"),
+            ("🚀 批量模式", "batch"),
+            ("📋 生成标准", "generate_scheme"),
+            ("🤖 自动批改", "auto")
+        ]
+
+        # 如果LangGraph可用，添加LangGraph选项
+        if LANGGRAPH_AVAILABLE:
+            mode_options.append(("🧠 LangGraph智能批改", "langgraph"))
+
+        mode = st.selectbox(
+            "批改模式",
+            mode_options,
+            format_func=lambda x: x[0],
+            help="🧠 LangGraph: 基于LangGraph的智能批改系统（不包含OCR）"
+        )[1]
+    
+    # 批改按钮
+    if answer_files:  # 至少需要有学生答案文件
+        if st.button("🚀 开始AI批改", use_container_width=True, type="primary"):
+            with st.spinner("🤖 AI批改中..."):
+                try:
+                    # 分别保存不同类型的文件
+                    saved_question_files = save_files(question_files or [], st.session_state.username) if question_files else []
+                    saved_answer_files = save_files(answer_files, st.session_state.username)
+                    saved_marking_files = save_files(marking_files or [], st.session_state.username) if marking_files else []
+                    
+                    # 根据模式选择批改方法
+                    if mode == "langgraph" and LANGGRAPH_AVAILABLE:
+                        st.info("🧠 LangGraph智能批改系统启动中...")
+
+                        # 创建进度显示容器
+                        progress_container = st.empty()
+                        start_time = time.time()
+
+                        try:
+                            # 使用简化的LangGraph版本
+                            result = intelligent_correction_with_files_langgraph_simplified(
+                                question_files=saved_question_files,
+                                answer_files=saved_answer_files,
+                                marking_scheme_files=saved_marking_files,
+                                strictness_level=strictness,
+                                language=language,
+                                mode="auto"
+                            )
+
+                            # 显示性能统计
+                            processing_time = time.time() - start_time
+                            integration = get_simplified_langgraph_integration()
+                            stats = integration.get_performance_stats()
+
+                            st.success(f"✅ 批改完成！耗时: {processing_time:.2f}秒")
+
+                            # 保存结果
+                            st.session_state.langgraph_result = {
+                                'success': True,
+                                'processing_time': processing_time,
+                                'performance_stats': stats
+                            }
+
+                        except Exception as e:
+                            result = f"LangGraph批改失败: {str(e)}"
+                            st.error(f"❌ 批改失败: {str(e)}")
+                    else:
+                        # 使用传统批改方法
+                        from functions.api_correcting.calling_api import intelligent_correction_with_files
+                        result = intelligent_correction_with_files(
+                            question_files=saved_question_files,
+                            answer_files=saved_answer_files,
+                            marking_scheme_files=saved_marking_files,
+                            strictness_level=strictness,
+                            language=language,
+                            mode=mode
+                        )
+                    
+                    # 保存记录
+                    users = read_users()
+                    if st.session_state.username in users:
+                        all_file_names = []
+                        if question_files:
+                            all_file_names.extend([f"[题目]{f.name}" for f in question_files])
+                        if answer_files:
+                            all_file_names.extend([f"[答案]{f.name}" for f in answer_files])
+                        if marking_files:
+                            all_file_names.extend([f"[标准]{f.name}" for f in marking_files])
+                        
+                        record = {
+                            'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                            'files': all_file_names,
+                            'settings': {'strictness': strictness, 'language': language, 'mode': mode},
+                            'result': result,
+                            'files_count': len(all_uploaded_files)
+                        }
+                        users[st.session_state.username]['records'].append(record)
+                        save_users(users)
+                    
+                    # 保存批改结果和文件数据，跳转到结果页面
+                    st.session_state.correction_result = result
+                    st.session_state.uploaded_files_data = [
+                        {'name': f.name, 'path': path, 'type': get_file_type(f.name)} 
+                        for f, path in zip(all_uploaded_files, saved_question_files + saved_answer_files + saved_marking_files)
+                    ]
+                    st.session_state.correction_settings = {
+                        'strictness': strictness, 
+                        'language': language, 
+                        'mode': mode
+                    }
+                    # 重置文件索引到第一个文件
+                    st.session_state.current_file_index = 0
+                    st.session_state.page = "result"
+                    st.success("🎉 批改完成！正在跳转...")
+                    time.sleep(1)
+                    st.rerun()
+                    
+                except Exception as e:
+                    st.error(f"批改失败：{str(e)}")
+    else:
+        st.warning("请先上传学生答案文件")
+>>>>>>> b42dfdc87b0c14ed38790b4ae0a68ff39e132e3d
 
 # 新的简化结果页面
 def show_result():
@@ -3147,6 +3442,7 @@ def show_result_original():
     
     with col_right:
         st.markdown("### 📝 批改结果")
+<<<<<<< HEAD
                 
         # 批改结果容器 - 与左侧预览框对齐，支持独立滚动条控制
         if st.session_state.correction_result:
@@ -3239,6 +3535,43 @@ def show_result_original():
             </div>
             '''
             st.markdown(empty_html, unsafe_allow_html=True)
+=======
+
+        # 检查是否有LangGraph结果
+        if hasattr(st.session_state, 'langgraph_result') and st.session_state.langgraph_result:
+            # 显示LangGraph增强结果
+            st.markdown("#### 🧠 LangGraph智能分析")
+
+            # 显示LangGraph特殊结果
+            if LANGGRAPH_AVAILABLE:
+                show_langgraph_results(st.session_state.langgraph_result)
+
+            # 显示传统文本结果
+            with st.expander("📄 查看详细文本结果", expanded=False):
+                st.text_area(
+                    "批改详情",
+                    st.session_state.correction_result,
+                    height=300,
+                    disabled=True,
+                    label_visibility="collapsed"
+                )
+        else:
+            # 传统结果显示
+            result_container = st.container()
+
+            with result_container:
+                if st.session_state.correction_result:
+                    # 使用st.text_area显示批改结果，避免HTML解析问题
+                    st.text_area(
+                        "批改详情",
+                        st.session_state.correction_result,
+                        height=500,
+                        disabled=True,
+                        label_visibility="collapsed"
+                    )
+                else:
+                    st.info("没有批改结果")
+>>>>>>> b42dfdc87b0c14ed38790b4ae0a68ff39e132e3d
     
     # 文件切换功能 (放在左侧预览区域)
     if len(st.session_state.uploaded_files_data) > 1:
@@ -3508,6 +3841,7 @@ def show_history():
 def show_sidebar():
     """显示侧边栏"""
     with st.sidebar:
+<<<<<<< HEAD
         st.markdown('<h3 style="color: #60a5fa; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8); font-weight: 800;">🤖 AI批改系统</h3>', unsafe_allow_html=True)
         
         if st.session_state.logged_in:
@@ -3531,9 +3865,34 @@ def show_sidebar():
                 st.session_state.page = "history"
                 st_rerun()
             
+=======
+        st.markdown('<h3 style="color: #000000;">🤖 AI批改系统</h3>', unsafe_allow_html=True)
+
+        if st.session_state.logged_in:
+            st.markdown(f"👋 **{st.session_state.username}**")
+            st.markdown("---")
+
+            # 导航菜单
+            if st.button("🏠 首页", use_container_width=True):
+                st.session_state.page = "home"
+                st.rerun()
+
+            if st.button("📝 批改", use_container_width=True):
+                st.session_state.page = "grading"
+                st.rerun()
+
+            if st.button("📊 进度", use_container_width=True):
+                st.session_state.page = "progress"
+                st.rerun()
+
+            if st.button("📚 历史", use_container_width=True):
+                st.session_state.page = "history"
+                st.rerun()
+
+>>>>>>> b42dfdc87b0c14ed38790b4ae0a68ff39e132e3d
             # 结果页面导航 (只在有结果时显示)
             if st.session_state.correction_result:
-                if st.button("📊 查看结果", use_container_width=True):
+                if st.button("� 查看结果", use_container_width=True):
                     st.session_state.page = "result"
                     st_rerun()
             
@@ -6917,7 +7276,7 @@ def show_student_progress(analytics_data):
 def main():
     init_session()
     show_sidebar()
-    
+
     # 页面路由
     if st.session_state.page == "home":
         show_home()
@@ -6930,6 +7289,7 @@ def main():
         show_student_dashboard()
     elif st.session_state.page == "grading":
         show_grading()
+<<<<<<< HEAD
     elif st.session_state.page == "assignment_management":
         show_assignment_management()
     elif st.session_state.page == "class_management":
@@ -6940,6 +7300,13 @@ def main():
         show_student_detail()
     elif st.session_state.page == "analytics":
         show_analytics()
+=======
+    elif st.session_state.page == "progress":
+        if PROGRESS_AVAILABLE:
+            show_progress_page()
+        else:
+            st.error("❌ 进度模块不可用")
+>>>>>>> b42dfdc87b0c14ed38790b4ae0a68ff39e132e3d
     elif st.session_state.page == "history":
         show_history()
     elif st.session_state.page == "result":

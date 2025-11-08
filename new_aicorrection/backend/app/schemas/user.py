@@ -182,6 +182,39 @@ class EmailVerification(BaseModel):
     token: str = Field(..., min_length=1)
 
 
+<<<<<<< HEAD
+=======
+class FirebaseAuthRequest(BaseModel):
+    """Firebase authentication request schema."""
+    firebase_token: str = Field(..., min_length=1, description="Firebase ID token")
+
+
+class FirebaseAuthResponse(BaseModel):
+    """Firebase authentication response schema."""
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+    expires_in: int
+    user: UserResponse
+    is_new_user: bool = False
+
+
+class SupabaseAuthRequest(BaseModel):
+    """Supabase authentication request schema."""
+    access_token: str = Field(..., min_length=1, description="Supabase access token")
+
+
+class SupabaseAuthResponse(BaseModel):
+    """Supabase authentication response schema."""
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+    expires_in: int
+    user: UserResponse
+    is_new_user: bool = False
+
+
+>>>>>>> b42dfdc87b0c14ed38790b4ae0a68ff39e132e3d
 class UserProfile(UserResponse):
     """Extended user profile schema."""
     # Add additional profile fields if needed

@@ -9,6 +9,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.auth import auth_manager
+<<<<<<< HEAD
+=======
+from app.core.firebase_auth import FirebaseUser
+from app.core.supabase_auth import SupabaseUser
+>>>>>>> b42dfdc87b0c14ed38790b4ae0a68ff39e132e3d
 from app.models.user import User, UserRole, ParentStudentRelation
 from app.schemas.user import UserCreate, UserUpdate, UserResponse
 
@@ -65,6 +70,109 @@ class UserService:
             select(User).where(User.email == email)
         )
         return result.scalar_one_or_none()
+<<<<<<< HEAD
+=======
+
+    async def get_user_by_firebase_uid(self, firebase_uid: str) -> Optional[User]:
+        """Get user by Firebase UID."""
+        result = await self.db.execute(
+            select(User).where(User.firebase_uid == firebase_uid)
+        )
+        return result.scalar_one_or_none()
+
+    async def get_user_by_supabase_id(self, supabase_id: str) -> Optional[User]:
+        """Get user by Supabase ID."""
+        result = await self.db.execute(
+            select(User).where(User.supabase_id == supabase_id)
+        )
+        return result.scalar_one_or_none()
+
+    async def create_firebase_user(self, firebase_user: FirebaseUser) -> User:
+        """Create a new user from Firebase authentication."""
+        # Check if email already exists
+        existing_user = await self.get_user_by_email(firebase_user.email)
+        if existing_user:
+            raise ValueError("邮箱已被注册")
+
+        # Create user with Firebase UID
+        user = User(
+            email=firebase_user.email,
+            name=firebase_user.name or firebase_user.email.split('@')[0],
+            role=UserRole.STUDENT,  # Default role for Firebase users
+            firebase_uid=firebase_user.uid,
+            password_hash=None,  # No password for Firebase users
+            is_active=True,
+            is_verified=firebase_user.email_verified
+        )
+
+        self.db.add(user)
+        await self.db.commit()
+        await self.db.refresh(user)
+
+        return user
+
+    async def update_firebase_user(self, user: User, firebase_user: FirebaseUser) -> User:
+        """Update existing user with Firebase data."""
+        # Update user information if changed
+        if user.email != firebase_user.email:
+            user.email = firebase_user.email
+
+        if firebase_user.name and user.name != firebase_user.name:
+            user.name = firebase_user.name
+
+        if user.is_verified != firebase_user.email_verified:
+            user.is_verified = firebase_user.email_verified
+
+        user.updated_at = datetime.now(timezone.utc)
+
+        await self.db.commit()
+        await self.db.refresh(user)
+
+        return user
+
+    async def create_supabase_user(self, supabase_user: SupabaseUser) -> User:
+        """Create a new user from Supabase authentication."""
+        # Check if email already exists
+        existing_user = await self.get_user_by_email(supabase_user.email)
+        if existing_user:
+            raise ValueError("邮箱已被注册")
+
+        # Create user with Supabase ID
+        user = User(
+            email=supabase_user.email,
+            name=supabase_user.name or supabase_user.email.split('@')[0],
+            role=UserRole.STUDENT,  # Default role for Supabase users
+            supabase_id=supabase_user.id,
+            password_hash=None,  # No password for Supabase users
+            is_active=True,
+            is_verified=supabase_user.email_confirmed
+        )
+
+        self.db.add(user)
+        await self.db.commit()
+        await self.db.refresh(user)
+
+        return user
+
+    async def update_supabase_user(self, user: User, supabase_user: SupabaseUser) -> User:
+        """Update existing user with Supabase data."""
+        # Update user information if changed
+        if user.email != supabase_user.email:
+            user.email = supabase_user.email
+
+        if supabase_user.name and user.name != supabase_user.name:
+            user.name = supabase_user.name
+
+        if user.is_verified != supabase_user.email_confirmed:
+            user.is_verified = supabase_user.email_confirmed
+
+        user.updated_at = datetime.now(timezone.utc)
+
+        await self.db.commit()
+        await self.db.refresh(user)
+
+        return user
+>>>>>>> b42dfdc87b0c14ed38790b4ae0a68ff39e132e3d
     
     async def authenticate_user(self, email: str, password: str) -> Optional[User]:
         """Authenticate user with email and password."""
